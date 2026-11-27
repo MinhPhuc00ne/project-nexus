@@ -66,7 +66,8 @@ describeIfDatabase('PayOS order codes cannot repeat', () => {
   it('indexes the codes uniquely, and only where they are codes', async () => {
     const indexes = await prisma.$queryRaw<Array<{ indexdef: string }>>`
       SELECT indexdef FROM pg_indexes
-      WHERE indexname IN ('payments_payos_transaction_code_key',
+      WHERE schemaname = current_schema()
+        AND indexname IN ('payments_payos_transaction_code_key',
                           'wallet_transactions_deposit_reference_key')
       ORDER BY indexname`;
 

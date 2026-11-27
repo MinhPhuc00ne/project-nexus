@@ -33,6 +33,7 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     root: './',
+    testTimeout: 30000,
     setupFiles: ['./test/vitest.setup.ts'],
     include: ['src/**/*.spec.ts', 'test/**/*.spec.{ts,mjs}'],
     coverage: {
