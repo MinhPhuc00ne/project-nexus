@@ -207,31 +207,31 @@ function AppRouter() {
                   />
                   <Route
                     path={ROUTES.STAFF_TEAM}
-                    element={<StaffDashboard initialSection="Quản Lý Nhân Viên" />}
+                    element={<StaffDashboard initialSection="team" />}
                   />
                   <Route
                     path={ROUTES.STAFF_INBOX}
-                    element={<StaffDashboard initialSection="Hộp Thư Trực Tuyến" />}
+                    element={<StaffDashboard initialSection="inbox" />}
                   />
                   <Route
                     path={ROUTES.STAFF_DISPUTES}
-                    element={<StaffDashboard initialSection="Khiếu Nại & Tranh Chấp" />}
+                    element={<StaffDashboard initialSection="disputes" />}
                   />
                   <Route
                     path={ROUTES.STAFF_ORDERS}
-                    element={<StaffDashboard initialSection="Đơn hàng & Hậu mãi" />}
+                    element={<StaffDashboard initialSection="orders" />}
                   />
                   <Route
                     path={ROUTES.STAFF_AUCTION_SUPPORT}
-                    element={<StaffDashboard initialSection="Hỗ Trợ Đấu Giá 3D" />}
+                    element={<StaffDashboard initialSection="auctionSupport" />}
                   />
                   <Route
                     path={ROUTES.STAFF_BANNERS}
-                    element={<StaffDashboard initialSection="Quản Lý Banner" />}
+                    element={<StaffDashboard initialSection="banners" />}
                   />
                   <Route
                     path={ROUTES.STAFF_REVIEWS}
-                    element={<StaffDashboard initialSection="Kiểm Duyệt Đánh Giá" />}
+                    element={<StaffDashboard initialSection="reviews" />}
                   />
                 </Route>
               </Route>

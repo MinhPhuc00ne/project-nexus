@@ -14,6 +14,8 @@ import { OrderLifecycleController } from './controllers/order-lifecycle.controll
 import { OrderEscrowService } from './services/order-escrow.service';
 import { OrderExpirationService } from './services/order-expiration.service';
 import { OrderPaymentHelper } from './services/order-payment.helper';
+import { OrderPayosService } from './services/order-payos.service';
+import { OrderWalletPaymentService } from './services/order-wallet-payment.service';
 import { OrdersChatFacade } from './services/orders-chat.facade';
 
 /**
@@ -42,6 +44,8 @@ import { OrdersChatFacade } from './services/orders-chat.facade';
   ],
   controllers: [OrderController, SellerOrdersController, OrderLifecycleController],
   providers: [
+    OrderPayosService,
+    OrderWalletPaymentService,
     OrderPaymentHelper,
     OrderService,
     SellerOrdersService,
