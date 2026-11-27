@@ -45,15 +45,15 @@ export default function StaffSidebar({
           aria-label={t('sidebarNavAria')}
         >
           {navigation
-            .filter(({ label }) => label !== 'Quản Lý Nhân Viên' || managementAccess === 'allowed')
-            .map(({ label, i18nKey, icon: Icon }) => (
+            .filter(({ key }) => key !== 'team' || managementAccess === 'allowed')
+            .map(({ key, i18nKey, icon: Icon }) => (
               <button
-                className={`${dashboardChrome.navItem} w-full text-left ${activeNavigation === label ? dashboardChrome.navActive + ' is-active' : dashboardChrome.navIdle}`}
-                key={label}
-                aria-current={activeNavigation === label ? 'page' : undefined}
+                className={`${dashboardChrome.navItem} w-full text-left ${activeNavigation === key ? dashboardChrome.navActive + ' is-active' : dashboardChrome.navIdle}`}
+                key={key}
+                aria-current={activeNavigation === key ? 'page' : undefined}
                 onClick={() => {
-                  onSelectNavigation(label);
-                  navigate(staffSectionPaths[label]);
+                  onSelectNavigation(key);
+                  navigate(staffSectionPaths[key]);
                   onCloseSidebar();
                 }}
               >

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ChevronRight, Headphones, Inbox, Check } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { sectionContent, sectionKeyMap, type StaffSection } from './staffNavigationData';
+import { sectionContent, type StaffSection } from './staffNavigationData';
 import StaffSidebar from './StaffSidebar';
 import StaffHeader from './StaffHeader';
 import StaffTeamManagementPanel from './StaffTeamManagementPanel';
@@ -17,7 +17,7 @@ import StaffReviewsPanel from './StaffReviewsPanel';
 export type { StaffSection };
 
 export default function StaffDashboard({
-  initialSection = 'Hộp Thư Trực Tuyến',
+  initialSection = 'inbox',
 }: {
   initialSection?: StaffSection;
 }) {
@@ -41,7 +41,7 @@ export default function StaffDashboard({
     window.setTimeout(() => setToast(''), 2800);
   };
 
-  const sectionKey = sectionKeyMap[activeNavigation];
+  const sectionKey = activeNavigation;
   const fallbackContent = sectionContent[activeNavigation];
   const sectionTitle = t(`sections.${sectionKey}.title`, { defaultValue: fallbackContent.title });
   const sectionDescription = t(`sections.${sectionKey}.description`, {
@@ -52,7 +52,7 @@ export default function StaffDashboard({
       ? (t(`sections.${sectionKey}.topics`, { returnObjects: true }) as string[])
       : [];
 
-  if (activeNavigation === 'Quản Lý Nhân Viên' && managementAccess !== 'allowed') {
+  if (activeNavigation === 'team' && managementAccess !== 'allowed') {
     return (
       <main className="p-8">
         <p role="status">
@@ -87,12 +87,12 @@ export default function StaffDashboard({
 
         <main
           className={`w-full min-w-0 flex-1 min-h-0 flex flex-col ${
-            activeNavigation === 'Hộp Thư Trực Tuyến'
+            activeNavigation === 'inbox'
               ? 'overflow-hidden max-[768px]:overflow-visible px-3 pt-2 pb-3 lg:px-4 lg:pt-2.5 lg:pb-3.5 max-w-full'
               : 'overflow-y-auto px-5 pb-6 pt-4 max-w-[1800px] mx-auto custom-scrollbar'
           }`}
         >
-          {activeNavigation === 'Hộp Thư Trực Tuyến' ? (
+          {activeNavigation === 'inbox' ? (
             <div className="flex items-center justify-between pb-2 shrink-0">
               <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
                 <span>{t('dashboard.channelBreadcrumb')}</span>
@@ -130,19 +130,19 @@ export default function StaffDashboard({
             </>
           )}
 
-          {activeNavigation === 'Quản Lý Nhân Viên' ? (
+          {activeNavigation === 'team' ? (
             <StaffTeamManagementPanel notify={notify} />
-          ) : activeNavigation === 'Khiếu Nại & Tranh Chấp' ? (
+          ) : activeNavigation === 'disputes' ? (
             <StaffDisputesPanel />
-          ) : activeNavigation === 'Đơn hàng & Hậu mãi' ? (
+          ) : activeNavigation === 'orders' ? (
             <StaffOrdersPanel />
-          ) : activeNavigation === 'Quản Lý Banner' ? (
+          ) : activeNavigation === 'banners' ? (
             <StaffBannersPanel />
-          ) : activeNavigation === 'Kiểm Duyệt Đánh Giá' ? (
+          ) : activeNavigation === 'reviews' ? (
             <StaffReviewsPanel />
-          ) : activeNavigation === 'Hỗ Trợ Đấu Giá 3D' ? (
+          ) : activeNavigation === 'auctionSupport' ? (
             <StaffAuctionSupportPanel />
-          ) : activeNavigation !== 'Hộp Thư Trực Tuyến' ? (
+          ) : activeNavigation !== 'inbox' ? (
             <section
               className="mt-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
               aria-label={sectionTitle}

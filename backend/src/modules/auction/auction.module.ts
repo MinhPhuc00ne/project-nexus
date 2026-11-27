@@ -18,6 +18,7 @@ import { AuctionBiddingHelper } from './services/auction-bidding.helper';
 import { AuctionConsignmentHelper } from './services/auction-consignment.helper';
 import { AuctionCheckoutController } from './controllers/auction-checkout.controller';
 import { AuctionCheckoutService } from './services/auction-checkout.service';
+import { AuctionDefaultService } from './services/auction-default.service';
 import { AuctionSecondChanceHelper } from './services/auction-second-chance.helper';
 
 /**
@@ -37,6 +38,7 @@ import { AuctionSecondChanceHelper } from './services/auction-second-chance.help
   controllers: [AuctionController, AuctionImageController, AuctionCheckoutController],
   providers: [
     AuctionCheckoutService,
+    AuctionDefaultService,
     AuctionSecondChanceHelper,
     AuctionAdminHelper,
     AuctionBiddingHelper,

@@ -20,7 +20,6 @@ import { mergeGuestCartAfterLogin, resetCartSync } from '@/features/cart/service
 import { syncGuestWishlist } from '@/features/wishlist/services/wishlist.service';
 import type { AuthUser, UserProfile } from '@/features/account/types/user.types';
 import { useToast } from '../components/ToastNotification';
-import { useAuthStore } from '../stores/useAuthStore';
 
 const ACTIVE_MODE_PREFIX = 'nexus:active-mode:';
 
@@ -281,11 +280,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const activeMode: 'SELLER' | 'BUYER' =
     isSeller && user?.isSellerActive && user?.currentMode === 'SELLER' ? 'SELLER' : 'BUYER';
   const isAuthenticated = Boolean(token && (user || storedUser));
-
-  useEffect(() => {
-    useAuthStore.getState().setSession({ user, storedUser, token });
-    useAuthStore.getState().setLoading(isLoading);
-  }, [user, storedUser, token, isLoading]);
 
   const value = useMemo<AuthContextType>(
     () => ({

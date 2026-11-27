@@ -2,8 +2,8 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
-  Logger,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { ChatMessage } from '@prisma/client';
@@ -22,6 +22,7 @@ import { ChatAutoReplyService } from './chat-auto-reply.service';
 import { SUPPORT_STAFF_MASK, maskStaffSender } from './chat-mask.util';
 import { StaffQueueService } from './staff-queue.service';
 import { ChatRealtimePublisher } from './chat-realtime.publisher';
+import { ChatSupportService } from './chat-support.service';
 
 export interface ChatSocketBroadcaster {
   isUserOnline?(userId: string): Promise<boolean | null>;
@@ -39,14 +40,23 @@ export interface ChatSocketBroadcaster {
 
 @Injectable()
 export class ChatService {
-  private readonly logger = new Logger(ChatService.name);
+  private readonly fallbackSupportService: ChatSupportService;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly cloudinary: CloudinaryStorageService,
     private readonly autoReplyService: ChatAutoReplyService,
     private readonly staffQueueService: StaffQueueService,
     private readonly realtime: ChatRealtimePublisher,
-  ) {}
+    @Optional() private readonly supportService?: ChatSupportService,
+  ) {
+    this.fallbackSupportService =
+      supportService ?? new ChatSupportService(prisma, staffQueueService, realtime);
+  }
+
+  private get support(): ChatSupportService {
+    return this.supportService ?? this.fallbackSupportService;
+  }
 
   /**
    * Initializes or retrieves a direct conversation between participants.
@@ -156,272 +166,46 @@ export class ChatService {
    * @param role - Requesting user role
    * @param dto - Support request payload
    * @returns Created support Conversation entity
-   * @throws BadRequestException when staff or admin attempts to submit, or when content is invalid
    */
   async requestSupport(userId: string, role: string, dto: RequestSupportInput) {
-    if (role === 'SUPPORT_STAFF' || role === 'ADMIN') {
-      throw new BadRequestException(
-        'Tài khoản nhân viên hoặc quản trị viên không thể gửi yêu cầu hỗ trợ người dùng.',
-      );
-    }
-
-    const text = (dto.message || '').trim();
-    if (!text) {
-      throw new BadRequestException('Nội dung yêu cầu hỗ trợ không được để trống.');
-    }
-    assertCleanContent(text, 'Nội dung yêu cầu hỗ trợ');
-
-    if (dto.contextType === 'DISPUTE' && dto.contextId) {
-      const existingDisputeConv = await this.prisma.chatConversation.findFirst({
-        where: { contextId: dto.contextId, contextType: 'DISPUTE' },
-        include: {
-          participant1: { select: { id: true, fullName: true, avatarUrl: true, role: true } },
-          participant2: { select: { id: true, fullName: true, avatarUrl: true, role: true } },
-          assignedStaff: { select: { id: true, fullName: true, avatarUrl: true, role: true } },
-        },
-      });
-
-      if (existingDisputeConv) {
-        await this.sendMessage(userId, role, {
-          conversationId: existingDisputeConv.id,
-          content: text,
-          attachments: dto.attachments,
-        });
-        return existingDisputeConv;
-      }
-    }
-
-    const convType = role === 'SELLER' ? 'STAFF_SELLER' : 'STAFF_BUYER';
-
-    const availableStaffId = await this.staffQueueService.getNextAvailableStaff();
-
-    const conv = await this.prisma.chatConversation.create({
-      data: {
-        type: convType,
-        participant1Id: userId,
-        participant2Id: availableStaffId || null,
-        assignedStaffId: availableStaffId || null,
-        status: availableStaffId ? 'IN_PROGRESS' : 'OPEN',
-        title:
-          dto.subject ||
-          (dto.contextType === 'DISPUTE'
-            ? `Hỗ trợ khiếu nại #${dto.contextId}`
-            : 'Yêu cầu hỗ trợ CSKH'),
-        contextId: dto.contextId || null,
-        contextType: dto.contextType || 'GENERAL',
-        lastMessage: text,
-        lastMessageAt: new Date(),
-        unreadCountUser1: 0,
-        unreadCountUser2: availableStaffId ? 1 : 0,
-      },
-      include: {
-        participant1: { select: { id: true, fullName: true, avatarUrl: true, role: true } },
-        participant2: { select: { id: true, fullName: true, avatarUrl: true, role: true } },
-        assignedStaff: { select: { id: true, fullName: true, avatarUrl: true, role: true } },
-      },
-    });
-
-    await this.prisma.chatMessage.create({
-      data: {
-        conversationId: conv.id,
-        senderId: userId,
-        body: text,
-        attachments: dto.attachments || [],
-      },
-    });
-
-    if (availableStaffId) {
-      await this.staffQueueService.trackAssignedTicket(availableStaffId, conv.id);
-      this.realtime.toUser(availableStaffId, 'ticket_assigned', {
-        conversationId: conv.id,
-        conversation: conv,
-      });
-      this.logger.log(
-        `Tự động gán ticket ${conv.id} cho staff online sớm nhất: ${availableStaffId}`,
-      );
-    } else {
-      this.realtime.toStaff('new_queue_ticket', {
-        conversationId: conv.id,
-        conversation: conv,
-      });
-      this.logger.log(`Ticket ${conv.id} đã vào hàng đợi OPEN (chưa có staff rảnh online).`);
-    }
-
-    await this.triggerAutoReply(conv, userId, role, text);
-    return conv;
+    return this.support.requestSupport(
+      userId,
+      role,
+      dto,
+      (senderId, senderRole, msgDto) => this.sendMessage(senderId, senderRole, msgDto),
+      (conv, senderId, senderRole, text) => this.triggerAutoReply(conv, senderId, senderRole, text),
+    );
   }
 
   /**
    * Retrieves or initializes a unique support conversation bound to a dispute.
-   *
-   * @param disputeId - Target dispute identifier
-   * @param userId - Requesting user identifier
-   * @param role - Requesting user role
-   * @returns Dispute conversation entity
-   * @throws NotFoundException when dispute does not exist
-   * @throws ForbiddenException when user is not a dispute party or authorized staff
    */
   async getOrCreateDisputeConversation(disputeId: string, userId: string, role: string) {
-    const dispute = await this.prisma.dispute.findUnique({
-      where: { id: disputeId },
-      include: { order: { select: { id: true, buyerId: true, sellerId: true } } },
-    });
-    if (!dispute) throw new NotFoundException('Không tìm thấy khiếu nại tranh chấp.');
-
-    const isParty =
-      dispute.openedByUserId === userId ||
-      dispute.order.buyerId === userId ||
-      dispute.order.sellerId === userId;
-    const isStaffOrAdmin = role === 'SUPPORT_STAFF' || role === 'ADMIN';
-
-    if (!isParty && !isStaffOrAdmin) {
-      throw new ForbiddenException('Bạn không có quyền truy cập hội thoại của tranh chấp này.');
-    }
-
-    let conv = await this.prisma.chatConversation.findFirst({
-      where: { contextId: disputeId, contextType: 'DISPUTE' },
-      include: {
-        participant1: { select: { id: true, fullName: true, avatarUrl: true, role: true } },
-        participant2: { select: { id: true, fullName: true, avatarUrl: true, role: true } },
-        assignedStaff: { select: { id: true, fullName: true, avatarUrl: true, role: true } },
-      },
-    });
-
-    if (!conv) {
-      conv = await this.requestSupport(userId, role, {
-        subject: `Tranh chấp đơn hàng #${dispute.orderId}`,
-        message: `Mở hội thoại hỗ trợ giải quyết khiếu nại: ${dispute.reason}`,
-        contextId: disputeId,
-        contextType: 'DISPUTE',
-      });
-    }
-
-    return conv;
+    return this.support.getOrCreateDisputeConversation(
+      disputeId,
+      userId,
+      role,
+      (senderId, senderRole, msgDto) => this.sendMessage(senderId, senderRole, msgDto),
+      (conv, senderId, senderRole, text) => this.triggerAutoReply(conv, senderId, senderRole, text),
+    );
   }
 
   /**
    * Retrieves paginated support queue tickets adhering to FIFO ordering.
-   *
-   * @param role - User role (must be SUPPORT_STAFF or ADMIN)
-   * @param query - Pagination and filtering options
-   * @returns Paginated queue tickets and waiting metrics
-   * @throws ForbiddenException when user lacks staff or admin privileges
    */
   async getQueue(role: string, query: QueryQueueInput) {
-    if (role !== 'SUPPORT_STAFF' && role !== 'ADMIN') {
-      throw new ForbiddenException(
-        'Chỉ nhân viên hoặc quản trị viên mới có quyền xem hàng đợi hỗ trợ.',
-      );
-    }
-
-    const page = Math.max(1, Number(query.page) || 1);
-    const limit = Math.max(1, Math.min(100, Number(query.limit) || 20));
-    const skip = (page - 1) * limit;
-
-    const where: Record<string, unknown> = {
-      status: 'OPEN',
-      assignedStaffId: null,
-    };
-    if (query.contextType) where.contextType = query.contextType;
-
-    const [items, total] = await Promise.all([
-      this.prisma.chatConversation.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'asc' },
-        include: {
-          participant1: {
-            select: { id: true, fullName: true, avatarUrl: true, role: true, email: true },
-          },
-          messages: { take: 1, orderBy: { createdAt: 'desc' } },
-        },
-      }),
-      this.prisma.chatConversation.count({ where }),
-    ]);
-
-    const formatted = items.map((item) => {
-      const waitingTimeMs = Date.now() - new Date(item.createdAt).getTime();
-      return {
-        ...item,
-        waitingTimeSeconds: Math.floor(waitingTimeMs / 1000),
-      };
-    });
-
-    return {
-      items: formatted,
-      onlineStaffCount: this.staffQueueService.getOnlineStaffCount(),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+    return this.support.getQueue(role, query);
   }
 
   /**
    * Allows support staff to claim an unassigned support ticket from the FIFO queue.
-   *
-   * @param convId - Target conversation identifier
-   * @param staffId - Claiming staff user identifier
-   * @param role - Claiming user role
-   * @returns Updated Conversation entity
-   * @throws ForbiddenException when user lacks staff/admin role
-   * @throws NotFoundException when conversation does not exist
-   * @throws BadRequestException when conversation is not in OPEN status
    */
   async claimConversation(convId: string, staffId: string, role: string) {
-    if (role !== 'SUPPORT_STAFF' && role !== 'ADMIN') {
-      throw new ForbiddenException(
-        'Chỉ nhân viên hoặc quản trị viên mới có quyền tiếp nhận cuộc trò chuyện.',
-      );
-    }
-
-    const conv = await this.prisma.chatConversation.findUnique({
-      where: { id: convId },
-    });
-
-    if (!conv) throw new NotFoundException('Không tìm thấy cuộc trò chuyện.');
-    if (conv.status !== 'OPEN') {
-      throw new BadRequestException('Cuộc trò chuyện này đã được tiếp nhận hoặc đã hoàn tất.');
-    }
-
-    const updated = await this.prisma.chatConversation.update({
-      where: { id: convId },
-      data: {
-        status: 'IN_PROGRESS',
-        assignedStaffId: staffId,
-        participant2Id: staffId,
-        updatedAt: new Date(),
-      },
-      include: {
-        participant1: { select: { id: true, fullName: true, avatarUrl: true, role: true } },
-        participant2: { select: { id: true, fullName: true, avatarUrl: true, role: true } },
-        assignedStaff: { select: { id: true, fullName: true, avatarUrl: true, role: true } },
-      },
-    });
-
-    this.staffQueueService.trackAssignedTicket(staffId, convId);
-    this.realtime.statusChange(convId, 'IN_PROGRESS', staffId);
-    this.realtime.toUser(staffId, 'ticket_assigned', {
-      conversationId: convId,
-      conversation: updated,
-    });
-
-    return updated;
+    return this.support.claimConversation(convId, staffId, role);
   }
 
   /**
    * Updates conversation lifecycle status (OPEN, IN_PROGRESS, RESOLVED, CLOSED).
-   *
-   * @param convId - Target conversation identifier
-   * @param userId - Acting user identifier
-   * @param role - Acting user role
-   * @param dto - Status update payload
-   * @returns Updated Conversation entity
-   * @throws NotFoundException when conversation does not exist
-   * @throws ForbiddenException when user lacks assignment or audit permission
    */
   async updateConversationStatus(
     convId: string,
@@ -429,76 +213,16 @@ export class ChatService {
     role: string,
     dto: UpdateConversationStatusInput,
   ) {
-    const conv = await this.prisma.chatConversation.findUnique({
-      where: { id: convId },
-    });
-    if (!conv) throw new NotFoundException('Không tìm thấy cuộc trò chuyện.');
-
-    const isAuditAdmin = role === 'ADMIN';
-    const isAssigned = conv.assignedStaffId === userId || conv.participant2Id === userId;
-
-    if (!isAssigned && !isAuditAdmin) {
-      throw new ForbiddenException('Bạn không có quyền cập nhật trạng thái cuộc trò chuyện này.');
-    }
-
-    const updated = await this.prisma.chatConversation.update({
-      where: { id: convId },
-      data: {
-        status: dto.status,
-        updatedAt: new Date(),
-      },
-      include: {
-        participant1: { select: { id: true, fullName: true, avatarUrl: true, role: true } },
-        participant2: { select: { id: true, fullName: true, avatarUrl: true, role: true } },
-        assignedStaff: { select: { id: true, fullName: true, avatarUrl: true, role: true } },
-      },
-    });
-
-    if (dto.status === 'RESOLVED' || dto.status === 'CLOSED') {
-      if (conv.assignedStaffId) {
-        this.staffQueueService.releaseAssignedTicket(conv.assignedStaffId, convId);
-        void this.processQueueForStaff(conv.assignedStaffId);
-      }
-    }
-
-    this.realtime.statusChange(convId, dto.status, conv.assignedStaffId);
-
-    if (dto.resolutionNotes?.trim()) {
-      await this.sendMessage(userId, role, {
-        conversationId: convId,
-        content: `[Ghi chú kết thúc hỗ trợ]: ${dto.resolutionNotes.trim()}`,
-      });
-    }
-
-    return updated;
+    return this.support.updateConversationStatus(convId, userId, role, dto, (sId, sRole, msgDto) =>
+      this.sendMessage(sId, sRole, msgDto),
+    );
   }
 
   /**
    * Automatically allocates the next FIFO queue ticket to an idle support staff member.
-   *
-   * @param staffId - Target staff member identifier
    */
   async processQueueForStaff(staffId: string): Promise<void> {
-    try {
-      const isOnline = this.staffQueueService.isStaffOnline(staffId);
-      if (!isOnline) return;
-
-      const nextTicket = await this.prisma.chatConversation.findFirst({
-        where: {
-          status: 'OPEN',
-          assignedStaffId: null,
-        },
-        orderBy: { createdAt: 'asc' },
-      });
-
-      if (!nextTicket) return;
-
-      await this.claimConversation(nextTicket.id, staffId, 'SUPPORT_STAFF');
-      this.logger.log(`Tự động phân phối ticket FIFO ${nextTicket.id} cho staff ${staffId}`);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      this.logger.warn(`Lỗi khi phân phối ticket cho staff ${staffId}: ${msg}`);
-    }
+    return this.support.processQueueForStaff(staffId);
   }
 
   /**

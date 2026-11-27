@@ -162,9 +162,7 @@ jobs:
         run: npm run db:verify
 
       - name: Run backend tests with coverage
-        run: |
-          npm run test:coverage --workspace=nexus-backend
-          npm run test:legacy --workspace=nexus-backend
+        run: npm run test:coverage --workspace=nexus-backend
 
       - name: Upload backend coverage
         uses: actions/upload-artifact@v4

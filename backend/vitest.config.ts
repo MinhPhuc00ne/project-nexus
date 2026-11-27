@@ -34,7 +34,7 @@ export default defineConfig({
     environment: 'node',
     root: './',
     setupFiles: ['./test/vitest.setup.ts'],
-    include: ['src/**/*.spec.ts', 'test/**/*.spec.ts'],
+    include: ['src/**/*.spec.ts', 'test/**/*.spec.{ts,mjs}'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
