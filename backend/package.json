@@ -23,6 +23,7 @@
     "test:legacy": "node --test test/*.test.mjs",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit && npm run typecheck:test && npm run typecheck:seeds",
     "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
     "db:verify": "node prisma/scripts/verify-constraints.mjs",
     "db:bootstrap": "ts-node prisma/seeds/system.ts",

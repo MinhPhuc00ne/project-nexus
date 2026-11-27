@@ -11,8 +11,80 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify:
-    name: Lint, Build, and Test
+  static-checks:
+    name: Static Checks
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/nexus_ci
+      JWT_SECRET: ci-test-jwt-secret-key-at-least-32-chars
+      REFRESH_TOKEN_SECRET: ci-test-refresh-secret-key-at-least-32-chars
+      CORS_ORIGINS: http://localhost:5173
+      APP_PUBLIC_URL: http://localhost:3000
+      FRONTEND_URL: http://localhost:5173
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Cache Turbo and lint state
+        uses: actions/cache@v4
+        with:
+          path: |
+            .turbo
+            .eslintcache
+            .prettiercache
+          key: static-${{ runner.os }}-${{ hashFiles('package-lock.json', 'eslint.config.mjs', 'turbo.json') }}-${{ github.sha }}
+          restore-keys: |
+            static-${{ runner.os }}-${{ hashFiles('package-lock.json', 'eslint.config.mjs', 'turbo.json') }}-
+            static-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Run ESLint and SonarJS
+        run: npm run lint
+
+      - name: Check frontend i18n parity
+        run: npm run i18n:check
+
+      - name: Validate documentation and OpenAPI spec
+        run: npm run docs:check
+
+      - name: Validate Prisma schema
+        run: npx prisma validate --schema=backend/prisma/schema.prisma
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Check backend import graph for cycles
+        run: npm run check:cycles
+
+      - name: Build all workspaces
+        run: npm run build
+
+      - name: Typecheck all workspaces, tests, and seeds
+        run: npm run typecheck
+
+      - name: Check the committed OpenAPI spec is current
+        run: |
+          npm run docs:openapi
+          if ! git diff --quiet -- docs/static/openapi/nexus-openapi.json; then
+            echo 'The committed OpenAPI spec does not match the controllers.'
+            echo 'Run `npm run docs:openapi` and commit the result.'
+            git --no-pager diff --stat -- docs/static/openapi/nexus-openapi.json
+            exit 1
+          fi
+
+  backend-test:
+    name: Backend Tests
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -62,43 +134,28 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Cache Turbo state
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ hashFiles('package-lock.json', 'turbo.json') }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-${{ hashFiles('package-lock.json', 'turbo.json') }}-
+            turbo-${{ runner.os }}-
+
       - name: Install dependencies
-        # Without --legacy-peer-deps: the tree resolves on its own, and the flag
-        # was hiding whether it still did.
         run: npm ci
 
-      - name: Check formatting
-        run: npm run format:check
+      - name: Generate Prisma client
+        run: npm run db:generate
 
-      - name: Run ESLint and SonarJS
-        run: npm run lint
-
-      - name: Check frontend i18n parity
-        run: npm run i18n:check
-
-      - name: Validate documentation and OpenAPI spec
-        run: npm run docs:check
-
-      - name: Validate Prisma schema
-        run: npx prisma validate --schema=backend/prisma/schema.prisma
-
-      - name: Check backend import graph for cycles
-        run: npm run check:cycles
-
-      - name: Build all workspaces
-        run: npm run build
-
-      - name: Typecheck backend tests
-        run: npm run typecheck:test --workspace=nexus-backend
-
-      - name: Typecheck frontend tests
-        run: npm run typecheck:test --workspace=nexus-frontend
-
-      - name: Typecheck database seeds
-        run: npm run typecheck:seeds --workspace=nexus-backend
+      - name: Build shared packages
+        run: |
+          npm run build:types
+          npm run build:contracts
 
       - name: Deploy Prisma migrations for integration tests
-        run: npm run prisma:deploy --workspace=nexus-backend
+        run: npm run db:deploy
 
       - name: Bootstrap system rows
         run: npm run db:bootstrap
@@ -106,42 +163,62 @@ jobs:
       - name: Verify database CHECK constraints and partial indexes
         run: npm run db:verify
 
-      - name: Run automated test suites
-        run: npm test
-
-      - name: Check the committed OpenAPI spec is current
-        # The spec is generated from the controllers and committed, so the docs
-        # site and any client generated from it describe what the server does.
-        # Nothing stopped the two drifting: the file was regenerated by hand,
-        # and for a while it was missing eighteen routes that existed.
-        run: |
-          npm run docs:openapi
-          if ! git diff --quiet -- docs/static/openapi/nexus-openapi.json; then
-            echo 'The committed OpenAPI spec does not match the controllers.'
-            echo 'Run `npm run docs:openapi` and commit the result.'
-            git --no-pager diff --stat -- docs/static/openapi/nexus-openapi.json
-            exit 1
-          fi
-
-      - name: Collect coverage
-        # Reported, not gated: a threshold picked now would be a number nobody
-        # agreed to, and a build that fails on it teaches people to raise it.
+      - name: Run backend tests with coverage
         run: |
           npm run test:coverage --workspace=nexus-backend
-          npm run test:coverage --workspace=nexus-frontend
+          npm run test:legacy --workspace=nexus-backend
 
-      - name: Upload coverage
+      - name: Upload backend coverage
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: coverage
-          path: |
-            backend/coverage/lcov.info
-            frontend/coverage/lcov.info
+          name: backend-coverage
+          path: backend/coverage/lcov.info
+          if-no-files-found: warn
+
+  frontend-test:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Cache Turbo state
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ hashFiles('package-lock.json', 'turbo.json') }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-${{ hashFiles('package-lock.json', 'turbo.json') }}-
+            turbo-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared packages
+        run: |
+          npm run build:types
+          npm run build:contracts
+
+      - name: Run frontend tests with coverage
+        run: npm run test:coverage --workspace=nexus-frontend
+
+      - name: Upload frontend coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/lcov.info
           if-no-files-found: warn
 
   e2e:
-    name: Browser smoke tests
+    name: Browser Smoke Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -153,22 +230,26 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Cache Turbo state
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ hashFiles('package-lock.json', 'turbo.json') }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-${{ hashFiles('package-lock.json', 'turbo.json') }}-
+            turbo-${{ runner.os }}-
+
       - name: Install dependencies
         run: npm ci
 
-      - name: Build the shared packages
-        # The front end imports @nexus/types and @nexus/contracts from their
-        # built output, so the dev server cannot start without them.
+      - name: Build shared packages
         run: |
-          npm run build --workspace=@nexus/types
-          npm run build --workspace=@nexus/contracts
+          npm run build:types
+          npm run build:contracts
 
       - name: Install the browser
         run: npx playwright install --with-deps chromium
 
-      # The suite has existed since the first milestone and nothing ran it, so a
-      # route that stopped rendering — or an i18n key that stopped resolving —
-      # reached review unnoticed. Playwright starts the dev server itself.
       - name: Run the browser smoke tests
         run: npm run test:e2e:smoke
 
@@ -180,8 +261,32 @@ jobs:
           path: e2e/report
           retention-days: 7
 
+  changes:
+    name: Detect Container Paths
+    runs-on: ubuntu-latest
+    outputs:
+      docker: ${{ steps.filter.outputs.docker }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            docker:
+              - 'infra/**'
+              - 'backend/**'
+              - 'frontend/**'
+              - 'packages/**'
+              - 'package*.json'
+              - '.github/workflows/ci.yml'
+
   images:
-    name: Container images build
+    name: Container Images Build
+    needs: changes
+    if: github.ref == 'refs/heads/main' || needs.changes.outputs.docker == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -190,8 +295,6 @@ jobs:
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Built, not pushed. A Dockerfile that no longer builds is a deployment
-      # that fails at the worst moment, and nothing here used to check.
       - name: Build the backend image
         uses: docker/build-push-action@v6
         with:
