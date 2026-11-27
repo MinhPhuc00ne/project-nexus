@@ -1,4 +1,8 @@
 import {
+  NotificationPublisher,
+  publishNotification,
+} from '../../../core/notifications/notification-publisher.service';
+import {
   BadRequestException,
   ForbiddenException,
   Injectable,
@@ -41,6 +45,7 @@ export class AuctionBiddingHelper {
     private readonly auctionGateway: AuctionGateway,
     private readonly checkout: AuctionCheckoutService,
     @Optional() private readonly domainEvents?: DomainEventsService,
+    @Optional() private readonly notifications?: NotificationPublisher,
   ) {}
 
   /**
@@ -304,8 +309,9 @@ export class AuctionBiddingHelper {
           });
         }
 
-        await tx.notification.create({
-          data: {
+        await publishNotification(
+          tx,
+          {
             userId: previousBidderId,
             auctionId,
             targetUrl: auctionTargetUrl(auctionId),
@@ -320,7 +326,8 @@ export class AuctionBiddingHelper {
               newHighestBid: dto.bidAmount,
             },
           },
-        });
+          this.notifications,
+        );
       }
 
       const bid = await tx.bid.create({
@@ -550,8 +557,9 @@ export class AuctionBiddingHelper {
         });
         awardId = award.id;
 
-        await tx.notification.create({
-          data: {
+        await publishNotification(
+          tx,
+          {
             userId: lot.sellerId,
             auctionId: lot.auctionId,
             targetUrl: `/seller/auctions/${lot.auctionId}`,
@@ -567,7 +575,8 @@ export class AuctionBiddingHelper {
               winningPrice: Number(highestBid.bidAmount),
             },
           },
-        });
+          this.notifications,
+        );
       } else {
         if (highestBid) {
           const amount = Number(highestBid.bidAmount);
@@ -594,8 +603,9 @@ export class AuctionBiddingHelper {
           }
         }
 
-        await tx.notification.create({
-          data: {
+        await publishNotification(
+          tx,
+          {
             userId: lot.sellerId,
             auctionId: lot.auctionId,
             targetUrl: '/seller/auctions',
@@ -604,7 +614,8 @@ export class AuctionBiddingHelper {
             type: NotificationType.AUCTION,
             channel: NotificationChannel.IN_APP,
           },
-        });
+          this.notifications,
+        );
       }
 
       const updatedLot = await tx.auctionItem.update({

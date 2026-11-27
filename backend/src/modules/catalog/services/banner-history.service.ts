@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  NotificationPublisher,
+  publishNotifications,
+} from '../../../core/notifications/notification-publisher.service';
+import { BadRequestException, Injectable, Optional } from '@nestjs/common';
 import { BannerCreatorRole, Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { BannerHistoryPageDto, QueryBannerHistoryInput } from '../dtos/banner-history.dto';
@@ -22,7 +26,10 @@ export interface DisabledBannerSnapshot {
 /** Stores completed disable actions and exposes read-only history to every authorized manager. */
 @Injectable()
 export class BannerHistoryService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly notifications?: NotificationPublisher,
+  ) {}
 
   /**
    * Records one real active-to-inactive transition while the caller holds the banner row lock.
@@ -55,8 +62,9 @@ export class BannerHistoryService {
     if (actor.role !== Role.SUPPORT_STAFF) return;
     const admins = await tx.user.findMany({ where: { role: Role.ADMIN }, select: { id: true } });
     if (!admins.length) return;
-    await tx.notification.createMany({
-      data: admins.map(({ id }) => ({
+    await publishNotifications(
+      tx,
+      admins.map(({ id }) => ({
         userId: id,
         type: 'SYSTEM' as const,
         channel: 'IN_APP' as const,
@@ -64,7 +72,8 @@ export class BannerHistoryService {
         content: `${actor.fullName} (${actor.id}) đã tắt banner "${banner.title}" (${banner.id}) của ${banner.creator.fullName} lúc ${history.createdAt.toISOString()}. Mã lịch sử: ${history.id}.`,
         targetUrl: '/admin/banners',
       })),
-    });
+      this.notifications,
+    );
   }
 
   /**

@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  NotificationPublisher,
+  publishNotification,
+} from '../../../core/notifications/notification-publisher.service';
+import { ForbiddenException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { AfterSalesRequest, OrderRefund, Prisma } from '@prisma/client';
 import { QueryAfterSalesInput, QueryRefundsInput } from '../dtos/after-sales.dto';
 import { PrismaService } from '../../../core/prisma/prisma.service';
@@ -21,6 +25,7 @@ export class AfterSalesStoreService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly reputation: ReputationService,
+    @Optional() private readonly notifications?: NotificationPublisher,
   ) {}
 
   async lock(tx: Prisma.TransactionClient, orderId: string): Promise<AfterSalesOrder> {
@@ -60,15 +65,17 @@ export class AfterSalesStoreService {
       },
     });
     for (const userId of [order.buyerId, order.sellerId]) {
-      await tx.notification.create({
-        data: {
+      await publishNotification(
+        tx,
+        {
           userId,
           type: 'ORDER',
           channel: 'IN_APP',
           title: 'Cập nhật hủy/trả hàng',
           content: `Đơn #${order.id.slice(0, 8)}: ${action}.`,
         },
-      });
+        this.notifications,
+      );
     }
   }
 

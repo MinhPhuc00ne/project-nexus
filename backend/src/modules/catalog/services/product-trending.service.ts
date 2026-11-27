@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  NotificationPublisher,
+  publishNotification,
+} from '../../../core/notifications/notification-publisher.service';
+import { Injectable, Optional } from '@nestjs/common';
 import {
   NotificationChannel,
   NotificationType,
@@ -49,6 +53,7 @@ export class ProductTrendingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly inventoryService: InventoryService,
+    @Optional() private readonly notifications?: NotificationPublisher,
   ) {}
 
   /**
@@ -271,9 +276,10 @@ export class ProductTrendingService {
               trendingTopOneNotifiedAt: now,
             },
           });
-          if (claimed.count === 1 && this.prisma.notification?.create) {
-            await this.prisma.notification.create({
-              data: {
+          if (claimed.count === 1 && typeof this.prisma?.notification?.create === 'function') {
+            await publishNotification(
+              this.prisma,
+              {
                 userId: product.sellerId,
                 title: 'Sản phẩm của bạn đã đạt Top 1 Xu hướng',
                 content: `Chúc mừng! Sản phẩm "${product.title}" đã đạt Top 1 Xu hướng trên trang chủ với ${entry.purchaseCount} lượt mua.`,
@@ -281,7 +287,8 @@ export class ProductTrendingService {
                 type: NotificationType.SYSTEM,
                 channel: NotificationChannel.IN_APP,
               },
-            });
+              this.notifications,
+            );
           }
           return;
         }
@@ -291,9 +298,10 @@ export class ProductTrendingService {
             where: { id: product.id, trendingNotifiedAt: null, trendingExcluded: false },
             data: { trendingNotifiedAt: now },
           });
-          if (claimed.count === 1 && this.prisma.notification?.create) {
-            await this.prisma.notification.create({
-              data: {
+          if (claimed.count === 1 && typeof this.prisma?.notification?.create === 'function') {
+            await publishNotification(
+              this.prisma,
+              {
                 userId: product.sellerId,
                 title: 'Sản phẩm của bạn đã lên Xu hướng',
                 content: `Chúc mừng! Sản phẩm "${product.title}" đang đứng Top ${entry.rank} Xu hướng trên trang chủ với ${entry.purchaseCount} lượt mua.`,
@@ -301,7 +309,8 @@ export class ProductTrendingService {
                 type: NotificationType.SYSTEM,
                 channel: NotificationChannel.IN_APP,
               },
-            });
+              this.notifications,
+            );
           }
         }
       }),

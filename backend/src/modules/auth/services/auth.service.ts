@@ -1,10 +1,15 @@
 import {
+  NotificationPublisher,
+  publishNotification,
+} from '../../../core/notifications/notification-publisher.service';
+import {
   BadRequestException,
   ForbiddenException,
   GoneException,
   Injectable,
   Logger,
   UnauthorizedException,
+  Optional,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -57,6 +62,7 @@ export class AuthService {
     private readonly tokenAuth: TokenAuthService,
     private readonly redisService: RedisService,
     private readonly mailService: MailService,
+    @Optional() private readonly notifications?: NotificationPublisher,
   ) {}
 
   /**
@@ -176,15 +182,17 @@ export class AuthService {
           referenceId: 'REGISTRATION_EMAIL',
         },
       });
-      await tx.notification.create({
-        data: {
+      await publishNotification(
+        tx,
+        {
           userId: user.id,
           title: 'Chào mừng bạn đến với NEXUS!',
           content: `Tài khoản của bạn đã kích hoạt thành công qua Email. Điểm uy tín khởi đầu: ${INITIAL_REPUTATION_SCORE} (${INITIAL_REPUTATION_TRUST_LEVEL}).`,
           type: 'SYSTEM',
           channel: 'IN_APP',
         },
-      });
+        this.notifications,
+      );
       return { message: 'Xác thực tài khoản thành công! Bây giờ bạn có thể đăng nhập.' };
     });
   }

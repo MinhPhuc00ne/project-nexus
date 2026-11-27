@@ -1,4 +1,8 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  NotificationPublisher,
+  publishNotification,
+} from '../../../core/notifications/notification-publisher.service';
+import { Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import {
   NotificationChannel,
   NotificationType,
@@ -28,6 +32,7 @@ export class ReputationService {
   constructor(
     private readonly prisma: PrismaService,
     _notificationsService: NotificationsService,
+    @Optional() private readonly notifications?: NotificationPublisher,
   ) {}
 
   /**
@@ -327,15 +332,17 @@ export class ReputationService {
     }
 
     try {
-      await prismaClient.notification.create({
-        data: {
+      await publishNotification(
+        prismaClient,
+        {
           userId,
           title,
           content,
           type: delta > 0 ? NotificationType.SYSTEM : NotificationType.DISPUTE,
           channel: NotificationChannel.IN_APP,
         },
-      });
+        this.notifications,
+      );
     } catch (error) {
       this.logger.error(
         `Failed to persist in-app reputation notification for user '${userId}': ${error instanceof Error ? error.message : String(error)}`,

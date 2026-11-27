@@ -1,10 +1,15 @@
 import {
+  NotificationPublisher,
+  publishNotification,
+} from '../../../core/notifications/notification-publisher.service';
+import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import {
   AuctionItemStatus,
@@ -30,6 +35,7 @@ export class AuctionConsignmentHelper {
   constructor(
     private readonly prisma: PrismaService,
     private readonly chatService?: ChatService,
+    @Optional() private readonly notifications?: NotificationPublisher,
   ) {}
 
   /**
@@ -200,8 +206,9 @@ export class AuctionConsignmentHelper {
         },
       });
 
-      await this.prisma.notification.create({
-        data: {
+      await publishNotification(
+        this.prisma,
+        {
           userId: item.sellerId,
           auctionId: item.auctionId,
           targetUrl: `/seller/auctions`,
@@ -210,7 +217,8 @@ export class AuctionConsignmentHelper {
           type: NotificationType.AUCTION,
           channel: NotificationChannel.IN_APP,
         },
-      });
+        this.notifications,
+      );
 
       return rejected;
     }
@@ -254,8 +262,9 @@ export class AuctionConsignmentHelper {
       },
     });
 
-    await this.prisma.notification.create({
-      data: {
+    await publishNotification(
+      this.prisma,
+      {
         userId: item.sellerId,
         auctionId: item.auctionId,
         targetUrl: auctionTargetUrl(item.auctionId),
@@ -264,7 +273,8 @@ export class AuctionConsignmentHelper {
         type: NotificationType.AUCTION,
         channel: NotificationChannel.IN_APP,
       },
-    });
+      this.notifications,
+    );
 
     return approved;
   }

@@ -1,4 +1,9 @@
 import { NotificationChannel, NotificationType, Prisma, Role } from '@prisma/client';
+import {
+  type NotificationPublisher,
+  type NotificationWriteClient,
+  publishNotifications,
+} from './notification-publisher.service';
 
 export interface AdminNotificationPayload {
   title: string;
@@ -55,6 +60,7 @@ function hasNotificationDelegates(client: AdminNotificationDbClient): boolean {
 export async function notifyAllAdmins(
   client: AdminNotificationDbClient,
   payload: AdminNotificationPayload,
+  publisher?: NotificationPublisher,
 ): Promise<number> {
   if (!hasNotificationDelegates(client)) {
     return 0;
@@ -69,8 +75,9 @@ export async function notifyAllAdmins(
     return 0;
   }
 
-  await client.notification!.createMany!({
-    data: admins.map(({ id }) => ({
+  await publishNotifications(
+    client as NotificationWriteClient,
+    admins.map(({ id }) => ({
       userId: id,
       title: payload.title,
       content: payload.content,
@@ -80,7 +87,8 @@ export async function notifyAllAdmins(
       ...(payload.auctionId ? { auctionId: payload.auctionId } : {}),
       ...(payload.metadata ? { metadata: payload.metadata as Prisma.InputJsonValue } : {}),
     })),
-  });
+    publisher,
+  );
 
   return admins.length;
 }
@@ -91,6 +99,7 @@ export async function notifyAllAdmins(
 export async function notifyAdminsAndStaff(
   client: AdminNotificationDbClient,
   payload: BackofficeNotificationPayload,
+  publisher?: NotificationPublisher,
 ): Promise<number> {
   if (!hasNotificationDelegates(client)) {
     return 0;
@@ -105,8 +114,9 @@ export async function notifyAdminsAndStaff(
     return 0;
   }
 
-  await client.notification!.createMany!({
-    data: recipients.map(({ id, role }) => ({
+  await publishNotifications(
+    client as NotificationWriteClient,
+    recipients.map(({ id, role }) => ({
       userId: id,
       title: payload.title,
       content: payload.content,
@@ -116,7 +126,8 @@ export async function notifyAdminsAndStaff(
       ...(payload.auctionId ? { auctionId: payload.auctionId } : {}),
       ...(payload.metadata ? { metadata: payload.metadata as Prisma.InputJsonValue } : {}),
     })),
-  });
+    publisher,
+  );
 
   return recipients.length;
 }
