@@ -37,8 +37,9 @@ export class ChatbotAiService {
    * @returns True when external Gemini calls may be dispatched.
    */
   isConfigured(): boolean {
+    const enabled = this.config.get<boolean | string>('CHATBOT_AI_ENABLED');
     return (
-      this.config.get<string>('CHATBOT_AI_ENABLED') === 'true' &&
+      (enabled === true || enabled === 'true') &&
       Boolean(this.config.get<string>('GEMINI_API_KEY')?.trim()) &&
       /^gemini-[a-z0-9.-]+$/.test(this.config.get<string>('CHATBOT_GEMINI_MODEL') ?? '')
     );

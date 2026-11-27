@@ -1,15 +1,17 @@
 import { Injectable } from '@nestjs/common';
-import type { DependencyHealth, HealthCheck, HealthStatus } from '@nexus/contracts';
-import { OutboxEventStatus } from '@prisma/client';
+import type {
+  DependencyHealth,
+  HealthCheck,
+  HealthStatus,
+  LivenessHealth,
+  ReadinessHealth,
+} from '@nexus/contracts';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { SocketMetricsService } from '../realtime/socket-metrics.service';
 
 /** Beyond this, a dependency still answers but is not healthy. */
 const SLOW_DEPENDENCY_MS = 500;
-
-/** Beyond this many undelivered rows, the outbox worker is not keeping up. */
-const OUTBOX_BACKLOG_THRESHOLD = 100;
 
 @Injectable()
 export class HealthService {
@@ -22,22 +24,42 @@ export class HealthService {
   /**
    * Probes every dependency the platform needs to serve traffic.
    *
-   * @returns The health of PostgreSQL, Redis, the realtime namespaces and the
-   *   outbox backlog, plus an overall status derived from them.
+   * @returns The health of PostgreSQL, Redis, and realtime namespaces, plus an
+   *   overall status derived from them.
    */
   async check(): Promise<HealthCheck> {
     const [db, redis] = await Promise.all([this.probeDatabase(), this.probeRedis()]);
-    const pendingCount = await this.countPendingOutbox();
-
-    const statuses: HealthStatus[] = [db.status, redis.status];
-    if (pendingCount > OUTBOX_BACKLOG_THRESHOLD) statuses.push('degraded');
 
     return {
-      status: worstOf(statuses),
+      status: worstOf([db.status, redis.status]),
       db,
       redis,
       sockets: { connectedClients: this.socketMetrics.connectedClients() },
-      outbox: { pendingCount },
+      uptimeSeconds: Math.floor(process.uptime()),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Reports zero-I/O process liveness when the Node.js event loop is responsive.
+   */
+  liveness(): LivenessHealth {
+    return {
+      status: 'ok',
+      uptimeSeconds: Math.floor(process.uptime()),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Probes PostgreSQL and Redis to determine whether the instance can serve traffic.
+   */
+  async readiness(): Promise<ReadinessHealth> {
+    const [db, redis] = await Promise.all([this.probeDatabase(), this.probeRedis()]);
+    return {
+      status: worstOf([db.status, redis.status]),
+      db,
+      redis,
       uptimeSeconds: Math.floor(process.uptime()),
       timestamp: new Date().toISOString(),
     };
@@ -56,24 +78,6 @@ export class HealthService {
         throw new Error(`unexpected PING reply: ${reply}`);
       }
     });
-  }
-
-  /**
-   * Counts outbox rows still waiting for delivery.
-   *
-   * A backlog means financial and fulfillment side effects are committed but
-   * not yet acted on, so it is reported rather than hidden.
-   */
-  private async countPendingOutbox(): Promise<number> {
-    try {
-      return await this.prisma.outboxEvent.count({
-        where: { status: { in: [OutboxEventStatus.PENDING, OutboxEventStatus.PROCESSING] } },
-      });
-    } catch {
-      // The database probe already reports the connection itself; a failure
-      // here must not turn the whole response into an error.
-      return 0;
-    }
   }
 }
 

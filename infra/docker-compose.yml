@@ -65,8 +65,10 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
+      APP_ENV: ${APP_ENV:-demo}
       PORT: 3000
       PORT_BACKEND: 3000
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-nexus_secret_2026}@postgres:5432/${POSTGRES_DB:-nexus_main}?schema=public
       REDIS_URL: ${REDIS_URL:-}
       REDIS_HOST: redis
@@ -78,6 +80,17 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
       APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:3000}
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-sandbox}
+      SHIPPING_PROVIDER: ${SHIPPING_PROVIDER:-sandbox}
+      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}
+      MAIL_PROVIDER: ${MAIL_PROVIDER:-console}
+      CHATBOT_AI_ENABLED: ${CHATBOT_AI_ENABLED:-false}
+    healthcheck:
+      test: ['CMD-SHELL', 'wget --spider -q http://127.0.0.1:3000/api/v1/health/ready || exit 1']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     ports:
       - '3000:3000'
     depends_on:

@@ -156,14 +156,6 @@ enum WalletType {
   PLATFORM_REVENUE
 }
 
-/// Delivery state of a transactional outbox row.
-enum OutboxEventStatus {
-  PENDING
-  PROCESSING
-  PROCESSED
-  FAILED
-}
-
 enum WalletTransactionStatus {
   PENDING
   SUCCESS
@@ -1345,24 +1337,6 @@ model SystemSetting {
 
   @@index([updatedById])
   @@map("system_settings")
-}
-
-/// Side effects committed with their transaction and delivered by a worker.
-model OutboxEvent {
-  id          String            @id @default(uuid())
-  eventName   String            @map("event_name")
-  payload     Json
-  status      OutboxEventStatus @default(PENDING)
-  attempts    Int               @default(0)
-  availableAt DateTime          @default(now()) @map("available_at")
-  lastError   String?           @map("last_error") @db.Text
-  processedAt DateTime?         @map("processed_at")
-  createdAt   DateTime          @default(now()) @map("created_at")
-  updatedAt   DateTime          @updatedAt @map("updated_at")
-
-  @@index([status, availableAt])
-  @@index([eventName, createdAt])
-  @@map("outbox_events")
 }
 
 model EventLog {

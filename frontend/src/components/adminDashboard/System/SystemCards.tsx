@@ -43,19 +43,19 @@ export function SystemHealthBreakdown({ health }: { health?: HealthCheck }) {
   );
 }
 
-export function OutboxCard({ health }: { health?: HealthCheck }) {
+export function SystemRuntimeCard({ health }: { health?: HealthCheck }) {
   const { t } = useTranslation('admin');
   return (
     <Panel
       title={t('system.events.title')}
-      subtitle={t('system.events.subtitle')}
+      subtitle={health ? `Updated ${new Date(health.timestamp).toLocaleTimeString()}` : undefined}
       icon={<ScrollText size={19} />}
     >
       <div className="space-y-2 rounded-lg bg-slate-50 p-3 text-xs">
         <div className="flex justify-between gap-2">
-          <span className="text-slate-500">Outbox Pending Events</span>
-          <Badge tone={(health?.outbox.pendingCount ?? 0) > 50 ? 'amber' : 'green'}>
-            {health?.outbox.pendingCount ?? 0}
+          <span className="text-slate-500">{t('system.uptime')}</span>
+          <Badge tone={health ? 'green' : 'gray'}>
+            {health ? `${Math.floor(health.uptimeSeconds)}s` : 'unknown'}
           </Badge>
         </div>
         <div className="flex justify-between gap-2">

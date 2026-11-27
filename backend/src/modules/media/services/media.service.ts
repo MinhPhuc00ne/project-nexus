@@ -142,7 +142,9 @@ export class MediaService {
   ): { url: string; publicId: string } {
     const appPublicUrl = resolveAppPublicUrl({
       APP_PUBLIC_URL: this.configService.get<string>('APP_PUBLIC_URL'),
+      APP_ENV: this.configService.get<string>('APP_ENV') ?? process.env.APP_ENV,
       NODE_ENV: this.configService.get<string>('NODE_ENV') ?? process.env.NODE_ENV,
+      PORT: this.configService.get<number | string>('PORT') ?? process.env.PORT,
       PORT_BACKEND: this.configService.get<number | string>('PORT_BACKEND'),
     });
 

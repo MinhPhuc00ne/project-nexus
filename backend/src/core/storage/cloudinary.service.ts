@@ -33,7 +33,9 @@ export class CloudinaryStorageService {
       this.logger.log('STORAGE_PROVIDER=local: lưu file vào thư mục static uploads/seller-proofs.');
       const appPublicUrl = resolveAppPublicUrl({
         APP_PUBLIC_URL: this.configService.get<string>('APP_PUBLIC_URL'),
+        APP_ENV: this.configService.get<string>('APP_ENV') ?? process.env.APP_ENV,
         NODE_ENV: this.configService.get<string>('NODE_ENV') ?? process.env.NODE_ENV,
+        PORT: this.configService.get<number | string>('PORT') ?? process.env.PORT,
         PORT_BACKEND: this.configService.get<number | string>('PORT_BACKEND'),
       });
       const ext = fileName.split('.').pop()?.toLowerCase() || 'png';
