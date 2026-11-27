@@ -43,6 +43,10 @@
     "lint": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$"]
     }
   }
 }

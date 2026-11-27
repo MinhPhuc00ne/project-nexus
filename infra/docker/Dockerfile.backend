@@ -26,7 +26,7 @@ ENV DATABASE_URL=postgresql://postgres:postgres@localhost:5432/nexus_build
 # compiler option the older one accepts.
 COPY --from=dependencies /app/ ./
 COPY . .
-RUN npm run prisma:generate
+RUN npm run db:generate
 RUN npm run build --workspace=@nexus/types
 RUN npm run build --workspace=@nexus/contracts
 RUN npm run build --workspace=backend
