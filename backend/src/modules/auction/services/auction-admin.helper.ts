@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
 import {
   AuctionItemStatus,
   AuctionStatus,
@@ -9,6 +15,7 @@ import {
   Role,
 } from '@prisma/client';
 import type { AuctionStatus as NexusAuctionStatus, WsAuctionIntroItemPayload } from '@nexus/types';
+import { DomainEventsService } from '../../../core/events/domain-events.service';
 import { auctionTargetUrl } from '../../../core/navigation/auction-navigation';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { AdminCreateAuctionInput } from '../dtos/admin-create-auction.dto';
@@ -23,6 +30,7 @@ export class AuctionAdminHelper {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auctionGateway: AuctionGateway,
+    @Optional() private readonly domainEvents?: DomainEventsService,
   ) {}
 
   /**
@@ -360,6 +368,10 @@ export class AuctionAdminHelper {
       serverTime: new Date().toISOString(),
       introDurationMs,
       items: introItems,
+    });
+    this.domainEvents?.publishAuctionStateChanged({
+      auctionId: updated.id,
+      reason: 'STARTED',
     });
 
     await this.dispatchAuctionStartNotifications(

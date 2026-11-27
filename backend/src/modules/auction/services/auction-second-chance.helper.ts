@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import {
   AuctionAward,
@@ -18,6 +19,7 @@ import {
   WalletTransactionStatus,
   WalletTransactionType,
 } from '@prisma/client';
+import { DomainEventsService } from '../../../core/events/domain-events.service';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { TreasuryService } from '../../treasury/services/treasury.service';
 import { PlatformSettingsService } from '../../../core/settings/platform-settings.service';
@@ -44,10 +46,11 @@ export class AuctionSecondChanceHelper {
     private readonly adminSettings: PlatformSettingsService,
     private readonly treasury: TreasuryService,
     _auctionStock?: AuctionStockService,
+    @Optional() private readonly domainEvents?: DomainEventsService,
   ) {}
 
   async respondSecondChance(awardId: string, buyerId: string, accept: boolean) {
-    return this.prisma.$transaction(async (tx) => {
+    const outcome = await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM auction_awards WHERE id = ${awardId} FOR UPDATE`;
       const award = await tx.auctionAward.findUnique({
         where: { id: awardId },
@@ -164,6 +167,15 @@ export class AuctionSecondChanceHelper {
 
       return updated;
     });
+
+    if (outcome.status === AuctionAwardStatus.DECLINED) {
+      this.domainEvents?.publishAuctionStateChanged({
+        auctionId: outcome.auctionId,
+        reason: 'AWARD_SETTLED',
+      });
+    }
+
+    return outcome;
   }
 
   /**
@@ -209,7 +221,7 @@ export class AuctionSecondChanceHelper {
    * revokes the buyer's order/access, and invites the second-highest distinct bidder if primary.
    */
   async markPaymentDefault(awardId: string, adminId?: string, note?: string) {
-    return this.prisma.$transaction(async (tx) => {
+    const outcome = await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM auction_awards WHERE id = ${awardId} FOR UPDATE`;
       const current = await tx.auctionAward.findUnique({
         where: { id: awardId },
@@ -239,6 +251,7 @@ export class AuctionSecondChanceHelper {
           defaultedAwardId: current.id,
           secondChanceAwardId: secondChance?.id ?? null,
           lotStatus: current.auctionItem?.lotStatus ?? AuctionStatus.ENDED,
+          auctionId: current.auctionId,
         };
       }
 
@@ -432,6 +445,7 @@ export class AuctionSecondChanceHelper {
             defaultedAwardId: current.id,
             secondChanceAwardId: secondChance.id,
             lotStatus: current.auctionItem?.lotStatus ?? AuctionStatus.ENDED,
+            auctionId: current.auctionId,
           };
         }
       }
@@ -460,8 +474,22 @@ export class AuctionSecondChanceHelper {
         defaultedAwardId: current.id,
         secondChanceAwardId: null,
         lotStatus: AuctionStatus.FAILED,
+        auctionId: current.auctionId,
       };
     });
+
+    if (outcome.secondChanceAwardId === null) {
+      this.domainEvents?.publishAuctionStateChanged({
+        auctionId: outcome.auctionId,
+        reason: 'AWARD_SETTLED',
+      });
+    }
+
+    return {
+      defaultedAwardId: outcome.defaultedAwardId,
+      secondChanceAwardId: outcome.secondChanceAwardId,
+      lotStatus: outcome.lotStatus,
+    };
   }
 
   /**
@@ -471,7 +499,7 @@ export class AuctionSecondChanceHelper {
    * - If unresponsive before deposit lock (AWAITING_ACCEPTANCE / AWAITING_DEPOSIT), terminates the offer cleanly.
    */
   async withdrawSecondChanceByAdmin(awardId: string, adminId: string, note?: string) {
-    return this.prisma.$transaction(async (tx) => {
+    const outcome = await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM auction_awards WHERE id = ${awardId} FOR UPDATE`;
       const award = await tx.auctionAward.findUnique({
         where: { id: awardId },
@@ -593,6 +621,13 @@ export class AuctionSecondChanceHelper {
 
       return updated;
     });
+
+    this.domainEvents?.publishAuctionStateChanged({
+      auctionId: outcome.auctionId,
+      reason: 'AWARD_SETTLED',
+    });
+
+    return outcome;
   }
 
   /**
@@ -613,7 +648,7 @@ export class AuctionSecondChanceHelper {
       offer.status === AuctionAwardStatus.AWAITING_ACCEPTANCE ||
       offer.status === AuctionAwardStatus.AWAITING_DEPOSIT
     ) {
-      await this.prisma.$transaction(async (tx) => {
+      const expiredAuctionId = await this.prisma.$transaction(async (tx) => {
         await tx.$queryRaw`SELECT id FROM auction_awards WHERE id = ${awardId} FOR UPDATE`;
         const current = await tx.auctionAward.findUnique({
           where: { id: awardId },
@@ -624,7 +659,7 @@ export class AuctionSecondChanceHelper {
           (current.status !== AuctionAwardStatus.AWAITING_ACCEPTANCE &&
             current.status !== AuctionAwardStatus.AWAITING_DEPOSIT)
         ) {
-          return;
+          return null;
         }
         await tx.auctionAward.update({
           where: { id: current.id },
@@ -641,7 +676,14 @@ export class AuctionSecondChanceHelper {
           });
         }
         await syncAuctionCompletionStatusTx(tx, current.auctionId);
+        return current.auctionId;
       });
+      if (expiredAuctionId) {
+        this.domainEvents?.publishAuctionStateChanged({
+          auctionId: expiredAuctionId,
+          reason: 'AWARD_SETTLED',
+        });
+      }
     }
   }
 

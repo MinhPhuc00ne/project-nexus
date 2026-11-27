@@ -4,6 +4,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import {
   AuctionItemStatus,
@@ -16,6 +17,7 @@ import {
   WalletTransactionType,
 } from '@prisma/client';
 import type { AuctionStatus as NexusAuctionStatus, WsLotEndedPayload } from '@nexus/types';
+import { DomainEventsService } from '../../../core/events/domain-events.service';
 import { auctionTargetUrl } from '../../../core/navigation/auction-navigation';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { AuctionCheckoutService } from './auction-checkout.service';
@@ -38,6 +40,7 @@ export class AuctionBiddingHelper {
     private readonly prisma: PrismaService,
     private readonly auctionGateway: AuctionGateway,
     private readonly checkout: AuctionCheckoutService,
+    @Optional() private readonly domainEvents?: DomainEventsService,
   ) {}
 
   /**
@@ -397,6 +400,11 @@ export class AuctionBiddingHelper {
       });
     }
 
+    this.domainEvents?.publishAuctionStateChanged({
+      auctionId,
+      reason: result.shouldExtend ? 'EXTENDED' : 'BID_PLACED',
+    });
+
     return {
       bidId: result.bid.id,
       auctionId,
@@ -461,12 +469,18 @@ export class AuctionBiddingHelper {
     });
 
     for (const room of legacyDueRooms) {
-      await this.prisma.auction
+      const updated = await this.prisma.auction
         .updateMany({
           where: { id: room.id, status: { in: [AuctionStatus.ACTIVE, AuctionStatus.EXTENDED] } },
           data: { status: AuctionStatus.ENDED },
         })
-        .catch(() => undefined);
+        .catch(() => ({ count: 0 }));
+      if (updated.count > 0) {
+        this.domainEvents?.publishAuctionStateChanged({
+          auctionId: room.id,
+          reason: 'ROOM_ENDED',
+        });
+      }
     }
   }
 
@@ -638,6 +652,11 @@ export class AuctionBiddingHelper {
           winningPrice: outcome.winningBid ? Number(outcome.winningBid.bidAmount) : 0,
         });
       }
+
+      this.domainEvents?.publishAuctionStateChanged({
+        auctionId: outcome.lot.auctionId,
+        reason: outcome.roomClosed ? 'ROOM_ENDED' : 'LOT_ENDED',
+      });
     }
 
     return {

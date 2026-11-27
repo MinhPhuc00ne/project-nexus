@@ -47,6 +47,23 @@ export class SocketMetricsService {
   }
 
   /**
+   * Counts clients currently connected to a single registered namespace.
+   *
+   * @param namespace - The namespace name (e.g. `'/ws/auctions'`).
+   * @returns Connected client count, or 0 if unregistered or probe fails.
+   */
+  connectedClientsFor(namespace: string): number {
+    const probe = this.probes.get(namespace);
+    if (!probe) return 0;
+    try {
+      const count = probe();
+      return Number.isFinite(count) && count > 0 ? count : 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  /**
    * Counts clients connected across all registered namespaces.
    *
    * @returns The total, skipping any namespace whose probe fails.

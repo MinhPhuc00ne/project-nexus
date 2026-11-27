@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import {
   AuctionAward,
@@ -20,6 +21,7 @@ import {
   WalletTransactionStatus,
   WalletTransactionType,
 } from '@prisma/client';
+import { DomainEventsService } from '../../../core/events/domain-events.service';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { productChoiceLabel } from '../../../core/domain/product-options';
 import { GhnParcelItem } from '../../fulfillment/services/ghn-parcel';
@@ -57,6 +59,7 @@ export class AuctionCheckoutService {
     private readonly shipping: GhnShippingService,
     private readonly escrow: OrderEscrowService,
     private readonly secondChanceHelper: AuctionSecondChanceHelper,
+    @Optional() private readonly domainEvents?: DomainEventsService,
   ) {}
 
   /**
@@ -294,7 +297,7 @@ export class AuctionCheckoutService {
     }
     const quote = await this.quoteShipping(buyerId, offer, dto);
 
-    return this.prisma.$transaction(async (tx) => {
+    const settledOrder = await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM auction_awards WHERE id = ${awardId} FOR UPDATE`;
       const current = await tx.auctionAward.findUniqueOrThrow({
         where: { id: awardId },
@@ -306,7 +309,7 @@ export class AuctionCheckoutService {
         },
       });
       if (current.status === AuctionAwardStatus.PAID && current.order) {
-        return current.order;
+        return { order: current.order, auctionId: null as string | null };
       }
       if (current.status !== AuctionAwardStatus.AWAITING_CHECKOUT || !current.order) {
         throw new ConflictException(
@@ -412,8 +415,17 @@ export class AuctionCheckoutService {
         });
       }
 
-      return updatedOrder;
+      return { order: updatedOrder, auctionId: current.auctionId as string | null };
     });
+
+    if (settledOrder.auctionId) {
+      this.domainEvents?.publishAuctionStateChanged({
+        auctionId: settledOrder.auctionId,
+        reason: 'AWARD_SETTLED',
+      });
+    }
+
+    return settledOrder.order;
   }
 
   /**

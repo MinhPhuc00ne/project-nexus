@@ -4,7 +4,6 @@ import * as dotenv from 'dotenv';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as prettier from 'prettier';
-import { AppModule } from '../app.module';
 import { buildSwaggerConfig } from '../swagger.config';
 
 function ensureOpenApiPreviewEnv(): void {
@@ -25,6 +24,7 @@ function ensureOpenApiPreviewEnv(): void {
 
 async function exportOpenApi(): Promise<void> {
   ensureOpenApiPreviewEnv();
+  const { AppModule } = await import('../app.module');
   const app = await NestFactory.create(AppModule, {
     preview: true,
     logger: ['error'],

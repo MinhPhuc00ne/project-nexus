@@ -5,7 +5,14 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 export const DOMAIN_EVENTS = {
   NOTIFICATIONS_CREATED: 'notifications.created',
   NOTIFICATIONS_UNREAD_SYNC: 'notifications.unread_sync',
+  AUCTION_STATE_CHANGED: 'auction.state_changed',
 } as const;
+
+/** In-process auction lifecycle state transition signal used to invalidate timer caches. */
+export interface AuctionStateChangedEvent {
+  auctionId: string;
+  reason: 'STARTED' | 'BID_PLACED' | 'EXTENDED' | 'LOT_ENDED' | 'ROOM_ENDED' | 'AWARD_SETTLED';
+}
 
 /** A committed in-app notification, as the realtime gateways need it. */
 export interface NotificationCreatedEvent {
@@ -30,13 +37,13 @@ export interface UnreadSyncEvent {
 }
 
 /**
- * Publishes in-process domain events, for side effects that may be lost without
- * harm — pushing a notification to an open socket, refreshing a counter.
+ * Publishes in-process domain events for side effects such as pushing a
+ * notification to an open socket, refreshing a counter, or invalidating an
+ * active-auction cache.
  *
  * This replaces a bare `node:events` emitter that sat in a module-level
  * singleton while `EventEmitterModule` was already registered globally and
- * unused. Anything that must survive a crash belongs in the outbox instead,
- * because an in-process emitter offers no delivery guarantee.
+ * unused.
  */
 @Injectable()
 export class DomainEventsService {
@@ -89,12 +96,40 @@ export class DomainEventsService {
    * @returns A function that unsubscribes.
    */
   onUnreadSync(handler: (payload: UnreadSyncEvent) => void | Promise<void>): () => void {
-    const listener = (payload: UnreadSyncEvent) => {
+    return this.subscribeBestEffort(DOMAIN_EVENTS.NOTIFICATIONS_UNREAD_SYNC, handler);
+  }
+
+  /**
+   * Announces that an auction room or lot changed active/ended state.
+   *
+   * @param payload - The auction identifier and transition reason.
+   */
+  publishAuctionStateChanged(payload: AuctionStateChangedEvent): void {
+    this.emitter.emit(DOMAIN_EVENTS.AUCTION_STATE_CHANGED, payload);
+  }
+
+  /**
+   * Subscribes to auction state changes.
+   *
+   * @param handler - Called whenever an active auction starts, receives a bid/extension, or closes.
+   * @returns A function that unsubscribes.
+   */
+  onAuctionStateChanged(
+    handler: (payload: AuctionStateChangedEvent) => void | Promise<void>,
+  ): () => void {
+    return this.subscribeBestEffort(DOMAIN_EVENTS.AUCTION_STATE_CHANGED, handler);
+  }
+
+  private subscribeBestEffort<T>(
+    eventName: string,
+    handler: (payload: T) => void | Promise<void>,
+  ): () => void {
+    const listener = (payload: T) => {
       void Promise.resolve(handler(payload)).catch(() => {
-        // Same as above: delivery is best effort by design.
+        // Best-effort subscribers must never fail the publishing caller.
       });
     };
-    this.emitter.on(DOMAIN_EVENTS.NOTIFICATIONS_UNREAD_SYNC, listener);
-    return () => this.emitter.off(DOMAIN_EVENTS.NOTIFICATIONS_UNREAD_SYNC, listener);
+    this.emitter.on(eventName, listener);
+    return () => this.emitter.off(eventName, listener);
   }
 }

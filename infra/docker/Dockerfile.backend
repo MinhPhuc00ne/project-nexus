@@ -83,9 +83,11 @@ COPY --from=production-dependencies --chown=nestjs:nodejs /app/node_modules ./no
 COPY --from=builder --chown=nestjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder --chown=nestjs:nodejs /app/packages ./packages
 COPY --from=builder --chown=nestjs:nodejs /app/backend/dist ./backend/dist
-# Only the schema: migrations are applied by the migrator, and the demo seed is
-# not shipped at all.
+# Ship schema, migrations, Prisma config, and compiled system seed (`dist/prisma/seeds/system.js`)
+# for portable `preDeployCommand` execution. Demo seeds (`prisma/seeds/demo`) stay excluded.
 COPY --from=builder --chown=nestjs:nodejs /app/backend/prisma/schema.prisma ./backend/prisma/schema.prisma
+COPY --from=builder --chown=nestjs:nodejs /app/backend/prisma/migrations ./backend/prisma/migrations
+COPY --from=builder --chown=nestjs:nodejs /app/backend/prisma.config.ts ./backend/prisma.config.ts
 COPY --from=builder --chown=nestjs:nodejs /app/backend/package.json ./backend/package.json
 COPY --from=builder --chown=nestjs:nodejs /app/package.json ./package.json
 
@@ -93,11 +95,9 @@ USER nestjs
 EXPOSE 3000
 WORKDIR /app/backend
 
-# `/api/v1/health` reports PostgreSQL, Redis and the outbox. The check used to
-# fetch `/api/docs`, which answers even when the database is unreachable and is
-# not served at all when Swagger is disabled — so an unhealthy container looked
-# healthy, and a hardened one looked broken.
+# `/api/v1/health/ready` verifies PostgreSQL and Redis readiness before the container
+# accepts traffic, avoiding false-positive checks against documentation routes.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD wget --spider -q http://127.0.0.1:3000/api/v1/health || exit 1
+  CMD wget --spider -q "http://127.0.0.1:${PORT:-3000}/api/v1/health/ready" || exit 1
 
 CMD ["node", "dist/main.js"]

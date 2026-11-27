@@ -357,7 +357,7 @@ export class UsersService {
 
     let attachmentUrl = dto.attachmentUrl?.trim();
     if (file) {
-      const port = process.env.PORT_BACKEND || '3000';
+      const port = process.env.PORT || process.env.PORT_BACKEND || '3000';
       attachmentUrl = `http://localhost:${port}/uploads/seller-proofs/${file.filename}`;
 
       try {
