@@ -4,7 +4,7 @@ title: Frontend Architecture
 
 # Frontend Architecture (`frontend/src`)
 
-The client application uses React 19.3, TypeScript 5.9, Vite 8.3, and Tailwind CSS v4. It imports `@nexus/types` directly for shared enums, DTOs, and WebSocket event names.
+The client application uses React 19.3, TypeScript 5.9, Vite 8.3, and Tailwind CSS v4. It imports `@nexus/contracts` directly for shared enums, Zod schemas, `AppErrorCode`, and WebSocket event names.
 
 ## 1. Five Portals and Routing (`src/routes/paths.ts`, `AppRouter.tsx`)
 

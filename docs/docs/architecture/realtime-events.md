@@ -4,7 +4,7 @@ title: Realtime Events (WebSocket)
 
 # WebSocket Contracts (Socket.IO 4)
 
-The Backend exposes 3 isolated Socket.IO Gateways, all authenticating JWT tokens via the WebSocket handshake (`auth.token` or `Authorization: Bearer <token>`), with event constants shared through `@nexus/types`.
+The Backend exposes 3 isolated Socket.IO Gateways, all authenticating JWT tokens via the WebSocket handshake (`auth.token` or `Authorization: Bearer <token>`), with event constants shared through `@nexus/contracts`.
 
 ## 1. `/ws/auctions` (`AuctionGateway`)
 

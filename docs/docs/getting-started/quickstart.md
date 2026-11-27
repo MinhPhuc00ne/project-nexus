@@ -8,7 +8,7 @@ This guide explains how to bootstrap the Project Nexus development environment l
 
 ## 1. Prerequisites
 
-- Node.js `>= 20.x` (version `22.x` or `24.x` is recommended for native `lcov` coverage in `node:test`).
+- Node.js `>= 20.x` (version `22.x` or `24.x` is recommended).
 - npm `>= 10.x` (the monorepo uses `npm@11.19.0` workspaces).
 - Docker and Docker Compose to run PostgreSQL 17 and Redis 7 via `infra/docker-compose.yml`.
 - GitHub CLI (`gh`), optional, for creating pull requests and checking workflow runs.
@@ -16,22 +16,23 @@ This guide explains how to bootstrap the Project Nexus development environment l
 ## 2. Local Setup
 
 ```bash
-# 1. Create local environment file from template
+# 1. Create local environment file from template (zero secrets required locally)
 cp .env.example .env
 
 # 2. Install dependencies across all workspaces (root, backend, frontend, docs, packages/*)
 npm install
 
-# 3. Build shared contract package @nexus/types
-npm run build:types
+# 3. Build shared contract package @nexus/contracts
+npm run build:contracts
 
 # 4. Start PostgreSQL 17 and Redis 7 containers
 npm run docker:infra
 
-# 5. Generate Prisma Client, apply migrations, and seed sample data
-npm run prisma:generate
-npx prisma migrate deploy --schema=backend/prisma/schema.prisma
-npm run prisma:seed
+# 5. Generate Prisma Client, apply migrations, bootstrap system rows, and optionally seed demo data
+npm run db:generate
+npm run db:deploy
+npm run db:bootstrap
+npm run seed:demo
 
 # 6. Start Backend (3000) and Frontend (5173) concurrently via Turborepo
 npm run dev
