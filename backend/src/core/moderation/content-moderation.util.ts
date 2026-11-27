@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { AppErrorCode } from '@nexus/contracts';
 
 /**
  * Prohibited and sensitive keyword registry for the Project Nexus platform:
@@ -209,8 +210,9 @@ export function checkSensitiveContent(text?: string | null): {
 export function assertCleanContent(text?: string | null, fieldLabel = 'Nội dung'): void {
   const result = checkSensitiveContent(text);
   if (result.hasSensitive) {
-    throw new BadRequestException(
-      `${fieldLabel} không hợp lệ vì chứa từ ngữ nhạy cảm hoặc vi phạm chính sách của sàn ("${result.matchedWord}").`,
-    );
+    throw new BadRequestException({
+      message: `${fieldLabel} không hợp lệ vì chứa từ ngữ nhạy cảm hoặc vi phạm chính sách của sàn ("${result.matchedWord}").`,
+      errorCode: AppErrorCode.PROFANITY_DETECTED,
+    });
   }
 }

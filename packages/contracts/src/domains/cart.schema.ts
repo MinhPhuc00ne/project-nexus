@@ -6,13 +6,13 @@ export const AddToCartSchema = z
       .string()
       .trim()
       .min(1, 'productId is required')
-      .describe('ID của sản phẩm muốn thêm vào giỏ')
+      .describe('ID of the product to add to the cart')
       .meta({ example: 'uuid-product-id' }),
-    quantity: z.coerce.number().int().min(1).describe('Số lượng mua').meta({ example: 1 }),
+    quantity: z.coerce.number().int().min(1).describe('Purchase quantity').meta({ example: 1 }),
     selections: z
       .record(z.string(), z.string())
       .optional()
-      .meta({ example: { 'Màu sắc': 'Đen', Size: 'M' } }),
+      .meta({ example: { Color: 'Black', Size: 'M' } }),
   })
   .strict();
 
@@ -24,7 +24,7 @@ export const UpdateCartItemSchema = z
       .number()
       .int()
       .min(0)
-      .describe('Số lượng mới của món hàng (nếu truyền 0 sẽ tự động xóa khỏi giỏ)')
+      .describe('Updated item quantity (passing 0 removes the item from the cart)')
       .meta({ example: 2 }),
   })
   .strict();

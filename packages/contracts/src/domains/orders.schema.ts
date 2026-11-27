@@ -8,23 +8,28 @@ export const ShippingAddressSchema = z
       .string()
       .trim()
       .min(1)
-      .describe('Họ tên người nhận')
-      .meta({ example: 'Nguyễn Văn A' }),
+      .describe('Recipient full name')
+      .meta({ example: 'Alex Morgan' }),
     phone: z
       .string()
       .trim()
       .min(1)
-      .describe('Số điện thoại người nhận')
+      .describe('Recipient phone number')
       .meta({ example: '0987654321' }),
-    city: z.string().trim().min(1).describe('Tỉnh/Thành phố').meta({ example: 'TP. Hồ Chí Minh' }),
-    district: z.string().describe('Quận/Huyện').meta({ example: 'Quận 1' }).optional(),
-    ward: z.string().describe('Phường/Xã').meta({ example: 'Phường Bến Nghé' }).optional(),
+    city: z
+      .string()
+      .trim()
+      .min(1)
+      .describe('Province or city')
+      .meta({ example: 'Ho Chi Minh City' }),
+    district: z.string().describe('District').meta({ example: 'District 1' }).optional(),
+    ward: z.string().describe('Ward or commune').meta({ example: 'Ben Nghe Ward' }).optional(),
     street: z
       .string()
       .trim()
       .min(1)
-      .describe('Địa chỉ đường/số nhà cụ thể')
-      .meta({ example: '123 Lê Lợi' }),
+      .describe('Street address and building number')
+      .meta({ example: '123 Le Loi Street' }),
   })
   .strict();
 
@@ -32,30 +37,30 @@ export type ShippingAddressInput = z.infer<typeof ShippingAddressSchema>;
 
 export const CheckoutSchema = z
   .object({
-    shippingAddress: ShippingAddressSchema.describe('Thông tin địa chỉ giao hàng'),
+    shippingAddress: ShippingAddressSchema.describe('Shipping address details'),
     itemIds: z
       .array(z.string())
-      .describe(
-        'Danh sách ID các CartItem muốn thanh toán (nếu bỏ trống sẽ thanh toán toàn bộ giỏ)',
-      )
+      .describe('List of CartItem IDs to check out (defaults to the entire cart when omitted)')
       .meta({ example: ['item-uuid-1', 'item-uuid-2'] })
       .optional(),
     shippingFee: z
       .number()
       .min(0)
-      .describe('Chỉ giữ tương thích request cũ. Backend bỏ qua giá trị này và lấy phí từ GHN.')
+      .describe(
+        'Retained for legacy request compatibility only. Backend ignores this value and calculates shipping via GHN.',
+      )
       .optional(),
-    paymentMethod: PaymentProviderSchema.describe('Phương thức thanh toán khởi tạo ban đầu')
+    paymentMethod: PaymentProviderSchema.describe('Initial payment method')
       .meta({ example: 'PAYOS' })
       .default('PAYOS'),
     returnUrl: z
       .string()
-      .describe('URL chuyển hướng khi thanh toán thành công trên PayOS')
+      .describe('Redirect URL when PayOS payment succeeds')
       .meta({ example: 'http://localhost:5173/payment/success' })
       .optional(),
     cancelUrl: z
       .string()
-      .describe('URL chuyển hướng khi người dùng hủy trên trang PayOS')
+      .describe('Redirect URL when the user cancels on PayOS')
       .meta({ example: 'http://localhost:5173/payment/cancel' })
       .optional(),
   })

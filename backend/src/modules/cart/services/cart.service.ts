@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { AppErrorCode } from '@nexus/contracts';
 import { Prisma, ProductStatus } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { AddToCartInput } from '../dtos/add-to-cart.dto';
@@ -90,7 +91,10 @@ export class CartService {
       throw new BadRequestException('Sản phẩm ngừng bán hoặc shop đang bị đình chỉ.');
     }
     if (product.sellerId === userId)
-      throw new BadRequestException('Không thể tự mua sản phẩm của mình.');
+      throw new BadRequestException({
+        message: 'Không thể tự mua sản phẩm của mình.',
+        errorCode: AppErrorCode.CANNOT_PURCHASE_OWN_PRODUCT,
+      });
     return product;
   }
 
@@ -113,7 +117,10 @@ export class CartService {
     const room = totalAvailable - (existing._sum.quantity ?? 0);
     const quantity = clamp ? Math.min(dto.quantity, room) : dto.quantity;
     if (quantity < 1 || quantity > room)
-      throw new BadRequestException('Tổng số lượng các màu/size trong giỏ vượt tồn kho sản phẩm.');
+      throw new BadRequestException({
+        message: 'Tổng số lượng các màu/size trong giỏ vượt tồn kho sản phẩm.',
+        errorCode: AppErrorCode.INSUFFICIENT_STOCK,
+      });
     await tx.cartItem.upsert({
       where: {
         cartId_productId_optionKey: {

@@ -28,39 +28,43 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: number; description: string 
   {
     key: 'platformFeePercentage',
     value: 7.0,
-    description: 'Phần trăm phí sàn thu trên mỗi đơn hàng hoàn tất.',
+    description: 'Platform commission percentage collected on each completed order.',
   },
   {
     key: 'cartExpirationDays',
     value: 7,
-    description: 'Số ngày giỏ hàng được giữ trước khi hết hạn.',
+    description: 'Number of days an inactive shopping cart is retained before expiration.',
   },
   {
     key: 'checkoutTimeoutMinutes',
     value: 15,
-    description: 'Số phút một phiên thanh toán được giữ trước khi huỷ.',
+    description: 'Number of minutes a checkout session is held before automatic cancellation.',
   },
   {
     key: 'inventoryReservationTimeout',
     value: 30,
-    description: 'Số phút kho được giữ cho một đơn chưa thanh toán.',
+    description: 'Number of minutes inventory is reserved for an unpaid order.',
   },
   {
     key: 'maxActiveCartPerUser',
     value: 1,
-    description: 'Số giỏ hàng đang hoạt động tối đa của một tài khoản.',
+    description: 'Maximum number of active carts allowed per user account.',
   },
-  { key: 'categoryMaxLevel', value: 3, description: 'Độ sâu tối đa của cây danh mục.' },
-  { key: 'maxProductImages', value: 5, description: 'Số ảnh tối đa của một sản phẩm.' },
+  { key: 'categoryMaxLevel', value: 3, description: 'Maximum nesting depth of the category tree.' },
+  {
+    key: 'maxProductImages',
+    value: 5,
+    description: 'Maximum number of images allowed per product.',
+  },
   {
     key: 'antiSnipingTriggerMinutes',
     value: 2,
-    description: 'Đặt giá trong khoảng này trước giờ kết thúc sẽ gia hạn phiên đấu giá.',
+    description: 'Placing a bid within this window before closing extends the auction.',
   },
   {
     key: 'antiSnipingExtendMinutes',
     value: 5,
-    description: 'Số phút gia hạn thêm khi chống đặt giá phút chót được kích hoạt.',
+    description: 'Number of minutes added when anti-sniping extension is triggered.',
   },
 ];
 
@@ -76,9 +80,9 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: number; description: string 
 const PLATFORM_WALLETS: Array<{ type: WalletType; description: string }> = [
   {
     type: WalletType.ESCROW_LIABILITY,
-    description: 'Tiền đang giữ hộ người mua cho tới khi đơn hàng hoàn tất.',
+    description: 'Escrow funds held on behalf of buyers until order completion.',
   },
-  { type: WalletType.PLATFORM_REVENUE, description: 'Phí sàn đã thực thu.' },
+  { type: WalletType.PLATFORM_REVENUE, description: 'Realized platform commission revenue.' },
 ];
 
 /**
