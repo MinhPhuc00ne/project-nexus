@@ -22,6 +22,10 @@ const sidebars: SidebarsConfig = {
         'adr/frontend-i18n',
         'adr/zero-server-sonar',
         'adr/docusaurus-scalar-openapi',
+        'adr/unified-zod-contracts',
+        'adr/portable-deployment-and-env',
+        'adr/explicit-notifications-and-audit',
+        'adr/unified-vitest-and-decomposition',
       ],
     },
     {

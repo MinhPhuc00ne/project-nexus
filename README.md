@@ -13,10 +13,10 @@ Engineering documentation and the interactive OpenAPI 3.0 reference are publishe
 ```text
 project-nexus/
 ├── .github/                           # GitHub Actions CI, GitHub Pages deployment, issue and PR templates
-├── backend/                           # NestJS 12 modular monolith API, Prisma 7 schema, migrations, seed, node:test
+├── backend/                           # NestJS 12 modular monolith API, Prisma 7 schema, migrations, seed, Vitest
 ├── frontend/                          # React 19 SPA, i18n (en/vi), Vitest and React Testing Library
 ├── packages/
-│   ├── types/                         # @nexus/types shared enums, DTOs, and WebSocket event contracts
+│   ├── contracts/                     # @nexus/contracts: Zod 4 schemas, AppErrorCode, enums, and WS event contracts
 │   └── config/                        # @nexus/config shared TypeScript and ESLint configs
 ├── docs/                              # Docusaurus v3 engineering portal, Scalar OpenAPI, and style checker
 ├── e2e/                               # Playwright end-to-end smoke tests
@@ -42,7 +42,7 @@ project-nexus/
 
 ### Prerequisites
 
-- Node.js `>= 20.x` (version `22.x` or `24.x` is recommended for native `lcov` coverage in `node:test`).
+- Node.js `>= 20.x` (version `22.x` or `24.x` is recommended).
 - npm `>= 10.x`.
 - Docker and Docker Compose.
 
@@ -59,16 +59,17 @@ cp .env.example .env
 # 3. Install dependencies across all workspaces
 npm install
 
-# 4. Build shared @nexus/types contract package
-npm run build:types
+# 4. Build shared @nexus/contracts package
+npm run build:contracts
 
 # 5. Start PostgreSQL 17 and Redis 7 containers
 npm run docker:infra
 
-# 6. Generate Prisma Client, apply migrations, and seed sample data
-npm run prisma:generate
-npx prisma migrate deploy --schema=backend/prisma/schema.prisma
-npm run prisma:seed
+# 6. Generate Prisma Client, apply migrations, bootstrap system rows, and optionally seed demo data
+npm run db:generate
+npm run db:deploy
+npm run db:bootstrap
+npm run seed:demo
 
 # 7. Start Backend (3000) and Frontend (5173) concurrently
 npm run dev
@@ -85,12 +86,21 @@ npm run docker:down
 ## Verification Commands
 
 ```bash
+npm run verify
+```
+
+Or run individual checks:
+
+```bash
 npm run format:check
 npm run lint
 npm run i18n:check
+npm run lang:check
+npm run env:check
 npm run docs:check
-npm run docs:build
+npm run check:cycles
 npm run build
+npm run typecheck
 npm test
 ```
 

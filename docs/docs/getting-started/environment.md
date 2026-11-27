@@ -8,18 +8,20 @@ Project Nexus loads environment variables from the monorepo root `.env` file (vi
 
 ## 1. Database and Cache (PostgreSQL 17 and Redis 7)
 
-| Variable            | Example (`.env.example`)                                                          | Required | Description                                        |
-| :------------------ | :-------------------------------------------------------------------------------- | :------- | :------------------------------------------------- |
-| `NODE_ENV`          | `development`                                                                     | Yes      | Runtime mode (`development`, `test`, `production`) |
-| `POSTGRES_USER`     | `postgres`                                                                        | Yes      | PostgreSQL container username                      |
-| `POSTGRES_PASSWORD` | `nexus_secret_2026`                                                               | Yes      | PostgreSQL password                                |
-| `POSTGRES_DB`       | `nexus_main`                                                                      | Yes      | Primary database name                              |
-| `POSTGRES_PORT`     | `5432`                                                                            | Yes      | PostgreSQL port                                    |
-| `DATABASE_URL`      | `postgresql://postgres:nexus_secret_2026@localhost:5432/nexus_main?schema=public` | Yes      | Prisma 7 connection string                         |
-| `REDIS_HOST`        | `localhost`                                                                       | Yes      | Redis hostname                                     |
-| `REDIS_PORT`        | `6379`                                                                            | Yes      | Redis port                                         |
-| `REDIS_PASSWORD`    | _(empty)_                                                                         | No       | Optional Redis password                            |
-| `REDIS_URL`         | `redis://localhost:6379`                                                          | Yes      | Redis connection URL for locks and caching         |
+| Variable            | Example (`.env.example`)                                                          | Required | Description                                                           |
+| :------------------ | :-------------------------------------------------------------------------------- | :------- | :-------------------------------------------------------------------- |
+| `NODE_ENV`          | `development`                                                                     | Yes      | Runtime mode (`development`, `test`, `production`)                    |
+| `APP_ENV`           | `local`                                                                           | Yes      | Deployment tier (`local`, `staging`, `demo`, `production`)            |
+| `SWAGGER_ENABLED`   | `true`                                                                            | No       | Enables `/api/docs` Swagger UI (auto-disabled in production if unset) |
+| `POSTGRES_USER`     | `postgres`                                                                        | Yes      | PostgreSQL container username                                         |
+| `POSTGRES_PASSWORD` | `nexus_secret_2026`                                                               | Yes      | PostgreSQL password                                                   |
+| `POSTGRES_DB`       | `nexus_main`                                                                      | Yes      | Primary database name                                                 |
+| `POSTGRES_PORT`     | `5432`                                                                            | Yes      | PostgreSQL port                                                       |
+| `DATABASE_URL`      | `postgresql://postgres:nexus_secret_2026@localhost:5432/nexus_main?schema=public` | Yes      | Prisma 7 connection string                                            |
+| `REDIS_HOST`        | `localhost`                                                                       | Yes      | Redis hostname                                                        |
+| `REDIS_PORT`        | `6379`                                                                            | Yes      | Redis port                                                            |
+| `REDIS_PASSWORD`    | _(empty)_                                                                         | No       | Optional Redis password                                               |
+| `REDIS_URL`         | `redis://localhost:6379`                                                          | Yes      | Redis connection URL for locks and caching                            |
 
 ## 2. Authentication, OAuth and Server
 
@@ -48,7 +50,7 @@ Project Nexus loads environment variables from the monorepo root `.env` file (vi
 | `GHN_CLIENT_ID`      | `123456`                                                | Optional* | GHN client ID                                  |
 | `GHN_WEBHOOK_SECRET` | `nexus_ghn_webhook_secret_2026`                         | Yes       | Secret for verifying GHN tracking webhooks     |
 
-_\*Note_: Local development without external sandbox keys still supports Wallet and COD flows; PayOS and GHN live integration tests require valid sandbox credentials.
+_\*Note_: `.env.example` ships with blank third-party secrets so local development works immediately with Wallet and COD flows; `production` and `staging` fail fast at startup if required secrets (`JWT_SECRET`, `DATABASE_URL`, `REDIS_URL`) are missing. Run `npm run env:check` to validate any `.env` file, or `node infra/scripts/sync-railway-env.mjs` to sync Railway variables.
 
 ## 4. Business Rules, Media, Mail and AI Chatbot
 
