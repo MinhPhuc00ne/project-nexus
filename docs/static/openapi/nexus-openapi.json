@@ -220,13 +220,13 @@
                     "type": "string",
                     "format": "email",
                     "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
-                    "description": "Email đăng nhập của người dùng",
+                    "description": "User sign-in email address",
                     "example": "user@nexus.com"
                   },
                   "password": {
                     "type": "string",
                     "minLength": 6,
-                    "description": "Mật khẩu người dùng (tối thiểu 6 ký tự)",
+                    "description": "User password (minimum 6 characters)",
                     "example": "123456"
                   }
                 },
@@ -336,21 +336,21 @@
                         "pattern": "^[a-zA-Z0-9._%+-]+@gmail\\.com$"
                       }
                     ],
-                    "description": "Email đăng ký (chỉ chấp nhận @gmail.com)",
+                    "description": "Registration email address (only @gmail.com is accepted)",
                     "example": "user@gmail.com"
                   },
                   "password": {
                     "type": "string",
                     "minLength": 8,
                     "pattern": "^(?=.*[A-Z])(?=.*[^a-zA-Z0-9\\s]).+$",
-                    "description": "Mật khẩu (tối thiểu 8 ký tự, có ít nhất 1 chữ hoa và 1 ký tự đặc biệt)",
+                    "description": "Password (at least 8 characters, including 1 uppercase letter and 1 special character)",
                     "example": "Password@123"
                   },
                   "fullName": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Họ và tên người dùng",
-                    "example": "Nguyễn Văn A"
+                    "description": "User full name",
+                    "example": "Alex Morgan"
                   }
                 },
                 "required": ["email", "password", "fullName"],
@@ -424,7 +424,7 @@
                     "type": "string",
                     "format": "email",
                     "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
-                    "description": "Email đã đăng ký trong hệ thống để nhận mã OTP đặt lại mật khẩu (Admin, Staff, Buyer, Seller)",
+                    "description": "Registered account email to receive a password reset OTP (Admin, Staff, Buyer, Seller)",
                     "example": "admin@nexus.com"
                   }
                 },
@@ -461,21 +461,21 @@
                     "type": "string",
                     "format": "email",
                     "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
-                    "description": "Email cần đặt lại mật khẩu (Admin, Staff, Buyer, Seller)",
+                    "description": "Account email for password reset (Admin, Staff, Buyer, Seller)",
                     "example": "admin@nexus.com"
                   },
                   "code": {
                     "type": "string",
                     "minLength": 6,
                     "maxLength": 6,
-                    "description": "Mã OTP 6 chữ số gửi qua email",
+                    "description": "6-digit OTP code sent via email",
                     "example": "123456"
                   },
                   "newPassword": {
                     "type": "string",
                     "minLength": 8,
                     "pattern": "^(?=.*[A-Z])(?=.*[^a-zA-Z0-9\\s]).+$",
-                    "description": "Mật khẩu mới (tối thiểu 8 ký tự, có ít nhất 1 chữ hoa và 1 ký tự đặc biệt)",
+                    "description": "New password (at least 8 characters, including 1 uppercase letter and 1 special character)",
                     "example": "NewPassword@123"
                   }
                 },
@@ -10040,19 +10040,19 @@
                   "productId": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "ID của sản phẩm muốn thêm vào giỏ",
+                    "description": "ID of the product to add to the cart",
                     "example": "uuid-product-id"
                   },
                   "quantity": {
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 9007199254740991,
-                    "description": "Số lượng mua",
+                    "description": "Purchase quantity",
                     "example": 1
                   },
                   "selections": {
                     "example": {
-                      "Màu sắc": "Đen",
+                      "Color": "Black",
                       "Size": "M"
                     },
                     "type": "object",
@@ -10111,7 +10111,7 @@
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 9007199254740991,
-                    "description": "Số lượng mới của món hàng (nếu truyền 0 sẽ tự động xóa khỏi giỏ)",
+                    "description": "Updated item quantity (passing 0 removes the item from the cart)",
                     "example": 2
                   }
                 },
@@ -10798,70 +10798,70 @@
                       "recipientName": {
                         "type": "string",
                         "minLength": 1,
-                        "description": "Họ tên người nhận",
-                        "example": "Nguyễn Văn A"
+                        "description": "Recipient full name",
+                        "example": "Alex Morgan"
                       },
                       "phone": {
                         "type": "string",
                         "minLength": 1,
-                        "description": "Số điện thoại người nhận",
+                        "description": "Recipient phone number",
                         "example": "0987654321"
                       },
                       "city": {
                         "type": "string",
                         "minLength": 1,
-                        "description": "Tỉnh/Thành phố",
-                        "example": "TP. Hồ Chí Minh"
+                        "description": "Province or city",
+                        "example": "Ho Chi Minh City"
                       },
                       "district": {
                         "type": "string",
-                        "description": "Quận/Huyện",
-                        "example": "Quận 1"
+                        "description": "District",
+                        "example": "District 1"
                       },
                       "ward": {
                         "type": "string",
-                        "description": "Phường/Xã",
-                        "example": "Phường Bến Nghé"
+                        "description": "Ward or commune",
+                        "example": "Ben Nghe Ward"
                       },
                       "street": {
                         "type": "string",
                         "minLength": 1,
-                        "description": "Địa chỉ đường/số nhà cụ thể",
-                        "example": "123 Lê Lợi"
+                        "description": "Street address and building number",
+                        "example": "123 Le Loi Street"
                       }
                     },
                     "required": ["recipientName", "phone", "city", "street"],
                     "additionalProperties": false,
-                    "description": "Thông tin địa chỉ giao hàng"
+                    "description": "Shipping address details"
                   },
                   "itemIds": {
                     "type": "array",
                     "items": {
                       "type": "string"
                     },
-                    "description": "Danh sách ID các CartItem muốn thanh toán (nếu bỏ trống sẽ thanh toán toàn bộ giỏ)",
+                    "description": "List of CartItem IDs to check out (defaults to the entire cart when omitted)",
                     "example": ["item-uuid-1", "item-uuid-2"]
                   },
                   "shippingFee": {
                     "type": "number",
                     "minimum": 0,
-                    "description": "Chỉ giữ tương thích request cũ. Backend bỏ qua giá trị này và lấy phí từ GHN."
+                    "description": "Retained for legacy request compatibility only. Backend ignores this value and calculates shipping via GHN."
                   },
                   "paymentMethod": {
                     "default": "PAYOS",
                     "type": "string",
                     "enum": ["PAYOS", "WALLET", "COD"],
-                    "description": "Phương thức thanh toán khởi tạo ban đầu",
+                    "description": "Initial payment method",
                     "example": "PAYOS"
                   },
                   "returnUrl": {
                     "type": "string",
-                    "description": "URL chuyển hướng khi thanh toán thành công trên PayOS",
+                    "description": "Redirect URL when PayOS payment succeeds",
                     "example": "http://localhost:5173/payment/success"
                   },
                   "cancelUrl": {
                     "type": "string",
-                    "description": "URL chuyển hướng khi người dùng hủy trên trang PayOS",
+                    "description": "Redirect URL when the user cancels on PayOS",
                     "example": "http://localhost:5173/payment/cancel"
                   }
                 },
@@ -10918,70 +10918,70 @@
                       "recipientName": {
                         "type": "string",
                         "minLength": 1,
-                        "description": "Họ tên người nhận",
-                        "example": "Nguyễn Văn A"
+                        "description": "Recipient full name",
+                        "example": "Alex Morgan"
                       },
                       "phone": {
                         "type": "string",
                         "minLength": 1,
-                        "description": "Số điện thoại người nhận",
+                        "description": "Recipient phone number",
                         "example": "0987654321"
                       },
                       "city": {
                         "type": "string",
                         "minLength": 1,
-                        "description": "Tỉnh/Thành phố",
-                        "example": "TP. Hồ Chí Minh"
+                        "description": "Province or city",
+                        "example": "Ho Chi Minh City"
                       },
                       "district": {
                         "type": "string",
-                        "description": "Quận/Huyện",
-                        "example": "Quận 1"
+                        "description": "District",
+                        "example": "District 1"
                       },
                       "ward": {
                         "type": "string",
-                        "description": "Phường/Xã",
-                        "example": "Phường Bến Nghé"
+                        "description": "Ward or commune",
+                        "example": "Ben Nghe Ward"
                       },
                       "street": {
                         "type": "string",
                         "minLength": 1,
-                        "description": "Địa chỉ đường/số nhà cụ thể",
-                        "example": "123 Lê Lợi"
+                        "description": "Street address and building number",
+                        "example": "123 Le Loi Street"
                       }
                     },
                     "required": ["recipientName", "phone", "city", "street"],
                     "additionalProperties": false,
-                    "description": "Thông tin địa chỉ giao hàng"
+                    "description": "Shipping address details"
                   },
                   "itemIds": {
                     "type": "array",
                     "items": {
                       "type": "string"
                     },
-                    "description": "Danh sách ID các CartItem muốn thanh toán (nếu bỏ trống sẽ thanh toán toàn bộ giỏ)",
+                    "description": "List of CartItem IDs to check out (defaults to the entire cart when omitted)",
                     "example": ["item-uuid-1", "item-uuid-2"]
                   },
                   "shippingFee": {
                     "type": "number",
                     "minimum": 0,
-                    "description": "Chỉ giữ tương thích request cũ. Backend bỏ qua giá trị này và lấy phí từ GHN."
+                    "description": "Retained for legacy request compatibility only. Backend ignores this value and calculates shipping via GHN."
                   },
                   "paymentMethod": {
                     "default": "PAYOS",
                     "type": "string",
                     "enum": ["PAYOS", "WALLET", "COD"],
-                    "description": "Phương thức thanh toán khởi tạo ban đầu",
+                    "description": "Initial payment method",
                     "example": "PAYOS"
                   },
                   "returnUrl": {
                     "type": "string",
-                    "description": "URL chuyển hướng khi thanh toán thành công trên PayOS",
+                    "description": "Redirect URL when PayOS payment succeeds",
                     "example": "http://localhost:5173/payment/success"
                   },
                   "cancelUrl": {
                     "type": "string",
-                    "description": "URL chuyển hướng khi người dùng hủy trên trang PayOS",
+                    "description": "Redirect URL when the user cancels on PayOS",
                     "example": "http://localhost:5173/payment/cancel"
                   }
                 },
@@ -13896,36 +13896,36 @@
                       "recipientName": {
                         "type": "string",
                         "minLength": 1,
-                        "description": "Họ tên người nhận",
-                        "example": "Nguyễn Văn A"
+                        "description": "Recipient full name",
+                        "example": "Alex Morgan"
                       },
                       "phone": {
                         "type": "string",
                         "minLength": 1,
-                        "description": "Số điện thoại người nhận",
+                        "description": "Recipient phone number",
                         "example": "0987654321"
                       },
                       "city": {
                         "type": "string",
                         "minLength": 1,
-                        "description": "Tỉnh/Thành phố",
-                        "example": "TP. Hồ Chí Minh"
+                        "description": "Province or city",
+                        "example": "Ho Chi Minh City"
                       },
                       "district": {
                         "type": "string",
-                        "description": "Quận/Huyện",
-                        "example": "Quận 1"
+                        "description": "District",
+                        "example": "District 1"
                       },
                       "ward": {
                         "type": "string",
-                        "description": "Phường/Xã",
-                        "example": "Phường Bến Nghé"
+                        "description": "Ward or commune",
+                        "example": "Ben Nghe Ward"
                       },
                       "street": {
                         "type": "string",
                         "minLength": 1,
-                        "description": "Địa chỉ đường/số nhà cụ thể",
-                        "example": "123 Lê Lợi"
+                        "description": "Street address and building number",
+                        "example": "123 Le Loi Street"
                       }
                     },
                     "required": ["recipientName", "phone", "city", "street"],
@@ -14026,36 +14026,36 @@
                       "recipientName": {
                         "type": "string",
                         "minLength": 1,
-                        "description": "Họ tên người nhận",
-                        "example": "Nguyễn Văn A"
+                        "description": "Recipient full name",
+                        "example": "Alex Morgan"
                       },
                       "phone": {
                         "type": "string",
                         "minLength": 1,
-                        "description": "Số điện thoại người nhận",
+                        "description": "Recipient phone number",
                         "example": "0987654321"
                       },
                       "city": {
                         "type": "string",
                         "minLength": 1,
-                        "description": "Tỉnh/Thành phố",
-                        "example": "TP. Hồ Chí Minh"
+                        "description": "Province or city",
+                        "example": "Ho Chi Minh City"
                       },
                       "district": {
                         "type": "string",
-                        "description": "Quận/Huyện",
-                        "example": "Quận 1"
+                        "description": "District",
+                        "example": "District 1"
                       },
                       "ward": {
                         "type": "string",
-                        "description": "Phường/Xã",
-                        "example": "Phường Bến Nghé"
+                        "description": "Ward or commune",
+                        "example": "Ben Nghe Ward"
                       },
                       "street": {
                         "type": "string",
                         "minLength": 1,
-                        "description": "Địa chỉ đường/số nhà cụ thể",
-                        "example": "123 Lê Lợi"
+                        "description": "Street address and building number",
+                        "example": "123 Le Loi Street"
                       }
                     },
                     "required": ["recipientName", "phone", "city", "street"],

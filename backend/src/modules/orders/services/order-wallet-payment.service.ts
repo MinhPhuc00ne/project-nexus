@@ -6,6 +6,7 @@ import {
   NotFoundException,
   Optional,
 } from '@nestjs/common';
+import { AppErrorCode } from '@nexus/contracts';
 import {
   NotificationChannel,
   NotificationType,
@@ -82,7 +83,10 @@ export class OrderWalletPaymentService {
     });
 
     if (!order) {
-      throw new NotFoundException('Không tìm thấy đơn hàng tương ứng');
+      throw new NotFoundException({
+        message: 'Không tìm thấy đơn hàng tương ứng',
+        errorCode: AppErrorCode.ORDER_NOT_FOUND,
+      });
     }
 
     if (order.isAuction)
@@ -95,9 +99,10 @@ export class OrderWalletPaymentService {
     }
 
     if (order.status !== OrderStatus.PENDING_PAYMENT) {
-      throw new BadRequestException(
-        `Đơn hàng hiện không ở trạng thái chờ thanh toán (Trạng thái hiện tại: ${order.status})`,
-      );
+      throw new BadRequestException({
+        message: `Đơn hàng hiện không ở trạng thái chờ thanh toán (Trạng thái hiện tại: ${order.status})`,
+        errorCode: AppErrorCode.ORDER_INVALID_STATE,
+      });
     }
 
     const orderAmount = Number(order.totalAmount);
@@ -270,16 +275,21 @@ export class OrderWalletPaymentService {
     const orderAmount = Number(payable.totalAmount);
     const currentBalance = Number(buyerWallet.balance);
     if (currentBalance < orderAmount) {
-      throw new BadRequestException(
-        `Số dư ví NEXUS Pay không đủ để thanh toán. Số dư hiện tại: ${currentBalance.toLocaleString('vi-VN')} VND, Cần thanh toán: ${orderAmount.toLocaleString('vi-VN')} VND. Vui lòng nạp thêm tiền vào ví hoặc chọn phương thức chuyển khoản VietQR.`,
-      );
+      throw new BadRequestException({
+        message: `Số dư ví NEXUS Pay không đủ để thanh toán. Số dư hiện tại: ${currentBalance.toLocaleString('vi-VN')} VND, Cần thanh toán: ${orderAmount.toLocaleString('vi-VN')} VND. Vui lòng nạp thêm tiền vào ví hoặc chọn phương thức chuyển khoản VietQR.`,
+        errorCode: AppErrorCode.INSUFFICIENT_BALANCE,
+      });
     }
 
     const debited = await tx.wallet.updateMany({
       where: { id: buyerWallet.id, balance: { gte: payable.totalAmount } },
       data: { balance: { decrement: payable.totalAmount } },
     });
-    if (debited.count !== 1) throw new BadRequestException('Số dư ví không đủ để thanh toán.');
+    if (debited.count !== 1)
+      throw new BadRequestException({
+        message: 'Số dư ví không đủ để thanh toán.',
+        errorCode: AppErrorCode.INSUFFICIENT_BALANCE,
+      });
     const updatedBuyerWallet = await tx.wallet.findUniqueOrThrow({
       where: { id: buyerWallet.id },
     });

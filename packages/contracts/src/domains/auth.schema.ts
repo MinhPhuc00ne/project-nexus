@@ -2,13 +2,13 @@ import { z } from 'zod';
 
 export const LoginSchema = z
   .object({
-    email: z.email().describe('Email đăng nhập của người dùng').meta({ example: 'user@nexus.com' }),
+    email: z.email().describe('User sign-in email address').meta({ example: 'user@nexus.com' }),
     password: z
       .string()
       .trim()
       .min(1)
       .min(6)
-      .describe('Mật khẩu người dùng (tối thiểu 6 ký tự)')
+      .describe('User password (minimum 6 characters)')
       .meta({ example: '123456' }),
   })
   .strict();
@@ -20,7 +20,7 @@ export const RegisterSchema = z
     email: z
       .email()
       .regex(/^[a-zA-Z0-9._%+-]+@gmail\.com$/i)
-      .describe('Email đăng ký (chỉ chấp nhận @gmail.com)')
+      .describe('Registration email address (only @gmail.com is accepted)')
       .meta({ example: 'user@gmail.com' }),
     password: z
       .string()
@@ -28,14 +28,11 @@ export const RegisterSchema = z
       .min(1)
       .min(8)
       .regex(/^(?=.*[A-Z])(?=.*[^a-zA-Z0-9\s]).+$/)
-      .describe('Mật khẩu (tối thiểu 8 ký tự, có ít nhất 1 chữ hoa và 1 ký tự đặc biệt)')
+      .describe(
+        'Password (at least 8 characters, including 1 uppercase letter and 1 special character)',
+      )
       .meta({ example: 'Password@123' }),
-    fullName: z
-      .string()
-      .trim()
-      .min(1)
-      .describe('Họ và tên người dùng')
-      .meta({ example: 'Nguyễn Văn A' }),
+    fullName: z.string().trim().min(1).describe('User full name').meta({ example: 'Alex Morgan' }),
   })
   .strict();
 
@@ -46,7 +43,7 @@ export const ForgotPasswordSchema = z
     email: z
       .email()
       .describe(
-        'Email đã đăng ký trong hệ thống để nhận mã OTP đặt lại mật khẩu (Admin, Staff, Buyer, Seller)',
+        'Registered account email to receive a password reset OTP (Admin, Staff, Buyer, Seller)',
       )
       .meta({ example: 'admin@nexus.com' }),
   })
@@ -58,21 +55,23 @@ export const ResetPasswordSchema = z
   .object({
     email: z
       .email()
-      .describe('Email cần đặt lại mật khẩu (Admin, Staff, Buyer, Seller)')
+      .describe('Account email for password reset (Admin, Staff, Buyer, Seller)')
       .meta({ example: 'admin@nexus.com' }),
     code: z
       .string()
       .trim()
       .min(6)
       .max(6)
-      .describe('Mã OTP 6 chữ số gửi qua email')
+      .describe('6-digit OTP code sent via email')
       .meta({ example: '123456' }),
     newPassword: z
       .string()
       .trim()
       .min(8)
       .regex(/^(?=.*[A-Z])(?=.*[^a-zA-Z0-9\s]).+$/)
-      .describe('Mật khẩu mới (tối thiểu 8 ký tự, có ít nhất 1 chữ hoa và 1 ký tự đặc biệt)')
+      .describe(
+        'New password (at least 8 characters, including 1 uppercase letter and 1 special character)',
+      )
       .meta({ example: 'NewPassword@123' }),
   })
   .strict();

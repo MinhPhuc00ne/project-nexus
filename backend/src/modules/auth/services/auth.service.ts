@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { AppErrorCode } from '@nexus/contracts';
 import { TokenAuthService } from '../../../core/security/token-auth.service';
 import { ReputationTrustLevel, Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -78,7 +79,10 @@ export class AuthService {
     const existingUser = await this.prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       if (existingUser.isVerified) {
-        throw new BadRequestException('Email này đã được đăng ký và xác thực.');
+        throw new BadRequestException({
+          message: 'Email này đã được đăng ký và xác thực.',
+          errorCode: AppErrorCode.EMAIL_ALREADY_EXISTS,
+        });
       }
       if (existingUser.codeExpiresAt) {
         const remainingMs = existingUser.codeExpiresAt.getTime() - Date.now();
@@ -155,9 +159,15 @@ export class AuthService {
       if (!user) throw new BadRequestException('Không tìm thấy tài khoản với email này.');
       if (user.isVerified) return { message: 'Tài khoản này đã được xác thực trước đó rồi.' };
       if (user.verificationCode !== dto.code)
-        throw new BadRequestException('Mã OTP không chính xác.');
+        throw new BadRequestException({
+          message: 'Mã OTP không chính xác.',
+          errorCode: AppErrorCode.INVALID_OTP,
+        });
       if (!user.codeExpiresAt || user.codeExpiresAt.getTime() <= Date.now())
-        throw new BadRequestException('Mã OTP đã hết hạn.');
+        throw new BadRequestException({
+          message: 'Mã OTP đã hết hạn.',
+          errorCode: AppErrorCode.OTP_EXPIRED,
+        });
       await tx.user.update({
         where: { id: user.id },
         data: {
@@ -218,7 +228,10 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Email hoặc mật khẩu không chính xác.');
+      throw new UnauthorizedException({
+        message: 'Email hoặc mật khẩu không chính xác.',
+        errorCode: AppErrorCode.INVALID_CREDENTIALS,
+      });
     }
     if (!user.passwordHash) {
       throw new UnauthorizedException(
@@ -227,7 +240,10 @@ export class AuthService {
     }
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Email hoặc mật khẩu không chính xác.');
+      throw new UnauthorizedException({
+        message: 'Email hoặc mật khẩu không chính xác.',
+        errorCode: AppErrorCode.INVALID_CREDENTIALS,
+      });
     }
     if (!user.isVerified) {
       throw new UnauthorizedException(
@@ -235,9 +251,10 @@ export class AuthService {
       );
     }
     if (user.trustLevel === ReputationTrustLevel.SUSPENDED) {
-      throw new ForbiddenException(
-        'Tài khoản của bạn đã bị khóa bởi Quản trị viên. Vui lòng liên hệ bộ phận hỗ trợ.',
-      );
+      throw new ForbiddenException({
+        message: 'Tài khoản của bạn đã bị khóa bởi Quản trị viên. Vui lòng liên hệ bộ phận hỗ trợ.',
+        errorCode: AppErrorCode.ACCOUNT_SUSPENDED,
+      });
     }
 
     const effectiveSellerActive = user.isShopSuspended ? false : user.isSellerActive;

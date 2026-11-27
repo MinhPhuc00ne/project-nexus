@@ -36,6 +36,7 @@
     "check:cycles": "npm run check:cycles --workspace=nexus-backend",
     "env:check": "npm run env:check --workspace=nexus-backend",
     "i18n:check": "node frontend/scripts/check-i18n-parity.mjs",
+    "lang:check": "node scripts/check-lang.mjs",
     "test": "turbo test",
     "test:backend": "npm test --workspace=nexus-backend",
     "test:frontend": "npm test --workspace=nexus-frontend",
@@ -60,7 +61,7 @@
     "docs:check": "node docs/scripts/check-docs.mjs",
     "docs:dev": "npm run start --workspace=nexus-docs",
     "docs:build": "npm run build --workspace=nexus-docs",
-    "verify": "npm run format:check && npm run lint && npm run i18n:check && npm run docs:check && npm run check:cycles && npm run build && npm run typecheck && npm test",
+    "verify": "npm run format:check && npm run lint && npm run i18n:check && npm run lang:check && npm run docs:check && npm run check:cycles && npm run build && npm run typecheck && npm test",
     "prepare": "husky"
   },
   "devDependencies": {

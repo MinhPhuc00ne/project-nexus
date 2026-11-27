@@ -20,39 +20,39 @@ export const sectionContent: Record<
   { title: string; description: string; topics: string[] }
 > = {
   team: {
-    title: 'Quản lý nhân viên hỗ trợ',
-    description: 'Quản lý nhân viên và gửi lời mời kích hoạt tài khoản hỗ trợ.',
+    title: 'Support Team Management',
+    description: 'Manage support staff members and send account activation invitations.',
     topics: [],
   },
   inbox: {
-    title: 'Hộp thư hỗ trợ khách hàng',
-    description: 'Tiếp nhận hội thoại, phản hồi khách hàng và theo dõi hàng đợi hỗ trợ.',
+    title: 'Customer Support Inbox',
+    description: 'Claim conversations, reply to customers, and monitor the support queue.',
     topics: [],
   },
   disputes: {
-    title: 'Xử lý khiếu nại và tranh chấp',
+    title: 'Complaints & Disputes',
     description:
-      'Tiếp nhận phản ánh về đơn hàng, kiểm tra bằng chứng và theo dõi tiến độ giải quyết.',
-    topics: ['Tiếp nhận khiếu nại', 'Kiểm tra bằng chứng', 'Theo dõi kết quả xử lý'],
+      'Review order complaints, inspect submitted evidence, and track resolution progress.',
+    topics: ['Intake complaints', 'Inspect evidence', 'Track resolution progress'],
   },
   orders: {
-    title: 'Hỗ trợ đơn hàng và hậu mãi',
-    description: 'Tra cứu đơn, kiểm tra vận chuyển, ký quỹ và xử lý yêu cầu trả hàng.',
+    title: 'Orders & After-Sales Support',
+    description: 'Look up orders, inspect shipping status, escrow, and process return requests.',
     topics: [],
   },
   auctionSupport: {
-    title: 'Hỗ trợ phiên đấu giá',
-    description: 'Theo dõi yêu cầu về phòng đấu giá, thao tác trả giá và hiển thị sản phẩm 3D.',
-    topics: ['Sự cố phòng đấu giá', 'Yêu cầu về lượt trả giá', 'Hiển thị sản phẩm 3D'],
+    title: '3D Auction Support',
+    description: 'Monitor auction room requests, bidding issues, and 3D showcase rendering.',
+    topics: ['Auction room incidents', 'Bidding inquiries', '3D product display'],
   },
   banners: {
-    title: 'Quản lý banner sự kiện',
-    description: 'Tạo, cập nhật và điều chỉnh lịch hiển thị banner trên sàn.',
+    title: 'Event Banner Management',
+    description: 'Create, update, and schedule marketplace promotional banners.',
     topics: [],
   },
   reviews: {
-    title: 'Kiểm duyệt đánh giá',
-    description: 'Xem và xử lý đánh giá vi phạm theo quyền Staff được cấp.',
+    title: 'Review Moderation',
+    description: 'Inspect and moderate flagged reviews according to assigned staff permissions.',
     topics: [],
   },
 };

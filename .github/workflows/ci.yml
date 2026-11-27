@@ -55,6 +55,9 @@ jobs:
       - name: Check frontend i18n parity
         run: npm run i18n:check
 
+      - name: Check English-US language guard
+        run: npm run lang:check
+
       - name: Validate documentation and OpenAPI spec
         run: npm run docs:check
 
