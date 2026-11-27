@@ -10,6 +10,7 @@ import {
   NotFoundException,
   Optional,
 } from '@nestjs/common';
+import { AppErrorCode } from '@nexus/contracts';
 import {
   AuctionItemStatus,
   AuctionStatus,
@@ -173,10 +174,16 @@ export class AuctionBiddingHelper {
         },
       });
       if (!auction) {
-        throw new NotFoundException('Không tìm thấy phòng đấu giá.');
+        throw new NotFoundException({
+          message: 'Không tìm thấy phòng đấu giá.',
+          errorCode: AppErrorCode.AUCTION_NOT_FOUND,
+        });
       }
       if (auction.status !== AuctionStatus.ACTIVE && auction.status !== AuctionStatus.EXTENDED) {
-        throw new BadRequestException('Phòng đấu giá hiện không trong trạng thái mở đặt giá.');
+        throw new BadRequestException({
+          message: 'Phòng đấu giá hiện không trong trạng thái mở đặt giá.',
+          errorCode: AppErrorCode.AUCTION_NOT_LIVE,
+        });
       }
 
       const introState = computeIntroState(auction.status, auction.startTime, auction.items.length);
@@ -211,10 +218,16 @@ export class AuctionBiddingHelper {
         throw new NotFoundException('Không tìm thấy lô hàng hợp lệ trong phòng đấu giá này.');
       }
       if (lot.sellerId === bidderId) {
-        throw new ForbiddenException('Người bán không thể tự đặt giá cho vật phẩm của chính mình.');
+        throw new ForbiddenException({
+          message: 'Người bán không thể tự đặt giá cho vật phẩm của chính mình.',
+          errorCode: AppErrorCode.AUCTION_BID_SELF_FORBIDDEN,
+        });
       }
       if (lot.lotStatus !== AuctionStatus.ACTIVE && lot.lotStatus !== AuctionStatus.EXTENDED) {
-        throw new BadRequestException('Lô hàng này đã kết thúc nhận lượt đặt giá.');
+        throw new BadRequestException({
+          message: 'Lô hàng này đã kết thúc nhận lượt đặt giá.',
+          errorCode: AppErrorCode.AUCTION_NOT_LIVE,
+        });
       }
 
       const now = new Date();
@@ -248,11 +261,13 @@ export class AuctionBiddingHelper {
           : currentHighestBid + bidIncrement;
 
       if (dto.bidAmount < requiredMinimum) {
-        throw new BadRequestException(
-          lot.totalBidsCount === 0 && reservePrice && reservePrice > startingPrice
-            ? `Mức giá đặt đầu tiên phải đạt tối thiểu giá sàn (${formatVnd(requiredMinimum)}).`
-            : `Giá đặt tối thiểu cho lượt tiếp theo là ${formatVnd(requiredMinimum)}.`,
-        );
+        throw new BadRequestException({
+          message:
+            lot.totalBidsCount === 0 && reservePrice && reservePrice > startingPrice
+              ? `Mức giá đặt đầu tiên phải đạt tối thiểu giá sàn (${formatVnd(requiredMinimum)}).`
+              : `Giá đặt tối thiểu cho lượt tiếp theo là ${formatVnd(requiredMinimum)}.`,
+          errorCode: AppErrorCode.AUCTION_BID_TOO_LOW,
+        });
       }
 
       const walletOwners = [
@@ -264,9 +279,10 @@ export class AuctionBiddingHelper {
 
       const bidderWallet = await tx.wallet.findUnique({ where: { userId: bidderId } });
       if (!bidderWallet || Number(bidderWallet.balance) < dto.bidAmount) {
-        throw new BadRequestException(
-          `Số dư ví khả dụng không đủ để giữ chỗ 100% mức giá đặt (${formatVnd(dto.bidAmount)}).`,
-        );
+        throw new BadRequestException({
+          message: `Số dư ví khả dụng không đủ để giữ chỗ 100% mức giá đặt (${formatVnd(dto.bidAmount)}).`,
+          errorCode: AppErrorCode.AUCTION_DEPOSIT_REQUIRED,
+        });
       }
 
       await tx.wallet.update({

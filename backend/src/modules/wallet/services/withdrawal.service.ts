@@ -10,6 +10,7 @@ import {
   NotFoundException,
   Optional,
 } from '@nestjs/common';
+import { AppErrorCode } from '@nexus/contracts';
 import {
   NotificationType,
   Prisma,
@@ -389,7 +390,10 @@ export class WithdrawalService {
       });
 
       if (debitResult.count === 0) {
-        throw new BadRequestException('Số dư ví khả dụng không đủ để thực hiện rút tiền.');
+        throw new BadRequestException({
+          message: 'Số dư ví khả dụng không đủ để thực hiện rút tiền.',
+          errorCode: AppErrorCode.INSUFFICIENT_BALANCE,
+        });
       }
 
       const updatedWallet = await tx.wallet.findUniqueOrThrow({
