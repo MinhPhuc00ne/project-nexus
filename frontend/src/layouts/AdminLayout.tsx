@@ -125,7 +125,7 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
   // Tính số đếm từ dữ liệu hiện tại; duyệt hồ sơ xong badge sẽ tự giảm sau lần render tiếp.
   const sellerCount = sellerRequests.pendingTotal;
   return (
-    <div className="nexus-shell h-dvh overflow-hidden text-sm selection:bg-blue-100">
+    <div className="nexus-shell nexus-dashboard h-dvh overflow-hidden text-sm selection:bg-blue-100">
       {/* Đây là sidebar: menu điều hướng bên trái, dùng chung cho mọi trang admin.
           open/onClose điều khiển đóng mở menu trên mobile; các count hiển thị badge. */}
       <Sidebar

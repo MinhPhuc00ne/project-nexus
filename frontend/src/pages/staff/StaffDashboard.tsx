@@ -73,7 +73,7 @@ export default function StaffDashboard({
   }
 
   return (
-    <div className="nexus-shell [--staff-ink:var(--color-ink)] [--staff-line:var(--color-line)] [--staff-primary:var(--color-primary)] [--staff-primary-soft:var(--color-blue-50)] [--staff-primary-strong:var(--color-primary-dark)] [--staff-accent:var(--color-primary)] [--staff-accent-strong:var(--color-primary-dark)] grid [grid-template-columns:256px_minmax(0,_1fr)] max-[1023px]:block h-screen overflow-hidden bg-[var(--color-canvas)] [color:var(--staff-ink)] font-sans text-sm text-slate-800">
+    <div className="nexus-shell nexus-dashboard [--staff-ink:var(--color-ink)] [--staff-line:var(--color-line)] [--staff-primary:var(--color-primary)] [--staff-primary-soft:var(--color-blue-50)] [--staff-primary-strong:var(--color-primary-dark)] [--staff-accent:var(--color-primary)] [--staff-accent-strong:var(--color-primary-dark)] grid [grid-template-columns:256px_minmax(0,_1fr)] max-[1023px]:block h-screen overflow-hidden bg-[var(--color-canvas)] [color:var(--staff-ink)] font-sans text-sm text-slate-800">
       <StaffSidebar
         activeNavigation={activeNavigation}
         onSelectNavigation={setActiveNavigation}

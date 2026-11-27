@@ -191,6 +191,23 @@ body {
     color: var(--color-ink);
   }
 
+  /* Management workspaces share a stronger type hierarchy. Keep these tokens
+     scoped so storefront typography retains its own weights. */
+  .nexus-dashboard {
+    --font-weight-normal: 500;
+    --font-weight-medium: 600;
+    --font-weight-semibold: 700;
+    font-weight: var(--font-weight-normal);
+  }
+
+  .nexus-dashboard :where(h1, h2, h3, h4, h5, h6, strong, b, th) {
+    font-weight: 700;
+  }
+
+  .nexus-dashboard :where(button, label, summary, [role='tab']) {
+    font-weight: 600;
+  }
+
   .nexus-page {
     min-width: 0;
   }

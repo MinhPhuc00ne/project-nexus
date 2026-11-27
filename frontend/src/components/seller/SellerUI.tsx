@@ -208,7 +208,7 @@ export function StatCard({
       data-seller="stat"
     >
       <div
-        className="flex min-h-9 items-center justify-between gap-2 text-sm text-muted [&_i]:grid [&_i]:size-9 [&_i]:shrink-0 [&_i]:place-items-center [&_i]:rounded-xl [&_i]:bg-blue-50 [&_i]:text-primary"
+        className="flex min-h-9 items-center justify-between gap-2 text-sm font-semibold text-muted [&_i]:grid [&_i]:size-9 [&_i]:shrink-0 [&_i]:place-items-center [&_i]:rounded-xl [&_i]:bg-blue-50 [&_i]:text-primary"
         data-seller="stat-top"
       >
         <span>{label}</span>
