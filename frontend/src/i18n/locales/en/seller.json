@@ -576,7 +576,42 @@
     "emptyDesc": "Verified buyer reviews will appear here.",
     "shopReviewBadge": "Shop review",
     "productReviewBadge": "Product review",
-    "noComment": "Buyer left no comment."
+    "noComment": "Buyer left no comment.",
+    "filterAllStars": "All stars",
+    "filterStarOption": "{{star}} stars",
+    "sortNewest": "Newest",
+    "sortOldest": "Oldest",
+    "sortLabel": "Sort by",
+    "typeAll": "All types",
+    "typeProduct": "Products",
+    "typeShop": "Shop",
+    "replies": {
+      "toggleOpen": "Reply & Discuss",
+      "toggleClose": "Hide replies",
+      "loading": "Loading replies…",
+      "loadError": "Unable to load replies.",
+      "empty": "No replies yet. Thank the buyer or offer support.",
+      "loadMore": "Load more replies",
+      "sellerBadge": "Shop",
+      "buyerBadge": "Buyer",
+      "legacyReply": "Shop reply",
+      "placeholder": "Write a reply to the customer…",
+      "attachMedia": "Attach image/video",
+      "mediaHint": "PNG/JPG/WEBP ≤ 5MB, MP4/MOV ≤ 50MB (max 6 files)",
+      "send": "Send reply",
+      "sending": "Sending…",
+      "sendSuccess": "Review reply sent.",
+      "sendError": "Unable to send reply. Please try again.",
+      "contentRequired": "Please enter a reply message.",
+      "removeFile": "Remove file {{name}}",
+      "mediaErrors": {
+        "maxFiles": "Maximum 6 images or videos per reply.",
+        "unsupportedType": "Only images (PNG, JPG, WEBP) and videos (MP4, MOV) are supported.",
+        "imageTooLarge": "Image exceeds the 5MB limit.",
+        "videoTooLarge": "Video exceeds the 50MB limit.",
+        "emptyFile": "Selected file is empty or invalid."
+      }
+    }
   },
   "settings": {
     "pageTitle": "Shop Settings",

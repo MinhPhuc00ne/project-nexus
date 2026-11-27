@@ -576,7 +576,42 @@
     "emptyDesc": "Đánh giá hợp lệ từ người mua sẽ hiển thị tại đây.",
     "shopReviewBadge": "Đánh giá gian hàng",
     "productReviewBadge": "Đánh giá sản phẩm",
-    "noComment": "Người mua không để lại nội dung."
+    "noComment": "Người mua không để lại nội dung.",
+    "filterAllStars": "Tất cả sao",
+    "filterStarOption": "{{star}} sao",
+    "sortNewest": "Mới nhất",
+    "sortOldest": "Cũ nhất",
+    "sortLabel": "Sắp xếp",
+    "typeAll": "Tất cả loại",
+    "typeProduct": "Sản phẩm",
+    "typeShop": "Gian hàng",
+    "replies": {
+      "toggleOpen": "Phản hồi & Trao đổi",
+      "toggleClose": "Thu gọn phản hồi",
+      "loading": "Đang tải phản hồi…",
+      "loadError": "Không thể tải danh sách phản hồi.",
+      "empty": "Chưa có phản hồi nào. Hãy gửi lời cảm ơn hoặc hỗ trợ khách hàng.",
+      "loadMore": "Xem thêm phản hồi",
+      "sellerBadge": "Shop",
+      "buyerBadge": "Khách hàng",
+      "legacyReply": "Phản hồi của Shop",
+      "placeholder": "Nhập nội dung phản hồi cho khách hàng…",
+      "attachMedia": "Đính kèm ảnh/video",
+      "mediaHint": "PNG/JPG/WEBP ≤ 5MB, MP4/MOV ≤ 50MB (tối đa 6 tệp)",
+      "send": "Gửi phản hồi",
+      "sending": "Đang gửi…",
+      "sendSuccess": "Đã gửi phản hồi đánh giá.",
+      "sendError": "Không thể gửi phản hồi. Vui lòng thử lại.",
+      "contentRequired": "Vui lòng nhập nội dung phản hồi.",
+      "removeFile": "Xóa tệp {{name}}",
+      "mediaErrors": {
+        "maxFiles": "Tối đa 6 ảnh hoặc video cho mỗi phản hồi.",
+        "unsupportedType": "Chỉ hỗ trợ ảnh (PNG, JPG, WEBP) và video (MP4, MOV).",
+        "imageTooLarge": "Ảnh vượt quá giới hạn 5MB.",
+        "videoTooLarge": "Video vượt quá giới hạn 50MB.",
+        "emptyFile": "Tệp đính kèm không hợp lệ (rỗng)."
+      }
+    }
   },
   "settings": {
     "pageTitle": "Cài đặt Shop",
