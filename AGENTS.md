@@ -9,7 +9,7 @@ Repository handbook for AI coding agents and contributors working in **Project N
   - **Core Infrastructure (`backend/src/core/`)**: shared config, Prisma service, Redis, distributed locks, domain events, exception filters, response interceptors, health checks, mail, moderation, navigation, notifications, provider adapters, realtime metrics, security, settings, storage, and validation.
   - **WebSocket Gateways**: `/ws/notifications`, `/ws/auctions`, and `/chat`.
 - **`frontend/` (`nexus-frontend`)**: React 19 + Vite SPA serving 5 portals (Guest, Buyer, Seller, Staff, Admin) with `react-i18next` (`en` and `vi` across 10 namespaces).
-- **`packages/contracts/` (`@nexus/contracts`)**: Single source of truth for Zod 4 schemas, response envelopes, domain enums, WebSocket event contracts, and `@nexus/contracts/nest` validation decorators (`@ZodBody`, `@ZodQuery`, `@ZodParam`). Note: `packages/types/` (`@nexus/types`) remains in use until consolidated into `@nexus/contracts` in Milestone 8.
+- **`packages/contracts/` (`@nexus/contracts`)**: Single source of truth for Zod 4 schemas, canonical `AppErrorCode`s, response envelopes, domain enums, WebSocket event contracts, and `@nexus/contracts/nest` validation decorators (`@ZodBody`, `@ZodQuery`, `@ZodParam`).
 - **`packages/config/` (`@nexus/config`)**: Shared TypeScript base configuration.
 - **`docs/` (`nexus-docs`)**: Docusaurus 3 documentation portal with Scalar OpenAPI 3.0 reference (`docs/static/openapi/nexus-openapi.json`).
 - **`infra/`**: Dockerfiles (`Dockerfile.backend`, `Dockerfile.frontend`), Compose stacks (`docker-compose.yml`, `docker-compose.demo.yml`), and deployment config (`railway.toml`, `vercel.json`).

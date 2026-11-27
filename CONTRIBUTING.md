@@ -39,11 +39,21 @@ docs(api): refresh OpenAPI specification for wallet endpoints
 Run all checks locally before pushing your branch:
 
 ```bash
+npm run verify
+```
+
+Or run individual gates:
+
+```bash
 npm run format:check
 npm run lint
 npm run i18n:check
+npm run lang:check
+npm run env:check
 npm run docs:check
+npm run check:cycles
 npm run build
+npm run typecheck
 npm test
 ```
 

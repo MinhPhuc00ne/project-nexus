@@ -8,20 +8,20 @@ This page documents the core architectural and implementation patterns enforced 
 
 ## 1. Backend Patterns (`backend/src`)
 
-| Pattern                              | Real Implementation                                                                                      | Technical Benefit                                                                      |
-| :----------------------------------- | :------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------- |
-| Inversion of Control and DI          | All Services, Controllers, and Gateways use NestJS constructor injection                                 | Cleanly mockable dependencies for `node:test` unit and integration tests               |
-| Unit of Work (`prisma.$transaction`) | `OrderService`, `OrderEscrowService`, `RefundService`, `AuctionService`, `SellerFinanceService`          | Guarantees ACID atomicity across wallets, escrow, inventory, and orders                |
-| Strategy Pattern                     | Payments (`PayosService`, `WALLET`, `COD`) and Logistics (`GhnLogisticsService`, `RouteDistanceService`) | New providers can be added without modifying core checkout orchestration               |
-| In-Process Domain Events             | `EventEmitterModule.forRoot({ wildcard: true, delimiter: '.' })`                                         | Decouples core transactions from side effects (reputation updates, notifications)      |
-| Pessimistic + Distributed Lock       | PostgreSQL `SELECT ... FOR UPDATE` combined with Redis locks (`AuctionService`)                          | Eliminates race conditions and double-spending under concurrent bids or stock checkout |
-| Delegate Wrapper                     | `PrismaService` wraps `Notification` writes to emit via `NotificationRealtimeBus`                        | Any service creating a `Notification` automatically triggers Socket.IO delivery        |
+| Pattern                              | Real Implementation                                                                                      | Technical Benefit                                                                        |
+| :----------------------------------- | :------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------- |
+| Inversion of Control and DI          | All Services, Controllers, and Gateways use NestJS constructor injection                                 | Cleanly mockable dependencies for Vitest unit and integration tests                      |
+| Unit of Work (`prisma.$transaction`) | `OrderService`, `OrderEscrowService`, `RefundService`, `AuctionService`, `SellerFinanceService`          | Guarantees ACID atomicity across wallets, escrow, inventory, and orders                  |
+| Strategy Pattern                     | Payments (`PayosService`, `WALLET`, `COD`) and Logistics (`GhnLogisticsService`, `RouteDistanceService`) | New providers can be added without modifying core checkout orchestration                 |
+| In-Process Domain Events             | `EventEmitterModule.forRoot({ wildcard: true, delimiter: '.' })`                                         | Decouples core transactions from side effects (reputation updates, notifications)        |
+| Pessimistic + Distributed Lock       | PostgreSQL `SELECT ... FOR UPDATE` combined with Redis locks (`AuctionService`)                          | Eliminates race conditions and double-spending under concurrent bids or stock checkout   |
+| Explicit Notification Publisher      | `NotificationPublisher` (`EventsModule`) with `AsyncLocalStorage` post-commit batching                   | Keeps notification side effects explicit while preserving post-commit Socket.IO delivery |
 
 ## 2. Frontend Patterns (`frontend/src`)
 
-### Single Source of Truth (`@nexus/types`)
+### Single Source of Truth (`@nexus/contracts`)
 
-Both Frontend and Backend import Enums (`Role`, `OrderStatus`, `AuctionStatus`), DTOs, and WebSocket event constants from `@nexus/types`, preventing string drift.
+Both Frontend and Backend import Enums (`Role`, `OrderStatus`, `AuctionStatus`), Zod schemas, `AppErrorCode`, and WebSocket event constants from `@nexus/contracts`, preventing string drift.
 
 ### In-Flight Deduplication and Cross-Tab Sync (`AuthContext.tsx`)
 

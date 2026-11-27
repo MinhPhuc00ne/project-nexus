@@ -12,8 +12,8 @@ This runbook documents remediation steps for common development, integration, an
 - Root cause: pending migrations in `backend/prisma/migrations/` have not been applied, or the generated Prisma client is out of date.
 - Resolution:
   ```bash
-  npx prisma migrate deploy --schema=backend/prisma/schema.prisma
-  npm run prisma:generate
+  npm run db:deploy
+  npm run db:generate
   ```
 
 ## 2. Local PostgreSQL or Redis Connection Refused (`ECONNREFUSED`)
@@ -24,12 +24,13 @@ This runbook documents remediation steps for common development, integration, an
   npm run docker:infra
   docker compose -f infra/docker-compose.yml ps
   ```
-  To perform a clean database reset and re-seed:
+  To perform a clean database reset and re-seed demo data:
   ```bash
   npm run docker:clean
   npm run docker:infra
-  npx prisma migrate deploy --schema=backend/prisma/schema.prisma
-  npm run prisma:seed
+  npm run db:deploy
+  npm run db:bootstrap
+  npm run seed:demo
   ```
 
 ## 3. Auction Bid Rejected with `403 Forbidden`
@@ -43,16 +44,23 @@ This runbook documents remediation steps for common development, integration, an
 - Pre-pickup cancellation timeout keeps `AfterSalesRequest` in a durable pending state rather than releasing escrow or stock prematurely. Inspect `GhnOrderActionService` logs and confirm shipment status on the GHN portal before retrying reconciliation.
 - `PAYOS` order refunds (`OrderRefund.status = PENDING`) hold funds in the admin wallet `lockedBalance`. After completing the external bank or PayOS transfer, an administrator records `externalReference` in `/admin/refunds` to transition the record to `SUCCESS`.
 
-## 5. Missing `@nexus/types` or Frontend i18n Errors
+## 5. Missing `@nexus/contracts` or Frontend i18n Errors
 
-- Symptom: `Cannot find module '@nexus/types'` or missing translation key errors in `vitest` or `vite build`.
+- Symptom: `Cannot find module '@nexus/contracts'` or missing translation key errors in `vitest` or `vite build`.
 - Resolution:
   ```bash
-  npm run build:types
+  npm run build:contracts
   npm run i18n:check
   ```
 
-## 6. Regenerating OpenAPI and Validating Documentation
+## 6. Health Probes and Portable Deployment
+
+- **Liveness Probe**: `GET /api/v1/health/live` verifies the Node.js process is responsive.
+- **Readiness Probe**: `GET /api/v1/health/ready` verifies PostgreSQL (`SELECT 1`) and Redis (`PING`), returning `503` when dependencies are unavailable.
+- **Environment Check**: Run `npm run env:check` before deploying, or sync Railway variables with `node infra/scripts/sync-railway-env.mjs`.
+- **Release Automation**: `infra/Dockerfile.backend` and `infra/railway.toml` run `prisma migrate deploy`, `db:bootstrap`, and `db:verify` before starting the API server.
+
+## 7. Regenerating OpenAPI and Validating Documentation
 
 Whenever backend controllers, DTOs, or `docs/` pages change:
 

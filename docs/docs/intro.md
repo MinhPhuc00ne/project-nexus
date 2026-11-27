@@ -8,7 +8,7 @@ title: Project Nexus Overview
 
 Project Nexus is a multi-shop e-commerce platform combined with real-time 3D live auctions, an internal wallet and escrow ledger, GHN Express logistics integration, multi-tier operational moderation, and a conversational shopping assistant.
 
-> Documentation principle: every page in this portal is verified directly against the codebase (`backend/prisma/schema.prisma`, `backend/src/modules/*`, `frontend/src/*`, `packages/types/src/*`), and the interactive API reference is generated from NestJS Swagger (`docs/static/openapi/nexus-openapi.json`).
+> Documentation principle: every page in this portal is verified directly against the codebase (`backend/prisma/schema.prisma`, `backend/src/modules/*`, `frontend/src/*`, `packages/contracts/src/*`), and the interactive API reference is generated from NestJS Swagger (`docs/static/openapi/nexus-openapi.json`).
 
 ## Five User Portals
 
@@ -22,27 +22,27 @@ Project Nexus is a multi-shop e-commerce platform combined with real-time 3D liv
 
 ## Core Tech Stack
 
-| Layer                  | Technology and Version                                                           | Primary Role                                                                           |
-| :--------------------- | :------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------- |
-| Monorepo               | npm workspaces and Turborepo `2.11`                                              | Cross-workspace build, lint, test, coverage, and caching                               |
-| Shared Contracts       | TypeScript `5.9` (`@nexus/types`, `@nexus/config`)                               | Single source of truth for enums, DTOs, and WebSocket event names                      |
-| Backend                | NestJS `12` (Modular Monolith)                                                   | Ten isolated domain modules and `@nestjs/event-emitter` in-process bus                 |
-| Database and ORM       | PostgreSQL `17` and Prisma `7`                                                   | Relational storage, ACID `$transaction`, pessimistic row locking                       |
-| Cache and Realtime     | Redis `7` and Socket.IO `4.8`                                                    | Distributed auction locks, race-condition protection, real-time chat and notifications |
-| Payments and Logistics | PayOS (VietQR), NEXUS Pay Wallet, COD, GHN API v2                                | Idempotent checkout (`Idempotency-Key`), 7% escrow, shipment and webhook handling      |
-| AI and Media           | Google Gemini and Cloudinary                                                     | Rate-limited shopping AI assistant, media, certificate, and 3D model storage           |
-| Frontend               | React `19.3`, Vite `8.3`, and Tailwind CSS `v4`                                  | Five-portal SPA, React Context state management, Axios client, and `react-i18next`     |
-| Quality and Testing    | SonarLint, `eslint-plugin-sonarjs`, `node:test`, Vitest `5.1`, Playwright `1.65` | Three-tier quality gate and automated testing                                          |
-| Documentation          | Docusaurus `3`, Scalar OpenAPI, Mermaid, and Local Search                        | English engineering portal deployed to GitHub Pages with interactive API reference     |
+| Layer                  | Technology and Version                                    | Primary Role                                                                           |
+| :--------------------- | :-------------------------------------------------------- | :------------------------------------------------------------------------------------- |
+| Monorepo               | npm workspaces and Turborepo `2.11`                       | Cross-workspace build, lint, test, coverage, and caching                               |
+| Shared Contracts       | TypeScript `5.9` (`@nexus/contracts`, `@nexus/config`)    | Single source of truth for Zod 4 schemas, `AppErrorCode`, enums, and WS event names    |
+| Backend                | NestJS `12` (Modular Monolith)                            | Sixteen isolated domain modules and `@nestjs/event-emitter` in-process bus             |
+| Database and ORM       | PostgreSQL `17` and Prisma `7`                            | Relational storage, ACID `$transaction`, pessimistic row locking                       |
+| Cache and Realtime     | Redis `7` and Socket.IO `4.8`                             | Distributed auction locks, race-condition protection, real-time chat and notifications |
+| Payments and Logistics | PayOS (VietQR), NEXUS Pay Wallet, COD, GHN API v2         | Idempotent checkout (`Idempotency-Key`), 7% escrow, shipment and webhook handling      |
+| AI and Media           | Google Gemini and Cloudinary                              | Rate-limited shopping AI assistant, media, certificate, and 3D model storage           |
+| Frontend               | React `19.3`, Vite `8.3`, and Tailwind CSS `v4`           | Five-portal SPA, React Context state management, Axios client, and `react-i18next`     |
+| Quality and Testing    | `eslint-plugin-sonarjs`, Vitest `5.1`, Playwright `1.65`  | Unified Vitest runner, static quality gate, and E2E smoke tests                        |
+| Documentation          | Docusaurus `3`, Scalar OpenAPI, Mermaid, and Local Search | English engineering portal deployed to GitHub Pages with interactive API reference     |
 
 ## Monorepo Layout
 
 ```text
 project-nexus/
-├── backend/                 # NestJS 12 API, Prisma 7 schema, migrations, seed, node:test
+├── backend/                 # NestJS 12 API, Prisma 7 schema, migrations, seeds, Vitest
 ├── frontend/                # React 19 SPA, i18n (vi/en), Vitest + React Testing Library
 ├── packages/
-│   ├── types/               # @nexus/types: shared Enums, Models, WebSocket Events
+│   ├── contracts/           # @nexus/contracts: Zod 4 schemas, AppErrorCode, Enums, WebSocket Events
 │   └── config/              # @nexus/config: shared TypeScript/ESLint configs
 ├── docs/                    # Docusaurus v3 + Scalar OpenAPI + style checker
 ├── e2e/                     # Playwright E2E smoke tests
