@@ -1,5 +1,5 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
-import { Role } from '@nexus/types';
+import { Role } from '@nexus/contracts';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import {
   PlatformSettingsService,

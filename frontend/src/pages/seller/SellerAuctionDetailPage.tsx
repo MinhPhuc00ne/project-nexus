@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { AuctionStatus } from '@nexus/types';
+import { AuctionStatus } from '@nexus/contracts';
 import { formatCurrency } from '../../i18n/formatters';
 import {
   ArrowLeft,

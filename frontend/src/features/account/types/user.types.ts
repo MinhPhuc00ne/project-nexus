@@ -1,4 +1,4 @@
-import { Role, ReputationTrustLevel } from '@nexus/types';
+import { Role, ReputationTrustLevel } from '@nexus/contracts';
 
 export interface AuthUser {
   id: string;

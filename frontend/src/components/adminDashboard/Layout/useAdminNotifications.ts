@@ -5,7 +5,7 @@ import {
   type WsNotificationConnectedPayload,
   type WsNotificationNewPayload,
   type WsNotificationUnreadCountPayload,
-} from '@nexus/types';
+} from '@nexus/contracts';
 import { queryClient } from '../../../lib/queryClient';
 import { notificationsQueryKey, notificationUnreadCountQueryKey } from '../../../lib/socketManager';
 import {

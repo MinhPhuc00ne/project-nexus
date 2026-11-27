@@ -46,9 +46,13 @@ export class GlobalHttpExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(GlobalHttpExceptionFilter.name);
 
   catch(exception: unknown, host: ArgumentsHost): void {
+    if (typeof host.getType === 'function' && host.getType() !== 'http') {
+      return;
+    }
+
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
+    const request = ctx.getRequest<Request & { id?: string }>();
 
     let statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
     let errorCode = 'INTERNAL_SERVER_ERROR';
@@ -61,7 +65,10 @@ export class GlobalHttpExceptionFilter implements ExceptionFilter {
       if (typeof res === 'object' && res !== null) {
         const resObj = res as Record<string, unknown>;
         message = (resObj.message as string | string[]) || exception.message;
-        errorCode = (resObj.error as string) || `HTTP_${statusCode}`;
+        errorCode =
+          (typeof resObj.errorCode === 'string' && resObj.errorCode) ||
+          (typeof resObj.error === 'string' && resObj.error) ||
+          `HTTP_${statusCode}`;
         errors = resObj.errors || null;
       } else {
         message = exception.message;
@@ -69,9 +76,6 @@ export class GlobalHttpExceptionFilter implements ExceptionFilter {
     } else if (exception instanceof Error) {
       this.logger.error(`Unhandled Error: ${exception.message}`, exception.stack);
     } else {
-      // Something was thrown that is neither an HttpException nor an Error — a
-      // bare object or string, usually from a library. Without this the request
-      // became a silent 500: the filter answered and logged nothing at all.
       // Something was thrown that is neither an HTTP error nor an Error — a
       // bare object or a string, usually from a library. Without this the
       // request became a 500 that logged nothing at all.
@@ -83,6 +87,7 @@ export class GlobalHttpExceptionFilter implements ExceptionFilter {
     }
 
     const traceId =
+      request?.id ||
       (request?.headers?.['x-request-id'] as string) ||
       (request?.headers?.['x-trace-id'] as string) ||
       crypto.randomUUID();

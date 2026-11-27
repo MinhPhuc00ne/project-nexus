@@ -6,11 +6,14 @@ import {
   HttpStatus,
   Patch,
   Post,
-  Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { ZodBody } from '@nexus/contracts/nest';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
+import {
+  StaffInvitationQuery,
+  StaffInvitationQuerySchema,
+} from '../../../core/validation/query-schemas';
 import { AuthService } from '../services/auth.service';
 import { AuthProfileService, UserProfileResponse } from '../services/auth-profile.service';
 import {
@@ -31,7 +34,7 @@ import {
 } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
-import { Role } from '@nexus/types';
+import { Role } from '@nexus/contracts';
 import {
   UpdateStaffProfileInput,
   UpdateStaffProfileSchema,
@@ -59,10 +62,11 @@ export class StaffController {
     description:
       'Staff nhận tài khoản và mật khẩu ngẫu nhiên qua email, đăng nhập ngay; dùng Quên mật khẩu để đặt lại.',
   })
-  @ApiQuery({ name: 'token', description: 'Mã token kích hoạt từ email' })
   @Public()
   @Get('invitation-info')
-  async getInvitationInfo(@Query('token') _token: string): Promise<never> {
+  async getInvitationInfo(
+    @ZodQuery(StaffInvitationQuerySchema) _query: StaffInvitationQuery,
+  ): Promise<never> {
     throw new GoneException(
       'Staff được cấp tài khoản và mật khẩu qua email. Vui lòng đăng nhập hoặc dùng Quên mật khẩu.',
     );

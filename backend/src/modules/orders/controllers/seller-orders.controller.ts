@@ -1,7 +1,7 @@
-import { Controller, Get, HttpCode, HttpStatus, Param, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
-import { Role } from '@nexus/types';
+import { ZodBody, ZodQuery, ZodParam } from '@nexus/contracts/nest';
+import { Role, UuidParamSchema } from '@nexus/contracts';
 import { CurrentUser, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
@@ -31,7 +31,7 @@ export class SellerOrdersController {
   @ApiOperation({ summary: '[SELLER] Lấy liên kết in phiếu chính thức GHN (A5, 80x80, 52x70)' })
   ghnLabel(
     @CurrentUser('id') sellerId: string,
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
   ): ReturnType<GhnDispatchService['label']> {
     return this.dispatch.label(sellerId, id);
   }
@@ -43,7 +43,7 @@ export class SellerOrdersController {
   })
   shippingQuote(
     @CurrentUser('id') sellerId: string,
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @ZodBody(DispatchGhnOrderSchema) dto: DispatchGhnOrderInput,
   ) {
     return this.dispatch.preview(sellerId, id, dto);
@@ -54,7 +54,10 @@ export class SellerOrdersController {
   @ApiOperation({
     summary: '[SELLER] Đối soát yêu cầu tạo vận đơn bị gián đoạn, không tạo lại vận đơn',
   })
-  async reconcile(@CurrentUser('id') sellerId: string, @Param('id') id: string) {
+  async reconcile(
+    @CurrentUser('id') sellerId: string,
+    @ZodParam('id', UuidParamSchema) id: string,
+  ) {
     await this.dispatch.reconcile(sellerId, id);
     return this.tracking.refresh(id, { id: sellerId, role: 'SELLER' });
   }
@@ -84,7 +87,10 @@ export class SellerOrdersController {
   @ApiResponse({ status: 200, description: 'Lấy chi tiết đơn hàng thành công' })
   @ApiResponse({ status: 403, description: 'Không có quyền truy cập đơn hàng này' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy đơn hàng' })
-  async getOrderDetail(@CurrentUser('id') sellerId: string, @Param('id') orderId: string) {
+  async getOrderDetail(
+    @CurrentUser('id') sellerId: string,
+    @ZodParam('id', UuidParamSchema) orderId: string,
+  ) {
     return this.sellerOrdersService.getOrderDetail(sellerId, orderId);
   }
 
@@ -97,7 +103,10 @@ export class SellerOrdersController {
   })
   @ApiResponse({ status: 200, description: 'Xác nhận đơn hàng thành công' })
   @ApiResponse({ status: 400, description: 'Đơn hàng không ở trạng thái hợp lệ để xác nhận' })
-  async confirmOrder(@CurrentUser('id') sellerId: string, @Param('id') orderId: string) {
+  async confirmOrder(
+    @CurrentUser('id') sellerId: string,
+    @ZodParam('id', UuidParamSchema) orderId: string,
+  ) {
     return this.sellerOrdersService.confirmOrder(sellerId, orderId);
   }
 
@@ -112,7 +121,7 @@ export class SellerOrdersController {
   @ApiResponse({ status: 400, description: 'Đơn hàng chưa ở trạng thái chuẩn bị hàng' })
   async dispatchGhn(
     @CurrentUser('id') sellerId: string,
-    @Param('id') orderId: string,
+    @ZodParam('id', UuidParamSchema) orderId: string,
     @ZodBody(DispatchGhnOrderSchema) dto: DispatchGhnOrderInput,
   ) {
     return this.sellerOrdersService.dispatchGhn(sellerId, orderId, dto);
@@ -126,7 +135,10 @@ export class SellerOrdersController {
       'Lấy dữ liệu phiếu gửi hàng chuẩn hóa (thông tin người gửi, người nhận, danh sách kiện hàng, barcode GHN) để người bán in dán lên bưu kiện.',
   })
   @ApiResponse({ status: 200, description: 'Lấy dữ liệu in vận đơn thành công' })
-  async printWaybill(@CurrentUser('id') sellerId: string, @Param('id') orderId: string) {
+  async printWaybill(
+    @CurrentUser('id') sellerId: string,
+    @ZodParam('id', UuidParamSchema) orderId: string,
+  ) {
     return this.sellerOrdersService.printWaybill(sellerId, orderId);
   }
 }

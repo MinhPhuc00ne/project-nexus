@@ -258,7 +258,12 @@ test(
       const response = await fetch(`${base}/admin/orders?page=2&limit=5&status=PAID`, { headers });
       assert.equal(response.status, 200);
       assert.deepEqual(await response.json(), { page: 2, limit: 5, items: [] });
-      assert.equal((await fetch(`${base}/admin/orders/missing`, { headers })).status, 404);
+      assert.equal((await fetch(`${base}/admin/orders/not-a-uuid`, { headers })).status, 400);
+      assert.equal(
+        (await fetch(`${base}/admin/orders/00000000-0000-4000-8000-000000000000`, { headers }))
+          .status,
+        404,
+      );
     } finally {
       await app.close();
     }

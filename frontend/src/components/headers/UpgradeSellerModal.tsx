@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Role } from '@nexus/types';
+import { Role } from '@nexus/contracts';
 import { getIntlLocale } from '../../i18n/config';
 import { ShoppingBag, Clock, AlertCircle, CheckCircle2, Upload } from 'lucide-react';
 import Popup from '../Popup';

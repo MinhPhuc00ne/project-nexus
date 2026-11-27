@@ -1,4 +1,4 @@
-import { BidStatus } from '@nexus/types';
+import { BidStatus } from '@nexus/contracts';
 import { describe, expect, it } from 'vitest';
 import type { AuctionBidItem, AuctionEntity } from '@/features/auction/types/auction-api.types';
 import type { AuctionConsignmentItem } from '@/features/auction/types/auction-consignment.types';

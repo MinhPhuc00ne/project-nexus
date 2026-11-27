@@ -13,7 +13,7 @@ import {
   Radio,
   RefreshCw,
 } from 'lucide-react';
-import { WS_AUCTION_EVENTS } from '@nexus/types';
+import { WS_AUCTION_EVENTS } from '@nexus/contracts';
 import { AuctionShowcaseHUD } from '../../components/auction/showcase/AuctionShowcaseHUD';
 import { getIntlLocale } from '../../i18n/config';
 import type {

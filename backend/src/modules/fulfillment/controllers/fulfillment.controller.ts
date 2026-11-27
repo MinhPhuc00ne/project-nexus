@@ -1,10 +1,14 @@
-import { Controller, Get, Param, ParseIntPipe, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ZodBody } from '@nexus/contracts/nest';
+import { Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ZodBody, ZodParam, ZodQuery } from '@nexus/contracts/nest';
+import { PositiveIntParamSchema, Role } from '@nexus/contracts';
+import {
+  AvailableServicesQuery,
+  AvailableServicesQuerySchema,
+} from '../../../core/validation/query-schemas';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { CurrentUser, Public, Roles } from '../../../core/security/roles.decorator';
 import { RolesGuard } from '../../../core/security/roles.guard';
-import { Role } from '@nexus/types';
 import { FulfillmentService } from '../services/fulfillment.service';
 import { RouteDistanceService } from '../services/route-distance.service';
 import { GhnLogisticsService } from '../services/ghn-logistics.service';
@@ -128,7 +132,7 @@ export class FulfillmentController {
   @Get('districts/:provinceId')
   @Public()
   @ApiOperation({ summary: 'Lấy danh sách Quận/Huyện theo Tỉnh/Thành từ GHN' })
-  async getDistricts(@Param('provinceId', ParseIntPipe) provinceId: number) {
+  async getDistricts(@ZodParam('provinceId', PositiveIntParamSchema) provinceId: number) {
     const districts = await this.ghnService.getDistricts(provinceId);
     return {
       message:
@@ -141,7 +145,7 @@ export class FulfillmentController {
   @Get('wards/:districtId')
   @Public()
   @ApiOperation({ summary: 'Lấy danh sách Phường/Xã theo Quận/Huyện từ GHN' })
-  async getWards(@Param('districtId', ParseIntPipe) districtId: number) {
+  async getWards(@ZodParam('districtId', PositiveIntParamSchema) districtId: number) {
     const wards = await this.ghnService.getWards(districtId);
     return {
       message: wards.length > 0 ? 'Lấy danh sách Phường/Xã thành công' : 'Danh sách Phường/Xã rỗng',
@@ -153,13 +157,13 @@ export class FulfillmentController {
   @Get('available-services')
   @Public()
   @ApiOperation({ summary: 'Tra cứu các gói dịch vụ GHN khả dụng giữa 2 Quận/Huyện' })
-  @ApiQuery({ name: 'fromDistrictId', required: true, type: Number })
-  @ApiQuery({ name: 'toDistrictId', required: true, type: Number })
   async getAvailableServices(
-    @Query('fromDistrictId', ParseIntPipe) fromDistrictId: number,
-    @Query('toDistrictId', ParseIntPipe) toDistrictId: number,
+    @ZodQuery(AvailableServicesQuerySchema) query: AvailableServicesQuery,
   ) {
-    const services = await this.ghnService.getAvailableServices(fromDistrictId, toDistrictId);
+    const services = await this.ghnService.getAvailableServices(
+      query.fromDistrictId,
+      query.toDistrictId,
+    );
     return {
       message: 'Tra cứu dịch vụ khả dụng thành công',
       total: services.length,

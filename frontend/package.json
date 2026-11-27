@@ -6,7 +6,7 @@
   "description": "Project Nexus - Buyer & Seller Frontend Portal",
   "scripts": {
     "dev": "vite",
-    "prebuild": "npm run build --workspace=@nexus/types",
+    "prebuild": "npm run build --workspace=@nexus/contracts",
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b --noEmit && npm run typecheck:test",
     "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
@@ -19,7 +19,6 @@
   "dependencies": {
     "@hookform/resolvers": "^7.0.9",
     "@nexus/contracts": "*",
-    "@nexus/types": "*",
     "@tanstack/react-query": "^5.104.1",
     "axios": "^1.20.0",
     "class-variance-authority": "^0.7.1",

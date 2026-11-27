@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Role } from '@nexus/types';
+import { Role } from '@nexus/contracts';
 import { ROLES_KEY, PRIVILEGES_KEY, AuthenticatedUserPayload } from './roles.decorator';
 
 // RBAC Privilege Map according to docs/srs/README.md Section 4

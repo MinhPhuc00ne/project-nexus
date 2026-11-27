@@ -1,15 +1,7 @@
-import {
-  Controller,
-  Get,
-  Headers,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Post,
-  UseGuards,
-} from '@nestjs/common';
+import { UuidParamSchema } from '@nexus/contracts';
+import { Controller, Get, Headers, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ZodBody } from '@nexus/contracts/nest';
+import { ZodBody, ZodParam } from '@nexus/contracts/nest';
 import { OrderService } from '../services/order.service';
 import { CheckoutInput, CheckoutSchema } from '../dtos/checkout.dto';
 import { PayOrderInput, PayOrderSchema } from '../dtos/pay-order.dto';
@@ -72,7 +64,7 @@ export class OrderController {
   })
   @ApiResponse({ status: 404, description: 'Không tìm thấy đơn hàng' })
   async payOrder(
-    @Param('id') orderId: string,
+    @ZodParam('id', UuidParamSchema) orderId: string,
     @CurrentUser('id') userId: string,
     @ZodBody(PayOrderSchema) dto: PayOrderInput,
   ) {
@@ -89,7 +81,10 @@ export class OrderController {
   })
   @ApiResponse({ status: 200, description: 'Lấy trạng thái thanh toán thành công' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy đơn hàng' })
-  async getPaymentStatus(@Param('id') orderId: string, @CurrentUser('id') userId: string) {
+  async getPaymentStatus(
+    @ZodParam('id', UuidParamSchema) orderId: string,
+    @CurrentUser('id') userId: string,
+  ) {
     return this.orderService.checkPayosPaymentStatus(orderId, userId);
   }
 
@@ -114,7 +109,10 @@ export class OrderController {
   })
   @ApiResponse({ status: 200, description: 'Lấy chi tiết đơn hàng thành công' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy đơn hàng' })
-  async getOrderDetail(@Param('id') orderId: string, @CurrentUser('id') userId: string) {
+  async getOrderDetail(
+    @ZodParam('id', UuidParamSchema) orderId: string,
+    @CurrentUser('id') userId: string,
+  ) {
     return this.orderService.getOrderById(orderId, userId);
   }
 }

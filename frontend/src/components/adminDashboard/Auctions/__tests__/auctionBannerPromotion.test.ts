@@ -1,4 +1,4 @@
-import { AuctionStatus } from '@nexus/types';
+import { AuctionStatus } from '@nexus/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n from '../../../../i18n';
 import type { AdminAuctionEntity } from '@/features/auction/services/auction.service';

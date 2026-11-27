@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuctionStatus } from '@nexus/types';
+import { AuctionStatus } from '@nexus/contracts';
 import i18n from '../../../../i18n';
 import type { AdminAuctionEntity } from '@/features/auction/services/auction.service';
 import AuctionRow from '../AuctionRow';

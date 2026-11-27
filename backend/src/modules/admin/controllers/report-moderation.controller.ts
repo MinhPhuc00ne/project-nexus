@@ -1,6 +1,7 @@
-import { Controller, Get, Param, ParseUUIDPipe, Patch, UseGuards } from '@nestjs/common';
+import { UuidParamSchema } from '@nexus/contracts';
+import { Controller, Get, Patch, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
+import { ZodBody, ZodQuery, ZodParam } from '@nexus/contracts/nest';
 import { CurrentUser, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
@@ -38,7 +39,7 @@ export class ReportModerationController {
   @Roles('ADMIN', 'SUPPORT_STAFF')
   @ApiOperation({ summary: 'Xử lý báo cáo: đang điều tra, xác nhận hoặc bác bỏ' })
   review(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() actor: ReportModerator,
     @ZodBody(ReviewReportSchema) dto: ReviewReportInput,
   ): ReturnType<ReportModerationService['review']> {

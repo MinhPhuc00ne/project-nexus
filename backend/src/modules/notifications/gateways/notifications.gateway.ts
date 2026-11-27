@@ -13,12 +13,13 @@ import {
   type WsNotificationConnectedPayload,
   type WsNotificationNewPayload,
   type WsNotificationUnreadCountPayload,
-} from '@nexus/types';
+} from '@nexus/contracts';
 import { Server, Socket } from 'socket.io';
 import {
   DomainEventsService,
   type NotificationCreatedEvent,
 } from '../../../core/events/domain-events.service';
+import { createCorsOriginCallback } from '../../../core/config/env.schema';
 import { TokenAuthService } from '../../../core/security/token-auth.service';
 import { SocketMetricsService } from '../../../core/realtime/socket-metrics.service';
 import { AuthenticatedUserPayload } from '../../../core/security/roles.decorator';
@@ -29,7 +30,7 @@ import { NotificationsService } from '../services/notifications.service';
  */
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    origin: createCorsOriginCallback(),
     credentials: true,
   },
   namespace: '/ws/notifications',

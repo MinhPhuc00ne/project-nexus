@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Role } from '@nexus/types';
+import { Role } from '@nexus/contracts';
 import { formatCurrency } from '../../i18n/formatters';
 import {
   User,

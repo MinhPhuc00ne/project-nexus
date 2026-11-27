@@ -314,6 +314,23 @@ export function parseCorsOrigins(raw?: string, fallback = 'http://localhost:5173
     .filter((origin) => origin.length > 0);
 }
 
+/**
+ * Builds a CORS origin callback shared between HTTP and Socket.IO gateways.
+ */
+export function createCorsOriginCallback(
+  getOrigins: () => string[] = () =>
+    parseCorsOrigins(process.env.CORS_ORIGINS, process.env.FRONTEND_URL || 'http://localhost:5173'),
+): (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => void {
+  return (origin, callback) => {
+    const allowedOrigins = getOrigins();
+    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      callback(null, true);
+      return;
+    }
+    callback(new Error(`Origin '${origin}' not allowed by CORS`), false);
+  };
+}
+
 export function resolveAppPublicUrl(env: {
   APP_PUBLIC_URL?: string;
   APP_ENV?: string;

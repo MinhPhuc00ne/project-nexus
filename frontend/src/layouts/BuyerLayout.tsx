@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Role } from '@nexus/types';
+import { Role } from '@nexus/contracts';
 import {
   LayoutDashboard,
   User,
