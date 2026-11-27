@@ -150,9 +150,7 @@ jobs:
         run: npm run db:generate
 
       - name: Build shared packages
-        run: |
-          npm run build:types
-          npm run build:contracts
+        run: npm run build:contracts
 
       - name: Deploy Prisma migrations for integration tests
         run: npm run db:deploy
@@ -202,9 +200,7 @@ jobs:
         run: npm ci
 
       - name: Build shared packages
-        run: |
-          npm run build:types
-          npm run build:contracts
+        run: npm run build:contracts
 
       - name: Run frontend tests with coverage
         run: npm run test:coverage --workspace=nexus-frontend
@@ -243,9 +239,7 @@ jobs:
         run: npm ci
 
       - name: Build shared packages
-        run: |
-          npm run build:types
-          npm run build:contracts
+        run: npm run build:contracts
 
       - name: Install the browser
         run: npx playwright install --with-deps chromium

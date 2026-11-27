@@ -1,5 +1,5 @@
 import { createParamDecorator, ExecutionContext, SetMetadata } from '@nestjs/common';
-import { Role } from '@nexus/types';
+import { Role } from '@nexus/contracts';
 
 export const IS_PUBLIC_KEY = 'isPublic';
 /**

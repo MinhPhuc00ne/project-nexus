@@ -4,7 +4,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Param,
   Patch,
   Post,
   UploadedFiles,
@@ -13,8 +12,8 @@ import {
 } from '@nestjs/common';
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
-import { Role } from '@nexus/types';
+import { ZodBody, ZodQuery, ZodParam } from '@nexus/contracts/nest';
+import { Role, UuidParamSchema } from '@nexus/contracts';
 
 import { CurrentUser, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
@@ -55,7 +54,7 @@ export class ReviewsController {
   })
   shopReview(
     @CurrentUser('id') id: string,
-    @Param('orderId') orderId: string,
+    @ZodParam('orderId', UuidParamSchema) orderId: string,
     @ZodBody(ReviewSchema) dto: ReviewInput,
     @UploadedFiles() files?: Express.Multer.File[],
   ): Promise<unknown> {
@@ -69,7 +68,7 @@ export class ReviewsController {
   @ApiOperation({ summary: 'Chỉnh sửa đánh giá gian hàng của chính mình' })
   updateShopReview(
     @CurrentUser('id') id: string,
-    @Param('orderId') orderId: string,
+    @ZodParam('orderId', UuidParamSchema) orderId: string,
     @ZodBody(ReviewSchema) dto: ReviewInput,
   ): Promise<unknown> {
     return this.reviews.updateShopReview(id, orderId, dto);
@@ -82,7 +81,7 @@ export class ReviewsController {
   @ApiOperation({ summary: 'Xóa đánh giá gian hàng của chính mình' })
   deleteShopReview(
     @CurrentUser('id') id: string,
-    @Param('orderId') orderId: string,
+    @ZodParam('orderId', UuidParamSchema) orderId: string,
   ): Promise<unknown> {
     return this.reviews.deleteShopReview(id, orderId);
   }
@@ -98,8 +97,8 @@ export class ReviewsController {
   })
   productReview(
     @CurrentUser('id') id: string,
-    @Param('orderId') orderId: string,
-    @Param('productId') productId: string,
+    @ZodParam('orderId', UuidParamSchema) orderId: string,
+    @ZodParam('productId', UuidParamSchema) productId: string,
     @ZodBody(ReviewSchema) dto: ReviewInput,
     @UploadedFiles() files?: Express.Multer.File[],
   ): Promise<unknown> {
@@ -113,8 +112,8 @@ export class ReviewsController {
   @ApiOperation({ summary: 'Chỉnh sửa đánh giá sản phẩm của chính mình' })
   updateProductReview(
     @CurrentUser('id') id: string,
-    @Param('orderId') orderId: string,
-    @Param('productId') productId: string,
+    @ZodParam('orderId', UuidParamSchema) orderId: string,
+    @ZodParam('productId', UuidParamSchema) productId: string,
     @ZodBody(ReviewSchema) dto: ReviewInput,
   ): Promise<unknown> {
     return this.reviews.updateProductReview(id, orderId, productId, dto);
@@ -127,8 +126,8 @@ export class ReviewsController {
   @ApiOperation({ summary: 'Xóa đánh giá sản phẩm của chính mình' })
   deleteProductReview(
     @CurrentUser('id') id: string,
-    @Param('orderId') orderId: string,
-    @Param('productId') productId: string,
+    @ZodParam('orderId', UuidParamSchema) orderId: string,
+    @ZodParam('productId', UuidParamSchema) productId: string,
   ): Promise<unknown> {
     return this.reviews.deleteProductReview(id, orderId, productId);
   }
@@ -141,7 +140,7 @@ export class ReviewsController {
   @ApiOperation({ summary: 'Bình chọn / bỏ bình chọn đánh giá sản phẩm hữu ích' })
   toggleHelpfulProductReview(
     @CurrentUser('id') userId: string,
-    @Param('reviewId') reviewId: string,
+    @ZodParam('reviewId', UuidParamSchema) reviewId: string,
   ): Promise<unknown> {
     return this.reviews.toggleHelpfulProductReview(userId, reviewId);
   }
@@ -159,7 +158,7 @@ export class ReviewsController {
   })
   createProductReviewReply(
     @CurrentUser('id') userId: string,
-    @Param('reviewId') reviewId: string,
+    @ZodParam('reviewId', UuidParamSchema) reviewId: string,
     @ZodBody(CreateReviewReplySchema) dto: CreateReviewReplyInput,
     @UploadedFiles() files?: Express.Multer.File[],
   ): Promise<unknown> {
@@ -179,7 +178,7 @@ export class ReviewsController {
   })
   createShopReviewReply(
     @CurrentUser('id') userId: string,
-    @Param('reviewId') reviewId: string,
+    @ZodParam('reviewId', UuidParamSchema) reviewId: string,
     @ZodBody(CreateReviewReplySchema) dto: CreateReviewReplyInput,
     @UploadedFiles() files?: Express.Multer.File[],
   ): Promise<unknown> {

@@ -28,9 +28,10 @@ export class TransformResponseInterceptor<T> implements NestInterceptor<
     // HTTP envelopes must not inspect or wrap Socket.IO event payloads.
     if (context.getType() !== 'http') return next.handle();
     const httpContext = context.switchToHttp();
-    const request = httpContext.getRequest<Request>();
+    const request = httpContext.getRequest<Request & { id?: string }>();
     const response = httpContext.getResponse<Response>();
     const traceId =
+      request?.id ||
       (request?.headers?.['x-request-id'] as string) ||
       (request?.headers?.['x-trace-id'] as string) ||
       crypto.randomUUID();

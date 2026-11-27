@@ -1,7 +1,7 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ZodQuery } from '@nexus/contracts/nest';
-import { Role } from '@nexus/types';
+import { ZodQuery, ZodParam } from '@nexus/contracts/nest';
+import { Role, UuidParamSchema } from '@nexus/contracts';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { Roles } from '../../../core/security/roles.decorator';
 import { RolesGuard } from '../../../core/security/roles.guard';
@@ -29,7 +29,7 @@ export class AdminOrdersController {
     summary:
       'Admin & Nhân viên hỗ trợ xem chi tiết đơn, thanh toán, vận chuyển, hậu mãi và lịch sử thao tác',
   })
-  detail(@Param('id') id: string): ReturnType<AdminOrdersService['detail']> {
+  detail(@ZodParam('id', UuidParamSchema) id: string): ReturnType<AdminOrdersService['detail']> {
     return this.orders.detail(id);
   }
 }

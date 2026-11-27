@@ -12,6 +12,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { ZodBody } from '@nexus/contracts/nest';
 import { Request, Response } from 'express';
 import { AuthService, GoogleUser, UserProfileResponse } from '../services/auth.service';
@@ -37,7 +38,7 @@ import {
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import { CurrentUser, RequirePrivilege, Roles } from '../../../core/security/roles.decorator';
-import { Role } from '@nexus/types';
+import { Role } from '@nexus/contracts';
 
 interface RequestWithUser extends Request {
   user?: GoogleUser;
@@ -54,6 +55,7 @@ export class AuthController {
   ) {}
 
   @Post('login')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @ApiOperation({ summary: 'Đăng nhập vào hệ thống' })
   @ApiResponse({ status: 200, description: 'Đăng nhập thành công' })
   @ApiResponse({ status: 401, description: 'Email hoặc mật khẩu không chính xác' })
@@ -107,6 +109,7 @@ export class AuthController {
   }
 
   @Post('register')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @ApiOperation({ summary: 'Đăng ký tài khoản mới & gửi mã OTP về email' })
   @ApiResponse({ status: 201, description: 'Đăng ký thành công, vui lòng check mail' })
   async register(
@@ -116,6 +119,7 @@ export class AuthController {
   }
 
   @Post('verify-email')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @ApiOperation({ summary: 'Xác thực tài khoản bằng mã OTP nhận từ email' })
   @ApiResponse({ status: 200, description: 'Xác thực thành công' })
   async verifyEmail(@ZodBody(VerifyEmailSchema) dto: VerifyEmailInput) {
@@ -123,6 +127,7 @@ export class AuthController {
   }
 
   @Post('forgot-password')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Quên mật khẩu - gửi mã OTP đặt lại mật khẩu về Gmail' })
   @ApiResponse({ status: 200, description: 'Đã gửi mã OTP về email' })
@@ -134,6 +139,7 @@ export class AuthController {
   }
 
   @Post('reset-password')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Đặt lại mật khẩu bằng mã OTP nhận từ email' })
   @ApiResponse({ status: 200, description: 'Đặt lại mật khẩu thành công' })
@@ -145,6 +151,7 @@ export class AuthController {
   }
 
   @Post('refresh')
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Làm mới Access Token bằng Refresh Token' })
   @ApiResponse({ status: 200, description: 'Làm mới token thành công' })

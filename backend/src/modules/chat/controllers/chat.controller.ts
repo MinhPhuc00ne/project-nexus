@@ -1,7 +1,7 @@
+import { UuidParamSchema } from '@nexus/contracts';
 import {
   Controller,
   Get,
-  Param,
   Patch,
   Post,
   UploadedFiles,
@@ -18,7 +18,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
+import { ZodBody, ZodQuery, ZodParam } from '@nexus/contracts/nest';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { CurrentUser } from '../../../core/security/roles.decorator';
 import {
@@ -108,7 +108,7 @@ export class ChatController {
   @ApiParam({ name: 'disputeId', description: 'ID của khiếu nại tranh chấp' })
   @ApiResponse({ status: 200, description: 'Hội thoại tranh chấp duy nhất.' })
   async getDisputeConversation(
-    @Param('disputeId') disputeId: string,
+    @ZodParam('disputeId', UuidParamSchema) disputeId: string,
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: string,
   ) {
@@ -138,7 +138,7 @@ export class ChatController {
   })
   @ApiParam({ name: 'id', description: 'ID cuộc trò chuyện cần tiếp nhận' })
   async claimConversation(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser('id') staffId: string,
     @CurrentUser('role') role: string,
   ) {
@@ -154,7 +154,7 @@ export class ChatController {
   })
   @ApiParam({ name: 'id', description: 'ID cuộc trò chuyện' })
   async updateStatus(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: string,
     @ZodBody(UpdateConversationStatusSchema) dto: UpdateConversationStatusInput,
@@ -190,7 +190,7 @@ export class ChatController {
       'Ẩn danh thông tin nhân viên hỗ trợ với khách hàng. Chỉ Admin mới thấy thông tin thực.',
   })
   async getConversation(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: string,
   ) {
@@ -205,7 +205,7 @@ export class ChatController {
       'Tin nhắn từ nhân viên hỗ trợ được ẩn danh thành "Nhân viên Hỗ trợ" đối với khách hàng. Chỉ Admin mới thấy ID và tên thật nhân viên.',
   })
   async listMessages(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: string,
     @ZodQuery(QueryMessagesSchema) query: QueryMessagesInput,
@@ -221,7 +221,7 @@ export class ChatController {
       'Tự động kiểm duyệt từ cấm/nhạy cảm. Nếu Staff phản hồi một hội thoại đang OPEN, hệ thống sẽ tự động gán và chuyển trạng thái sang IN_PROGRESS.',
   })
   async sendMessage(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: string,
     @ZodBody(SendMessageSchema) dto: SendMessageInput,
@@ -246,7 +246,7 @@ export class ChatController {
   @Patch('conversations/:id/read')
   @ApiOperation({ summary: 'Đánh dấu đã đọc toàn bộ tin nhắn trong cuộc trò chuyện' })
   async markAsRead(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: string,
   ) {

@@ -20,6 +20,7 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { createCorsOriginCallback } from '../../../core/config/env.schema';
 import { TokenAuthService } from '../../../core/security/token-auth.service';
 import { SocketMetricsService } from '../../../core/realtime/socket-metrics.service';
 import { ChatService, ChatSocketBroadcaster } from '../services/chat.service';
@@ -27,7 +28,7 @@ import { StaffQueueService } from '../services/staff-queue.service';
 
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    origin: createCorsOriginCallback(),
     credentials: true,
   },
   namespace: '/chat',

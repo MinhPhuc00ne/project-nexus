@@ -1,17 +1,12 @@
-import {
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Patch,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Delete, Get, HttpCode, HttpStatus, Patch, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
+import { ZodBody, ZodParam, ZodQuery } from '@nexus/contracts/nest';
+import { UuidParamSchema } from '@nexus/contracts';
 import { Role } from '@prisma/client';
+import {
+  TrendingLimitQuery,
+  TrendingLimitQuerySchema,
+} from '../../../core/validation/query-schemas';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import {
@@ -67,9 +62,9 @@ export class AdminProductsController {
   })
   @ApiResponse({ status: 200, description: 'Trending products retrieved successfully' })
   async listTrendingProducts(
-    @Query('limit') limit?: string,
+    @ZodQuery(TrendingLimitQuerySchema) query: TrendingLimitQuery,
   ): Promise<ReturnType<AdminProductsService['listTrendingProducts']>> {
-    return this.adminProductsService.listTrendingProducts(limit ? Number(limit) : 20);
+    return this.adminProductsService.listTrendingProducts(query.limit ?? 20);
   }
 
   @Get('products/:id')
@@ -78,7 +73,7 @@ export class AdminProductsController {
   })
   @ApiResponse({ status: 200, description: 'Product details retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Product not found' })
-  async getProductById(@Param('id') id: string) {
+  async getProductById(@ZodParam('id', UuidParamSchema) id: string) {
     return this.adminProductsService.getProductById(id);
   }
 
@@ -92,7 +87,7 @@ export class AdminProductsController {
   @ApiResponse({ status: 200, description: 'Product status updated successfully' })
   @ApiResponse({ status: 404, description: 'Product not found' })
   async updateProductStatus(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
     @ZodBody(UpdateProductStatusSchema) dto: UpdateProductStatusInput,
   ) {
@@ -109,7 +104,7 @@ export class AdminProductsController {
   @ApiResponse({ status: 200, description: 'Product category updated successfully' })
   @ApiResponse({ status: 404, description: 'Product or category not found' })
   async updateProductCategory(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
     @ZodBody(UpdateProductCategorySchema) dto: UpdateProductCategoryInput,
   ) {
@@ -126,7 +121,7 @@ export class AdminProductsController {
   @ApiResponse({ status: 200, description: 'Product removed from trending successfully' })
   @ApiResponse({ status: 404, description: 'Product not found' })
   async removeProductFromTrending(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
     @ZodBody(RemoveTrendingProductSchema.optional()) dto?: RemoveTrendingProductInput,
   ): Promise<ReturnType<AdminProductsService['removeProductFromTrending']>> {
@@ -142,7 +137,10 @@ export class AdminProductsController {
   })
   @ApiResponse({ status: 200, description: 'Product removed or archived successfully' })
   @ApiResponse({ status: 404, description: 'Product not found' })
-  async deleteProduct(@Param('id') id: string, @CurrentUser() admin: AuthenticatedUserPayload) {
+  async deleteProduct(
+    @ZodParam('id', UuidParamSchema) id: string,
+    @CurrentUser() admin: AuthenticatedUserPayload,
+  ) {
     return this.adminProductsService.deleteProduct(id, admin.id);
   }
 }

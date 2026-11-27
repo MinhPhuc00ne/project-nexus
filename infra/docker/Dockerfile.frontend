@@ -3,7 +3,6 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 COPY package*.json ./
 COPY packages/config/package.json ./packages/config/
-COPY packages/types/package.json ./packages/types/
 COPY packages/contracts/package.json ./packages/contracts/
 COPY backend/package.json ./backend/
 COPY frontend/package.json ./frontend/
@@ -21,12 +20,8 @@ ENV VITE_API_URL=${VITE_API_URL:-http://localhost:3000/api/v1}
 # contracts pins a TypeScript the root does not resolve to.
 COPY --from=dependencies /app/ ./
 COPY . .
-RUN npm run build --workspace=@nexus/types
-# The front end depends on @nexus/contracts, which was never built here: the
-# image only worked because the package happened to resolve to a dist built
-# outside Docker.
 RUN npm run build --workspace=@nexus/contracts
-RUN npm run build --workspace=frontend
+RUN npm run build --workspace=nexus-frontend
 
 FROM nginx:1.27-alpine AS runner
 WORKDIR /usr/share/nginx/html

@@ -1,6 +1,7 @@
-import { Controller, Get, HttpCode, HttpStatus, Param, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ZodBody } from '@nexus/contracts/nest';
+import { NumericCodeParamSchema } from '@nexus/contracts';
+import { ZodBody, ZodParam } from '@nexus/contracts/nest';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { CurrentUser } from '../../../core/security/roles.decorator';
 import { RolesGuard } from '../../../core/security/roles.guard';
@@ -65,7 +66,7 @@ export class WalletController {
   @ApiResponse({ status: 200, description: 'Lấy trạng thái nạp tiền thành công' })
   async checkWalletDepositStatus(
     @CurrentUser('id') userId: string,
-    @Param('orderCode') orderCode: string,
+    @ZodParam('orderCode', NumericCodeParamSchema) orderCode: string,
   ) {
     return this.deposits.checkPayosWalletDepositStatus(Number(orderCode), userId);
   }

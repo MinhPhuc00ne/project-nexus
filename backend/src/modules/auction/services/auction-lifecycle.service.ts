@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
-import { AuctionStatus as NexusAuctionStatus } from '@nexus/types';
+import { AuctionStatus as NexusAuctionStatus } from '@nexus/contracts';
 import { AuctionAwardStatus, AuctionStatus } from '@prisma/client';
 import { DomainEventsService } from '../../../core/events/domain-events.service';
 import { PrismaService } from '../../../core/prisma/prisma.service';

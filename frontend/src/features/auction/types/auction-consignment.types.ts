@@ -1,4 +1,4 @@
-import type { AuctionStatus } from '@nexus/types';
+import type { AuctionStatus } from '@nexus/contracts';
 import type { AuctionBidItem } from '@/features/auction/types/auction-api.types';
 
 /**

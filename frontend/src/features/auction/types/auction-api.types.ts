@@ -1,4 +1,4 @@
-import type { AuctionStatus, BidStatus } from '@nexus/types';
+import type { AuctionStatus, BidStatus } from '@nexus/contracts';
 import type {
   AuctionConsignmentItem,
   SellerAuctionConsignment,

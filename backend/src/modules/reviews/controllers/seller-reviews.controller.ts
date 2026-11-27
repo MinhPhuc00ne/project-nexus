@@ -1,8 +1,8 @@
-import { Controller, Get, HttpCode, HttpStatus, Param, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
 
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
-import { Role } from '@nexus/types';
+import { ZodBody, ZodQuery, ZodParam } from '@nexus/contracts/nest';
+import { Role, UuidParamSchema } from '@nexus/contracts';
 
 import { CurrentUser, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
@@ -29,7 +29,7 @@ export class SellerReviewsController {
   @Roles(Role.SELLER)
   customerReview(
     @CurrentUser('id') id: string,
-    @Param('orderId') orderId: string,
+    @ZodParam('orderId', UuidParamSchema) orderId: string,
     @ZodBody(ReviewSchema) dto: ReviewInput,
   ): Promise<unknown> {
     return this.reviews.create(id, orderId, dto, 'customer');
@@ -54,7 +54,7 @@ export class SellerReviewsController {
   @ApiOperation({ summary: 'Seller phản hồi đánh giá sản phẩm của khách hàng' })
   replyProductReview(
     @CurrentUser('id') sellerId: string,
-    @Param('reviewId') reviewId: string,
+    @ZodParam('reviewId', UuidParamSchema) reviewId: string,
     @ZodBody(SellerReplyReviewSchema) dto: SellerReplyReviewInput,
   ): Promise<unknown> {
     return this.reviews.replyToProductReview(sellerId, reviewId, dto);

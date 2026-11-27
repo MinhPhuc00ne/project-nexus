@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Role } from '@nexus/types';
+import { Role } from '@nexus/contracts';
 import {
   Store,
   Smartphone,

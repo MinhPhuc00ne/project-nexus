@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { Role } from '@nexus/types';
+import { Role } from '@nexus/contracts';
 import ProtectedRoute from '../ProtectedRoute';
 
 const mockUseAuth = vi.fn();

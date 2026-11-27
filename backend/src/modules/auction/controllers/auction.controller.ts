@@ -5,17 +5,20 @@ import {
   Get,
   HttpCode,
   Optional,
-  Param,
-  ParseUUIDPipe,
   Patch,
   Post,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
-import { AuctionComplaintStatus, Role as PrismaRole } from '@prisma/client';
-import { Role } from '@nexus/types';
+import { ZodBody, ZodParam, ZodQuery } from '@nexus/contracts/nest';
+import { Role as PrismaRole } from '@prisma/client';
+import { Role, UuidParamSchema } from '@nexus/contracts';
+import {
+  AuctionComplaintsQuery,
+  AuctionComplaintsQuerySchema,
+  OptionalAuctionIdQuery,
+  OptionalAuctionIdQuerySchema,
+} from '../../../core/validation/query-schemas';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import {
   AuthenticatedUserPayload,
@@ -98,7 +101,7 @@ export class AuctionController {
   @Patch('staff/items/:itemId/note')
   @ApiOperation({ summary: 'Nhân viên hỗ trợ cập nhật ghi chú kiểm tra / hỗ trợ trên lô hàng' })
   staffAddItemNote(
-    @Param('itemId', new ParseUUIDPipe()) itemId: string,
+    @ZodParam('itemId', UuidParamSchema) itemId: string,
     @CurrentUser('id') staffId: string,
     @ZodBody(StaffAuctionNoteSchema) dto: StaffAuctionNoteInput,
   ) {
@@ -112,12 +115,11 @@ export class AuctionController {
   })
   listComplaints(
     @CurrentUser() user: AuthenticatedUserPayload,
-    @Query('auctionId') auctionId?: string,
-    @Query('status') status?: AuctionComplaintStatus,
+    @ZodQuery(AuctionComplaintsQuerySchema) query: AuctionComplaintsQuery,
   ) {
     return this.complaintService!.listComplaints(user.id, user.role as unknown as PrismaRole, {
-      auctionId,
-      status,
+      auctionId: query.auctionId,
+      status: query.status,
     });
   }
 
@@ -125,7 +127,7 @@ export class AuctionController {
   @Patch('complaints/:complaintId/resolve')
   @ApiOperation({ summary: 'Admin tiếp nhận (chấp thuận) hoặc từ chối khiếu nại đấu giá' })
   resolveComplaint(
-    @Param('complaintId', new ParseUUIDPipe()) complaintId: string,
+    @ZodParam('complaintId', UuidParamSchema) complaintId: string,
     @CurrentUser('id') adminId: string,
     @ZodBody(ResolveAuctionComplaintSchema) dto: ResolveAuctionComplaintInput,
   ) {
@@ -148,7 +150,7 @@ export class AuctionController {
   @Patch('admin/:id')
   @ApiOperation({ summary: 'Admin cập nhật thông tin phiên đấu giá trước khi bắt đầu' })
   adminUpdateAuction(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @ZodBody(AdminUpdateAuctionSchema) dto: AdminUpdateAuctionInput,
   ) {
     return this.auctionService.adminUpdateAuction(id, dto);
@@ -160,7 +162,7 @@ export class AuctionController {
   @ApiOperation({
     summary: 'Admin & Nhân viên hỗ trợ khóa đăng ký ký gửi vật phẩm sớm cho phiên đấu giá',
   })
-  adminLockConsignment(@Param('id', new ParseUUIDPipe()) id: string) {
+  adminLockConsignment(@ZodParam('id', UuidParamSchema) id: string) {
     return this.auctionService.adminLockConsignment(id);
   }
 
@@ -171,14 +173,14 @@ export class AuctionController {
     summary:
       'Admin & Nhân viên hỗ trợ bấm bắt đầu phiên đấu giá thủ công và gửi thông báo tới Người mua',
   })
-  adminStartAuction(@Param('id', new ParseUUIDPipe()) id: string) {
+  adminStartAuction(@ZodParam('id', UuidParamSchema) id: string) {
     return this.auctionService.adminStartAuction(id);
   }
 
   @Roles(Role.ADMIN)
   @Delete('admin/:id')
   @ApiOperation({ summary: 'Admin xóa phòng đấu giá chưa diễn ra và chưa có lượt đặt giá' })
-  adminDeleteAuction(@Param('id', new ParseUUIDPipe()) id: string) {
+  adminDeleteAuction(@ZodParam('id', UuidParamSchema) id: string) {
     return this.auctionService.adminDeleteAuction(id);
   }
 
@@ -187,7 +189,7 @@ export class AuctionController {
   @ApiOperation({
     summary: 'Admin & Nhân viên hỗ trợ xem danh sách toàn bộ vật phẩm ký gửi trong phiên',
   })
-  adminGetAuctionItems(@Param('id', new ParseUUIDPipe()) id: string) {
+  adminGetAuctionItems(@ZodParam('id', UuidParamSchema) id: string) {
     return this.auctionService.adminGetAuctionItems(id);
   }
 
@@ -198,7 +200,7 @@ export class AuctionController {
     summary: 'Admin & Nhân viên hỗ trợ duyệt hoặc từ chối vật phẩm ký gửi của Người bán',
   })
   adminReviewAuctionItem(
-    @Param('itemId', new ParseUUIDPipe()) itemId: string,
+    @ZodParam('itemId', UuidParamSchema) itemId: string,
     @CurrentUser('id') adminId: string,
     @ZodBody(ReviewAuctionItemSchema) dto: ReviewAuctionItemInput,
   ) {
@@ -212,8 +214,8 @@ export class AuctionController {
     summary: 'Admin & Nhân viên hỗ trợ kết thúc riêng từng lô đấu giá',
   })
   adminEndLot(
-    @Param('id', new ParseUUIDPipe()) auctionId: string,
-    @Param('itemId', new ParseUUIDPipe()) itemId: string,
+    @ZodParam('id', UuidParamSchema) auctionId: string,
+    @ZodParam('itemId', UuidParamSchema) itemId: string,
     @CurrentUser('id') adminId: string,
   ) {
     return this.auctionService.adminEndLot(auctionId, itemId, adminId);
@@ -222,8 +224,8 @@ export class AuctionController {
   @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
   @Get('admin/awards')
   @ApiOperation({ summary: 'Danh sách quyền mua sau đấu giá cho Admin & Nhân viên hỗ trợ' })
-  listAdminAwards(@Query('auctionId') auctionId?: string) {
-    return this.checkoutService!.listAwardsForAdmin(auctionId);
+  listAdminAwards(@ZodQuery(OptionalAuctionIdQuerySchema) query: OptionalAuctionIdQuery) {
+    return this.checkoutService!.listAwardsForAdmin(query.auctionId);
   }
 
   @Roles(Role.ADMIN)
@@ -234,7 +236,7 @@ export class AuctionController {
       'Admin xác nhận người mua quá hạn thanh toán 24h (mất 30% cọc, trừ 10đ uy tín, chuyển người thứ 2)',
   })
   confirmPaymentDefault(
-    @Param('awardId', new ParseUUIDPipe()) awardId: string,
+    @ZodParam('awardId', UuidParamSchema) awardId: string,
     @CurrentUser('id') adminId: string,
     @ZodBody(AdminAwardActionSchema) dto: AdminAwardActionInput,
   ) {
@@ -252,7 +254,7 @@ export class AuctionController {
       'Admin xác nhận khách hàng thứ hai không mua nữa (hoàn cọc 30% nếu đã đóng và đóng lô hàng)',
   })
   confirmSecondChanceNotBuying(
-    @Param('awardId', new ParseUUIDPipe()) awardId: string,
+    @ZodParam('awardId', UuidParamSchema) awardId: string,
     @CurrentUser('id') adminId: string,
     @ZodBody(AdminAwardActionSchema) dto: AdminAwardActionInput,
   ) {
@@ -265,7 +267,7 @@ export class AuctionController {
   @Get(':id/eligibility')
   @ApiOperation({ summary: 'Kiểm tra điều kiện uy tín, ví và chế độ Người mua trước khi đặt giá' })
   checkBuyerEligibility(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser('id') buyerId: string,
   ) {
     return this.auctionService.checkBuyerEligibility(id, buyerId);
@@ -275,7 +277,7 @@ export class AuctionController {
   @Get(':id/intro-showcase')
   @ApiOperation({ summary: 'Lấy dữ liệu đồng bộ màn giới thiệu 3D khi vào phòng đấu giá' })
   @ApiOkResponse({ standardSchema: AuctionIntroShowcaseResponseSchema })
-  getAuctionIntroShowcase(@Param('id', new ParseUUIDPipe()) id: string) {
+  getAuctionIntroShowcase(@ZodParam('id', UuidParamSchema) id: string) {
     return this.auctionService.getAuctionIntroShowcase(id);
   }
 
@@ -283,7 +285,7 @@ export class AuctionController {
   @Get(':id')
   @ApiOperation({ summary: 'Chi tiết phòng đấu giá đa lô theo từng lô hàng và lịch sử trả giá' })
   getAuctionDetail(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() user?: AuthenticatedUserPayload,
   ) {
     return this.auctionService.getAuctionDetail(id, user?.id);
@@ -295,7 +297,7 @@ export class AuctionController {
     summary: 'Người bán ký gửi vật phẩm đấu giá (kèm kích thước đóng gói GHN & chứng thư)',
   })
   registerAuctionItem(
-    @Param('id', new ParseUUIDPipe()) auctionId: string,
+    @ZodParam('id', UuidParamSchema) auctionId: string,
     @CurrentUser('id') sellerId: string,
     @ZodBody(RegisterAuctionItemSchema) dto: RegisterAuctionItemInput,
   ) {
@@ -309,7 +311,7 @@ export class AuctionController {
     summary: 'Người mua đặt giá cho một lô hàng trong phòng đấu giá (chế độ Người bán chỉ xem)',
   })
   placeBid(
-    @Param('id', new ParseUUIDPipe()) auctionId: string,
+    @ZodParam('id', UuidParamSchema) auctionId: string,
     @CurrentUser('id') userId: string,
     @ZodBody(PlaceBidSchema) dto: PlaceBidInput,
   ) {
@@ -321,8 +323,8 @@ export class AuctionController {
   @HttpCode(200)
   @ApiOperation({ summary: 'Người mua đặt giá trực tiếp theo ID lô hàng trong phòng đấu giá' })
   placeLotBid(
-    @Param('id', new ParseUUIDPipe()) auctionId: string,
-    @Param('itemId', new ParseUUIDPipe()) itemId: string,
+    @ZodParam('id', UuidParamSchema) auctionId: string,
+    @ZodParam('itemId', UuidParamSchema) itemId: string,
     @CurrentUser('id') userId: string,
     @ZodBody(PlaceBidSchema) dto: PlaceBidInput,
   ) {
@@ -335,7 +337,7 @@ export class AuctionController {
     summary: 'Người bán hoặc Người mua gửi yêu cầu khiếu nại liên quan đến phiên đấu giá',
   })
   createComplaint(
-    @Param('id', new ParseUUIDPipe()) auctionId: string,
+    @ZodParam('id', UuidParamSchema) auctionId: string,
     @CurrentUser() user: AuthenticatedUserPayload,
     @ZodBody(CreateAuctionComplaintSchema) dto: CreateAuctionComplaintInput,
   ) {
@@ -353,7 +355,7 @@ export class AuctionController {
     summary: 'Mở cuộc trò chuyện hỗ trợ trực tiếp với Nhân viên hỗ trợ cho phòng đấu giá',
   })
   requestSupportChat(
-    @Param('id', new ParseUUIDPipe()) auctionId: string,
+    @ZodParam('id', UuidParamSchema) auctionId: string,
     @CurrentUser() user: AuthenticatedUserPayload,
     @ZodBody(AuctionSupportChatSchema) dto: AuctionSupportChatInput,
   ) {

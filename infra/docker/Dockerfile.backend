@@ -7,7 +7,6 @@ FROM base AS dependencies
 WORKDIR /app
 COPY package*.json ./
 COPY packages/config/package.json ./packages/config/
-COPY packages/types/package.json ./packages/types/
 COPY packages/contracts/package.json ./packages/contracts/
 COPY backend/package.json ./backend/
 COPY frontend/package.json ./frontend/
@@ -27,9 +26,8 @@ ENV DATABASE_URL=postgresql://postgres:postgres@localhost:5432/nexus_build
 COPY --from=dependencies /app/ ./
 COPY . .
 RUN npm run db:generate
-RUN npm run build --workspace=@nexus/types
 RUN npm run build --workspace=@nexus/contracts
-RUN npm run build --workspace=backend
+RUN npm run build --workspace=nexus-backend
 
 # What the server needs to run, and nothing else.
 #
@@ -41,7 +39,6 @@ FROM base AS production-dependencies
 WORKDIR /app
 COPY package*.json ./
 COPY packages/config/package.json ./packages/config/
-COPY packages/types/package.json ./packages/types/
 COPY packages/contracts/package.json ./packages/contracts/
 COPY backend/package.json ./backend/
 COPY frontend/package.json ./frontend/

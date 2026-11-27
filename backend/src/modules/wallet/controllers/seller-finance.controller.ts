@@ -1,10 +1,14 @@
-import { Controller, Get, HttpCode, HttpStatus, Post, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
+import {
+  StandardPaginationQuery,
+  StandardPaginationQuerySchema,
+} from '../../../core/validation/query-schemas';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import { CurrentUser, Roles } from '../../../core/security/roles.decorator';
-import { Role } from '@nexus/types';
+import { Role } from '@nexus/contracts';
 import { SellerFinanceService } from '../services/seller-finance.service';
 import { CreateWithdrawalInput, CreateWithdrawalSchema } from '../dtos/create-withdrawal.dto';
 import { QueryFinanceInput, QueryFinanceSchema } from '../dtos/query-finance.dto';
@@ -68,9 +72,8 @@ export class SellerFinanceController {
   @ApiResponse({ status: 200, description: 'Lấy danh sách yêu cầu rút tiền thành công' })
   async getWithdrawals(
     @CurrentUser('id') sellerId: string,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
+    @ZodQuery(StandardPaginationQuerySchema) query: StandardPaginationQuery,
   ) {
-    return this.sellerFinanceService.getWithdrawals(sellerId, page, limit);
+    return this.sellerFinanceService.getWithdrawals(sellerId, query.page, query.limit);
   }
 }

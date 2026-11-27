@@ -1,14 +1,4 @@
-import {
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseUUIDPipe,
-  Patch,
-  Post,
-  Put,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Delete, Get, Patch, Post, Put, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -20,8 +10,8 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
-import { Role } from '@nexus/types';
+import { ZodBody, ZodQuery, ZodParam } from '@nexus/contracts/nest';
+import { Role, UuidParamSchema } from '@nexus/contracts';
 import { CurrentUser, Public, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
@@ -144,7 +134,7 @@ export class BannerController {
   @ApiNotFoundResponse({ description: 'Auction not found' })
   createFromAuction(
     @CurrentUser('id') actorId: string,
-    @Param('auctionId', new ParseUUIDPipe()) auctionId: string,
+    @ZodParam('auctionId', UuidParamSchema) auctionId: string,
   ): Promise<BannerResponseDto> {
     return this.banners.createFromAuction(actorId, auctionId);
   }
@@ -164,7 +154,7 @@ export class BannerController {
   @ApiNotFoundResponse({ description: 'Banner or auction not found' })
   update(
     @CurrentUser('id') userId: string,
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @ZodBody(BannerSchema) dto: BannerInput,
   ): ReturnType<BannerService['save']> {
     return this.banners.save(userId, dto, id);
@@ -183,7 +173,7 @@ export class BannerController {
   @ApiOkResponse({ standardSchema: BannerDisabledSchema })
   @ApiNotFoundResponse({ description: 'Banner not found' })
   remove(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser('id') actorId: string,
   ): Promise<BannerDisabledDto> {
     return this.banners.remove(id, actorId);
@@ -202,7 +192,7 @@ export class BannerController {
   @ApiOkResponse({ standardSchema: BannerDisabledSchema })
   @ApiNotFoundResponse({ description: 'Banner not found' })
   disable(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser('id') actorId: string,
   ): Promise<BannerDisabledDto> {
     return this.banners.remove(id, actorId, 'DISABLE');

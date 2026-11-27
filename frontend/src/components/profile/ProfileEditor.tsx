@@ -2,7 +2,7 @@ import { useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Lock as LockOutlined } from 'lucide-react';
 import { Save as SaveOutlined, User as UserOutlined } from 'lucide-react';
-import { Role } from '@nexus/types';
+import { Role } from '@nexus/contracts';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { updateMyProfile, type ProfileChanges } from '@/features/account/services/profile';

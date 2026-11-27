@@ -1,4 +1,4 @@
-import type { OrderStatus, Role } from '@nexus/types';
+import type { OrderStatus, Role } from '@nexus/contracts';
 import type { SellerUpgradeRequest } from '@/features/account/types/user.types';
 
 export interface StaffUser {

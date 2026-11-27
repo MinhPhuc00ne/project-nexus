@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { I18nextProvider } from 'react-i18next';
-import { Role } from '@nexus/types';
+import { Role } from '@nexus/contracts';
 import i18n from '../../../i18n';
 import BuyerWithdrawalModal from '../BuyerWithdrawalModal';
 import type { UserProfile } from '@/features/account/types/user.types';

@@ -1,7 +1,7 @@
 /* eslint-disable sonarjs/no-duplicate-string */
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { Role } from '@nexus/types';
+import { Role } from '@nexus/contracts';
 import { AuthProvider, getStoredActiveMode, setStoredActiveMode, useAuth } from '../AuthContext';
 
 const mockGetMe = vi.fn();

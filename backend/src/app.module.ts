@@ -1,9 +1,16 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { LoggerModule } from 'nestjs-pino';
+import { randomUUID } from 'node:crypto';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { PrismaModule } from './core/prisma/prisma.module';
 import { validateBackendEnv } from './core/config/env.schema';
 import { RedisModule } from './core/redis/redis.module';
+import { RedisService } from './core/redis/redis.service';
+import { RedisThrottlerStorage } from './core/security/redis-throttler.storage';
 import { SecurityModule } from './core/security/security.module';
 import { HealthModule } from './core/health/health.module';
 import { EventsModule } from './core/events/events.module';
@@ -35,6 +42,51 @@ import { AuctionModule } from './modules/auction/auction.module';
       envFilePath: ['.env', '../.env', '../../.env'],
       validate: validateBackendEnv,
     }),
+    LoggerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        const nodeEnv = config.get<string>('NODE_ENV') ?? 'development';
+        const appEnv = config.get<string>('APP_ENV') ?? 'development';
+        const level = nodeEnv === 'test' ? 'silent' : appEnv === 'development' ? 'debug' : 'info';
+        return {
+          pinoHttp: {
+            level,
+            genReqId: (req: IncomingMessage, res: ServerResponse) => {
+              const headerId =
+                (req.headers['x-request-id'] as string | undefined) ||
+                (req.headers['x-trace-id'] as string | undefined);
+              const id = headerId?.trim() || randomUUID();
+              res.setHeader('X-Request-Id', id);
+              return id;
+            },
+            redact: [
+              'req.headers.authorization',
+              'req.headers.cookie',
+              'req.body.password',
+              'req.body.refreshToken',
+            ],
+            autoLogging: nodeEnv !== 'test',
+          },
+        };
+      },
+    }),
+    ThrottlerModule.forRootAsync({
+      imports: [RedisModule],
+      inject: [ConfigService, RedisService],
+      useFactory: (config: ConfigService, redis: RedisService) => ({
+        throttlers: [
+          {
+            name: 'default',
+            ttl: 60_000,
+            limit: 120,
+          },
+        ],
+        skipIf: () =>
+          (config.get<string>('NODE_ENV') ?? process.env.NODE_ENV) === 'test' &&
+          process.env.THROTTLE_ENABLE_IN_TEST !== 'true',
+        storage: new RedisThrottlerStorage(redis),
+      }),
+    }),
     EventEmitterModule.forRoot({
       wildcard: true,
       delimiter: '.',
@@ -64,6 +116,12 @@ import { AuctionModule } from './modules/auction/auction.module';
     FulfillmentModule,
     ChatModule,
     AuctionModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule {}

@@ -4,14 +4,13 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Param,
   Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ZodBody } from '@nexus/contracts/nest';
-import { Role } from '@nexus/types';
+import { ZodBody, ZodParam } from '@nexus/contracts/nest';
+import { Role, UuidParamSchema } from '@nexus/contracts';
 import { Public, RequirePrivilege, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
@@ -73,7 +72,7 @@ export class CategoryController {
   @ApiResponse({ status: 400, description: 'Không thể chuyển vì gây vòng lặp hoặc vượt quá 3 cấp' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy danh mục' })
   async updateCategory(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @ZodBody(UpdateCategorySchema) dto: UpdateCategoryInput,
   ) {
     return this.categoryService.updateCategory(id, dto);
@@ -96,7 +95,7 @@ export class CategoryController {
     description: 'Danh mục đang có danh mục con hoặc còn sản phẩm liên kết',
   })
   @ApiResponse({ status: 404, description: 'Không tìm thấy danh mục' })
-  async deleteCategory(@Param('id') id: string) {
+  async deleteCategory(@ZodParam('id', UuidParamSchema) id: string) {
     return this.categoryService.deleteCategory(id);
   }
 }

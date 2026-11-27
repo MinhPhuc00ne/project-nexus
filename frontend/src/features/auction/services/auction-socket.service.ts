@@ -1,5 +1,5 @@
 import { io, type Socket } from 'socket.io-client';
-import { WS_AUCTION_EVENTS } from '@nexus/types';
+import { WS_AUCTION_EVENTS } from '@nexus/contracts';
 import { API_BASE_URL } from '@/services/api';
 import { getStoredToken } from '@/features/auth/services/auth';
 import type { AuctionSocketClient } from '@/features/auction/types/auction-socket.types';

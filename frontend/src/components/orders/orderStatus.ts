@@ -1,4 +1,4 @@
-import { OrderStatus } from '@nexus/types';
+import { OrderStatus } from '@nexus/contracts';
 
 /**
  * How an order's state is named, and where the two vocabularies meet.

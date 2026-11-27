@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AuctionStatus } from '@nexus/types';
+import { AuctionStatus } from '@nexus/contracts';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
   adminStartAuctionApi,

@@ -21,7 +21,7 @@ import {
   type RecommendedProduct,
   type TrendingProductItem,
 } from '@/features/catalog/services/products.service';
-import { AuctionStatus } from '@nexus/types';
+import { AuctionStatus } from '@nexus/contracts';
 import { getAuctionsApi, type AuctionEntity } from '@/features/auction/services/auction.service';
 import type { HomeHeroSlide, HomeProduct } from '../../components/home/home.types';
 

@@ -1,7 +1,7 @@
-import { Controller, Param, ParseUUIDPipe, Patch, UseGuards } from '@nestjs/common';
+import { Controller, Patch, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ZodBody } from '@nexus/contracts/nest';
-import { Role } from '@nexus/types';
+import { ZodBody, ZodParam } from '@nexus/contracts/nest';
+import { Role, UuidParamSchema } from '@nexus/contracts';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { CurrentUser, Roles } from '../../../core/security/roles.decorator';
 import { RolesGuard } from '../../../core/security/roles.guard';
@@ -29,7 +29,7 @@ export class AuctionImageController {
   })
   update(
     @CurrentUser('id') actorId: string,
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @ZodBody(UpdateAuctionImageSchema) dto: UpdateAuctionImageInput,
   ): ReturnType<AuctionImageService['update']> {
     return this.images.update(actorId, id, dto.imageUrl);

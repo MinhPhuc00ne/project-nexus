@@ -1,17 +1,8 @@
-import {
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Patch,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Delete, Get, HttpCode, HttpStatus, Patch, UseGuards } from '@nestjs/common';
 
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
-import { Role } from '@nexus/types';
+import { ZodBody, ZodQuery, ZodParam } from '@nexus/contracts/nest';
+import { Role, UuidParamSchema } from '@nexus/contracts';
 
 import { CurrentUser, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
@@ -55,7 +46,7 @@ export class AdminReviewsController {
   })
   adminDeleteProductReview(
     @CurrentUser('role') actorRole: string,
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @ZodBody(AdminDeleteReviewSchema) dto: AdminDeleteReviewInput,
   ): Promise<unknown> {
     return this.reviews.adminDeleteReview(id, 'product', dto, actorRole);
@@ -72,7 +63,7 @@ export class AdminReviewsController {
   })
   adminRemoveSellerReply(
     @CurrentUser('role') actorRole: string,
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @ZodBody(AdminDeleteReviewSchema) dto: AdminDeleteReviewInput,
   ): Promise<unknown> {
     return this.reviews.adminRemoveSellerReply(id, dto, actorRole);
@@ -88,7 +79,7 @@ export class AdminReviewsController {
   })
   adminDeleteShopReview(
     @CurrentUser('role') actorRole: string,
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @ZodBody(AdminDeleteReviewSchema) dto: AdminDeleteReviewInput,
   ): Promise<unknown> {
     return this.reviews.adminDeleteReview(id, 'shop', dto, actorRole);
@@ -106,7 +97,7 @@ export class AdminReviewsController {
   adminHideProductReview(
     @CurrentUser('id') adminId: string,
     @CurrentUser('role') actorRole: string,
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @ZodBody(AdminModerateReviewVisibilitySchema) dto: AdminModerateReviewVisibilityInput,
   ): Promise<unknown> {
     return this.reviews.adminModerateReviewVisibility(adminId, 'product', id, dto, actorRole);
@@ -121,7 +112,7 @@ export class AdminReviewsController {
   adminHideShopReview(
     @CurrentUser('id') adminId: string,
     @CurrentUser('role') actorRole: string,
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @ZodBody(AdminModerateReviewVisibilitySchema) dto: AdminModerateReviewVisibilityInput,
   ): Promise<unknown> {
     return this.reviews.adminModerateReviewVisibility(adminId, 'shop', id, dto, actorRole);
@@ -138,7 +129,7 @@ export class AdminReviewsController {
   adminHideReviewReply(
     @CurrentUser('id') adminId: string,
     @CurrentUser('role') actorRole: string,
-    @Param('replyId') replyId: string,
+    @ZodParam('replyId', UuidParamSchema) replyId: string,
     @ZodBody(AdminModerateReviewVisibilitySchema) dto: AdminModerateReviewVisibilityInput,
   ): Promise<unknown> {
     return this.reviews.adminModerateReviewVisibility(adminId, 'reply', replyId, dto, actorRole);

@@ -1,21 +1,10 @@
-import { AuctionStatus, DisputeStatus, EscrowStatus, OrderStatus, Role } from '../enums/index.js';
-
-export interface ApiResponse<T> {
-  statusCode: number;
-  message: string;
-  data: T;
-  timestamp: string;
-  traceId?: string;
-  errors?: unknown;
-}
-
-export interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
-}
+import type {
+  AuctionStatus,
+  DisputeStatus,
+  EscrowStatus,
+  OrderStatus,
+  Role,
+} from '../enums/index.js';
 
 export interface UserSummaryDto {
   id: string;
