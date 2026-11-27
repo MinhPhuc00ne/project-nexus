@@ -1,8 +1,13 @@
 import {
+  NotificationPublisher,
+  publishNotification,
+} from '../../../core/notifications/notification-publisher.service';
+import {
   BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { NotificationChannel, NotificationType, Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
@@ -23,6 +28,7 @@ export class ReviewsRepliesHelper {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mediaService?: MediaService,
+    @Optional() private readonly notifications?: NotificationPublisher,
   ) {}
 
   async replyToProductReview(
@@ -65,16 +71,18 @@ export class ReviewsRepliesHelper {
         },
       });
 
-      if (tx.notification?.create) {
-        await tx.notification.create({
-          data: {
+      if (typeof tx?.notification?.create === 'function') {
+        await publishNotification(
+          tx,
+          {
             userId: review.reviewerId,
             title: 'Người bán đã phản hồi đánh giá của bạn 💬',
             content: `Người bán vừa trả lời đánh giá của bạn cho sản phẩm "${review.product.title}": "${updated.sellerReply}".`,
             type: NotificationType.SYSTEM,
             channel: NotificationChannel.IN_APP,
           },
-        });
+          this.notifications,
+        );
       }
 
       return updated;
@@ -239,17 +247,19 @@ export class ReviewsRepliesHelper {
       }
 
       const recipientId = userId === sellerId ? buyerId : sellerId;
-      if (tx.notification?.create) {
+      if (typeof tx?.notification?.create === 'function') {
         const senderLabel = authorRole === Role.SELLER ? 'Người bán' : 'Khách hàng';
-        await tx.notification.create({
-          data: {
+        await publishNotification(
+          tx,
+          {
             userId: recipientId,
             title: 'Phản hồi mới trên đánh giá 💬',
             content: `${senderLabel} vừa phản hồi trong đánh giá ${titleLabel}: "${content}".`,
             type: NotificationType.SYSTEM,
             channel: NotificationChannel.IN_APP,
           },
-        });
+          this.notifications,
+        );
       }
 
       return tx.reviewReply.findUnique({

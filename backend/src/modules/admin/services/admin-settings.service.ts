@@ -1,3 +1,8 @@
+import {
+  NotificationPublisher,
+  publishNotifications,
+} from '../../../core/notifications/notification-publisher.service';
+import { AuditLogService } from '../../../core/audit/audit-log.service';
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Role } from '@nexus/contracts';
 import { PrismaService } from '../../../core/prisma/prisma.service';
@@ -25,6 +30,8 @@ export class AdminSettingsService {
   constructor(
     private readonly platformSettings: PlatformSettingsService,
     @Optional() private readonly prisma?: PrismaService,
+    @Optional() private readonly notifications?: NotificationPublisher,
+    @Optional() private readonly auditLog?: AuditLogService,
   ) {}
 
   /**
@@ -56,6 +63,15 @@ export class AdminSettingsService {
     const updated = await this.platformSettings.update(dto, adminId);
 
     this.logger.log(`Admin (${adminId}) đã cập nhật cấu hình hệ thống.`);
+    await this.auditLog?.record({
+      eventName: 'admin.settings.updated',
+      operatorId: adminId,
+      payload: {
+        changes: dto,
+        previousPlatformFeePercentage: current.platformFeePercentage,
+        nextPlatformFeePercentage: updated.platformFeePercentage,
+      },
+    });
 
     if (
       this.prisma &&
@@ -74,8 +90,9 @@ export class AdminSettingsService {
           const oldFee = current.platformFeePercentage;
           const newFee = updated.platformFeePercentage;
           const nowLabel = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
-          await this.prisma.notification.createMany({
-            data: sellers.map((s) => ({
+          await publishNotifications(
+            this.prisma,
+            sellers.map((s) => ({
               userId: s.id,
               title: 'Thông báo điều chỉnh biểu phí sàn giao dịch 📢',
               content: `Sàn NEXUS thông báo: Tỷ lệ phí sàn đã được điều chỉnh từ ${oldFee}% sang ${newFee}%, áp dụng cho tất cả các đơn hàng mới phát sinh từ ${nowLabel}. Vui lòng kiểm tra lại mục Tài chính người bán để tối ưu giá bán sản phẩm.`,
@@ -83,7 +100,8 @@ export class AdminSettingsService {
               type: NotificationType.SYSTEM,
               channel: NotificationChannel.IN_APP,
             })),
-          });
+            this.notifications,
+          );
           this.logger.log(`Đã gửi thông báo thay đổi phí sàn tới ${sellers.length} người bán.`);
         }
       } catch (err) {

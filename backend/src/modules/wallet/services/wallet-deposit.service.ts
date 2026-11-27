@@ -1,4 +1,14 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  NotificationPublisher,
+  publishNotification,
+} from '../../../core/notifications/notification-publisher.service';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   NotificationChannel,
@@ -25,6 +35,7 @@ export class WalletDepositService {
     private readonly orderCodes: PayosOrderCodeService,
     _configService: ConfigService,
     private readonly auctionCheckout?: AuctionCheckoutService,
+    @Optional() private readonly notifications?: NotificationPublisher,
   ) {}
 
   /**
@@ -274,16 +285,18 @@ export class WalletDepositService {
 
         await this.auctionCheckout?.processPendingDepositsForUser(tx, walletOwnerId);
 
-        if (tx.notification?.create) {
-          await tx.notification.create({
-            data: {
+        if (typeof tx?.notification?.create === 'function') {
+          await publishNotification(
+            tx,
+            {
               userId: walletOwnerId,
               title: 'Nạp tiền ví NEXUS Pay thành công ✅',
               content: `Bạn đã nạp thành công ${Number(walletTx.amount).toLocaleString('vi-VN')} VND vào ví NEXUS Pay qua PayOS (VietQR).`,
               type: NotificationType.PAYMENT,
               channel: NotificationChannel.IN_APP,
             },
-          });
+            this.notifications,
+          );
         }
       });
 

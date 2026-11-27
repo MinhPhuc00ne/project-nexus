@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  NotificationPublisher,
+  publishNotification,
+} from '../../../core/notifications/notification-publisher.service';
+import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { NotificationChannel, NotificationType, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { ReputationService } from '../../users/services/reputation.service';
@@ -14,6 +18,7 @@ export class ReviewsModerationHelper {
   constructor(
     private readonly prisma: PrismaService,
     private readonly reputationService: ReputationService,
+    @Optional() private readonly notifications?: NotificationPublisher,
   ) {}
 
   async adminListReviews(query: QueryAdminReviewsInput): Promise<unknown> {
@@ -161,16 +166,18 @@ export class ReviewsModerationHelper {
 
         await tx.productReview.delete({ where: { id } });
 
-        if (tx.notification?.create) {
-          await tx.notification.create({
-            data: {
+        if (typeof tx?.notification?.create === 'function') {
+          await publishNotification(
+            tx,
+            {
               userId: review.reviewerId,
               title: 'Đánh giá của bạn đã bị gỡ bỏ do vi phạm tiêu chuẩn ⚠️',
               content: `Bình luận của bạn tại sản phẩm "${review.product.title}" đã bị ${actorLabel} xóa với lý do: "${dto.reason.trim()}". Bạn bị trừ ${dto.pointsToDeduct} điểm uy tín.`,
               type: NotificationType.SYSTEM,
               channel: NotificationChannel.IN_APP,
             },
-          });
+            this.notifications,
+          );
         }
 
         return {
@@ -199,16 +206,18 @@ export class ReviewsModerationHelper {
 
       await tx.review.delete({ where: { id } });
 
-      if (tx.notification?.create) {
-        await tx.notification.create({
-          data: {
+      if (typeof tx?.notification?.create === 'function') {
+        await publishNotification(
+          tx,
+          {
             userId: review.reviewerId,
             title: 'Đánh giá gian hàng của bạn đã bị gỡ bỏ do vi phạm tiêu chuẩn ⚠️',
             content: `Đánh giá gian hàng của bạn đã bị ${actorLabel} xóa với lý do: "${dto.reason.trim()}". Bạn bị trừ ${dto.pointsToDeduct} điểm uy tín.`,
             type: NotificationType.SYSTEM,
             channel: NotificationChannel.IN_APP,
           },
-        });
+          this.notifications,
+        );
       }
 
       return { success: true, message: 'Đã xóa đánh giá gian hàng và trừ điểm uy tín người dùng.' };
@@ -262,16 +271,18 @@ export class ReviewsModerationHelper {
         },
       });
 
-      if (tx.notification?.create) {
-        await tx.notification.create({
-          data: {
+      if (typeof tx?.notification?.create === 'function') {
+        await publishNotification(
+          tx,
+          {
             userId: review.product.sellerId,
             title: 'Phản hồi đánh giá của bạn đã bị gỡ bỏ do vi phạm tiêu chuẩn ⚠️',
             content: `Phản hồi của bạn tại sản phẩm "${review.product.title}" đã bị ${actorLabel} gỡ với lý do: "${dto.reason.trim()}". Bạn bị trừ ${dto.pointsToDeduct} điểm uy tín.`,
             type: NotificationType.SYSTEM,
             channel: NotificationChannel.IN_APP,
           },
-        });
+          this.notifications,
+        );
       }
 
       return {
@@ -421,17 +432,19 @@ export class ReviewsModerationHelper {
         );
       }
 
-      if (dto.isHidden && tx.notification?.create) {
+      if (dto.isHidden && typeof tx?.notification?.create === 'function') {
         const penaltyText = pointsToDeduct > 0 ? ` Bạn bị trừ ${pointsToDeduct} điểm uy tín.` : '';
-        await tx.notification.create({
-          data: {
+        await publishNotification(
+          tx,
+          {
             userId: authorId,
             title: 'Nội dung đánh giá của bạn đã bị ẩn do vi phạm tiêu chuẩn ⚠️',
             content: `Nội dung ${targetLabel} của bạn đã bị ${actorLabel} ẩn với lý do: "${reason}".${penaltyText}`,
             type: NotificationType.SYSTEM,
             channel: NotificationChannel.IN_APP,
           },
-        });
+          this.notifications,
+        );
       }
 
       return {

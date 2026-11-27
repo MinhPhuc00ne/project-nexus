@@ -1,8 +1,13 @@
 import {
+  NotificationPublisher,
+  publishNotification,
+} from '../../../core/notifications/notification-publisher.service';
+import {
   BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import {
   DisputeStatus,
@@ -44,6 +49,7 @@ export class OrderEscrowService {
     private readonly treasury: TreasuryService,
     private readonly refunds?: RefundService,
     private readonly reputation?: ReputationService,
+    @Optional() private readonly notifications?: NotificationPublisher,
   ) {}
 
   async hold(
@@ -208,15 +214,17 @@ export class OrderEscrowService {
           }
         }
       }
-      await tx.notification.create({
-        data: {
+      await publishNotification(
+        tx,
+        {
           userId: order.sellerId,
           type: 'ORDER',
           channel: 'IN_APP',
           title: 'Đơn hàng COD đã hoàn tất',
           content: `Đơn hàng #${order.id.slice(0, 8)} đã được người mua xác nhận nhận hàng thành công.`,
         },
-      });
+        this.notifications,
+      );
       return {
         success: true,
         orderStatus: OrderStatus.CONFIRMED,
@@ -355,15 +363,17 @@ export class OrderEscrowService {
         }
       }
     }
-    await tx.notification.create({
-      data: {
+    await publishNotification(
+      tx,
+      {
         userId: order.sellerId,
         type: 'PAYMENT',
         channel: 'IN_APP',
         title: 'Đã giải ngân đơn hàng',
         content: `Đơn #${order.id.slice(0, 8)} đã được giải ngân ${Number(escrow.sellerPayout).toLocaleString('vi-VN')} VND.`,
       },
-    });
+      this.notifications,
+    );
     return {
       success: true,
       orderStatus: OrderStatus.CONFIRMED,
@@ -446,26 +456,30 @@ export class OrderEscrowService {
       });
 
       // BẮN NOTI CHO NGƯỜI MUA (BUYER)
-      await tx.notification.create({
-        data: {
+      await publishNotification(
+        tx,
+        {
           userId: order.buyerId,
           title: 'Kết quả phân xử khiếu nại ⚖️',
           content: `Khiếu nại cho đơn hàng #${orderId.slice(0, 8)} đã được Admin xử lý. Quyết định: ${verdict === 'BUYER' ? 'Hoàn tiền cho bạn' : 'Phần thắng thuộc về Người bán'}. Chi tiết: ${reason.trim()}`,
           type: NotificationType.DISPUTE,
           channel: 'IN_APP',
         },
-      });
+        this.notifications,
+      );
 
       // BẮN NOTI CHO NGƯỜI BÁN (SELLER)
-      await tx.notification.create({
-        data: {
+      await publishNotification(
+        tx,
+        {
           userId: order.sellerId,
           title: 'Kết quả phân xử khiếu nại ⚖️',
           content: `Khiếu nại của đơn hàng #${orderId.slice(0, 8)} đã được Admin xử lý. Quyết định: ${verdict === 'SELLER' ? 'Giải ngân tiền hàng cho bạn' : 'Phần thắng thuộc về Người mua (Hoàn tiền)'}. Chi tiết: ${reason.trim()}`,
           type: NotificationType.DISPUTE,
           channel: 'IN_APP',
         },
-      });
+        this.notifications,
+      );
 
       if (verdict === 'SELLER') return this.release(tx, order, true);
       if (!this.refunds) {

@@ -21,7 +21,10 @@ const { NotificationsGateway } = load(
 );
 const { EventEmitter2 } = load('@nestjs/event-emitter');
 const { DomainEventsService } = load('../src/core/events/domain-events.service.ts');
-const { PrismaService, wrapNotificationDelegate } = load('../src/core/prisma/prisma.service.ts');
+const { PrismaService } = load('../src/core/prisma/prisma.service.ts');
+const { NotificationPublisher, runWithNotificationBatch } = load(
+  '../src/core/notifications/notification-publisher.service.ts',
+);
 /**
  * Stands in for TokenAuthService: the handshake token is read as the account id,
  * so the gateway is exercised without signing real tokens.
@@ -260,34 +263,34 @@ test('NotificationsGateway rejects missing JWT handshake cleanly', async () => {
   assert.equal(disconnect.mock.callCount(), 1);
 });
 
-test('wrapNotificationDelegate intercepts create, createMany and createManyAndReturn to emit realtime records', async () => {
+test('NotificationPublisher emits realtime records immediately and buffers inside runWithNotificationBatch', async () => {
   const emitted = [];
-  const delegateMock = {
-    create: async ({ data }) => ({ id: 'created-id-1', ...data }),
-    createMany: async ({ data }) => ({ count: Array.isArray(data) ? data.length : 1 }),
-    createManyAndReturn: async ({ data }) => (Array.isArray(data) ? data : [data]),
+  const emitter = new EventEmitter2({ wildcard: true, delimiter: '.' });
+  emitter.on('notifications.created', (records) => emitted.push(...records));
+
+  const prismaMock = {
+    notification: {
+      create: async ({ data }) => ({ id: 'created-id-1', ...data }),
+      createMany: async ({ data }) => ({ count: Array.isArray(data) ? data.length : 1 }),
+    },
   };
 
-  const wrapped = wrapNotificationDelegate(delegateMock, ({ events }) => {
-    emitted.push(...events);
-  });
+  const publisher = new NotificationPublisher(prismaMock, emitter);
 
-  await wrapped.create({
-    data: {
-      userId: 'user-1',
-      title: 'Đơn hàng mới',
-      content: 'Nội dung',
-      type: 'ORDER',
-      channel: 'IN_APP',
-    },
+  await publisher.create({
+    userId: 'user-1',
+    title: 'Đơn hàng mới',
+    content: 'Nội dung',
+    type: 'ORDER',
+    channel: 'IN_APP',
   });
 
   assert.equal(emitted.length, 1);
   assert.equal(emitted[0].userId, 'user-1');
   assert.equal(emitted[0].title, 'Đơn hàng mới');
 
-  await wrapped.createMany({
-    data: [
+  await runWithNotificationBatch(emitter, async () => {
+    await publisher.createMany([
       {
         userId: 'admin-1',
         title: 'Yêu cầu nâng cấp Seller mới',
@@ -296,7 +299,8 @@ test('wrapNotificationDelegate intercepts create, createMany and createManyAndRe
         channel: 'IN_APP',
         targetUrl: '/admin/sellers',
       },
-    ],
+    ]);
+    assert.equal(emitted.length, 1, 'Transactional notifications must wait until commit');
   });
 
   assert.equal(emitted.length, 2);
@@ -305,16 +309,13 @@ test('wrapNotificationDelegate intercepts create, createMany and createManyAndRe
   assert.ok(emitted[1].id, 'Should assign random id to createMany realtime payload');
 });
 
-test('PrismaService initializes wrapped notification delegate on instance', async () => {
+test('PrismaService exposes pure Prisma notification delegate without Proxy wrapper', async () => {
   const configServiceMock = { get: () => 'postgresql://localhost:5432/nexus_test' };
-  const prisma = new PrismaService(configServiceMock);
+  const emitter = new EventEmitter2({ wildcard: true, delimiter: '.' });
+  const prisma = new PrismaService(configServiceMock, emitter);
 
-  assert.ok(prisma.notification, 'PrismaService must expose wrapped notification delegate');
-  assert.equal(
-    prisma.notification,
-    prisma.wrappedNotificationDelegate,
-    'prisma.notification must return the wrapped delegate instance',
-  );
+  assert.ok(prisma.notification, 'PrismaService must expose notification delegate');
+  assert.equal(prisma.wrappedNotificationDelegate, undefined);
 
   await prisma.onModuleDestroy();
 });

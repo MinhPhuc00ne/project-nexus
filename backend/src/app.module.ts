@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { type MiddlewareConsumer, Module, type NestModule } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
@@ -6,6 +6,9 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import { randomUUID } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import type { NextFunction, Request, Response } from 'express';
+import { AuditModule } from './core/audit/audit.module';
+import { runWithRequestTrace } from './core/audit/request-trace.context';
 import { PrismaModule } from './core/prisma/prisma.module';
 import { validateBackendEnv } from './core/config/env.schema';
 import { RedisModule } from './core/redis/redis.module';
@@ -92,6 +95,7 @@ import { AuctionModule } from './modules/auction/auction.module';
       delimiter: '.',
     }),
     PrismaModule,
+    AuditModule,
     RedisModule,
     SecurityModule,
     HealthModule,
@@ -124,4 +128,16 @@ import { AuctionModule } from './modules/auction/auction.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer
+      .apply((req: Request & { id?: string }, _res: Response, next: NextFunction) => {
+        const headerId =
+          (req.headers['x-request-id'] as string | undefined) ||
+          (req.headers['x-trace-id'] as string | undefined);
+        const traceId = req.id || headerId?.trim() || randomUUID();
+        runWithRequestTrace(traceId, () => next());
+      })
+      .forRoutes('*');
+  }
+}

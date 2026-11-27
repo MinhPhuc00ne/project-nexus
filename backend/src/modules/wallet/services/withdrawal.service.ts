@@ -1,9 +1,14 @@
 import {
+  NotificationPublisher,
+  publishNotification,
+} from '../../../core/notifications/notification-publisher.service';
+import {
   BadRequestException,
   ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import {
   NotificationType,
@@ -40,7 +45,10 @@ export class WithdrawalService {
   private static readonly MAX_PENDING_WITHDRAWALS = 3;
   private static readonly CURRENCY_VND = 'VND';
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly notifications?: NotificationPublisher,
+  ) {}
 
   /**
    * Creates a withdrawal request for a buyer or seller, locking funds until admin review.
@@ -413,15 +421,17 @@ export class WithdrawalService {
 
       const formattedAmount = withdrawAmount.toLocaleString('vi-VN');
 
-      await tx.notification.create({
-        data: {
+      await publishNotification(
+        tx,
+        {
           userId,
           title: 'Yêu cầu rút tiền đã được tiếp nhận ⏳',
           content: `Yêu cầu rút ${formattedAmount} VND về ${bankDetails.bankName} (${bankDetails.accountNumber}) đã được tiếp nhận. Hệ thống sẽ thẩm định và giải ngân trong vòng 3-7 ngày làm việc. Số dư ví khả dụng đã được tạm giữ an toàn.`,
           type: NotificationType.PAYMENT,
           targetUrl: userRole === Role.SELLER ? '/seller/finance' : '/buyer/wallet',
         },
-      });
+        this.notifications,
+      );
 
       const isSeller = userRole === Role.SELLER;
       await notifyAllAdmins(tx, {

@@ -1,4 +1,8 @@
 import {
+  NotificationPublisher,
+  publishNotification,
+} from '../../../core/notifications/notification-publisher.service';
+import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
@@ -60,6 +64,7 @@ export class AuctionCheckoutService {
     private readonly escrow: OrderEscrowService,
     private readonly secondChanceHelper: AuctionSecondChanceHelper,
     @Optional() private readonly domainEvents?: DomainEventsService,
+    @Optional() private readonly notifications?: NotificationPublisher,
   ) {}
 
   /**
@@ -134,8 +139,9 @@ export class AuctionCheckoutService {
       },
     });
 
-    await tx.notification.create({
-      data: {
+    await publishNotification(
+      tx,
+      {
         userId: input.buyerId,
         auctionId: input.auctionId,
         targetUrl: `/auction/${input.auctionId}`,
@@ -156,7 +162,8 @@ export class AuctionCheckoutService {
           canChatWithShop: true,
         },
       },
-    });
+      this.notifications,
+    );
 
     return award;
   }
@@ -396,8 +403,9 @@ export class AuctionCheckoutService {
       const itemTitle = current.auctionItem?.title ?? current.auction.title;
       const sellerId = current.auctionItem?.sellerId ?? current.auction.sellerId;
       if (sellerId) {
-        await tx.notification.create({
-          data: {
+        await publishNotification(
+          tx,
+          {
             userId: sellerId,
             auctionId: current.auctionId,
             targetUrl: `/seller/orders/${updatedOrder.id}`,
@@ -412,7 +420,8 @@ export class AuctionCheckoutService {
               auctionItemId: current.auctionItemId,
             },
           },
-        });
+          this.notifications,
+        );
       }
 
       return { order: updatedOrder, auctionId: current.auctionId as string | null };

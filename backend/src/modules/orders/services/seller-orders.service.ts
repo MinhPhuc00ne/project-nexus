@@ -1,8 +1,13 @@
 import {
+  NotificationPublisher,
+  publishNotification,
+} from '../../../core/notifications/notification-publisher.service';
+import {
   BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import {
   CarrierName,
@@ -23,6 +28,7 @@ export class SellerOrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly dispatchService: GhnDispatchService,
+    @Optional() private readonly notifications?: NotificationPublisher,
   ) {}
 
   /**
@@ -333,15 +339,17 @@ export class SellerOrdersService {
       throw new BadRequestException('Đơn đã thay đổi hoặc đang có yêu cầu hủy/trả hàng.');
     const updated = { id: orderId, status: OrderStatus.PREPARING };
 
-    await this.prisma.notification.create({
-      data: {
+    await publishNotification(
+      this.prisma,
+      {
         userId: order.buyerId,
         title: 'Đơn hàng của bạn đã được người bán xác nhận',
         content: `Đơn hàng #${order.id.slice(0, 8)} đã được người bán xác nhận và đang đóng gói chuẩn bị giao.`,
         type: NotificationType.ORDER,
         channel: NotificationChannel.IN_APP,
       },
-    });
+      this.notifications,
+    );
 
     return {
       success: true,

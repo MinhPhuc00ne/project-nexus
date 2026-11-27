@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  NotificationPublisher,
+  publishNotification,
+} from '../../../core/notifications/notification-publisher.service';
+import { AuditLogService } from '../../../core/audit/audit-log.service';
+import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import {
   NotificationType,
   Prisma,
@@ -24,6 +29,8 @@ export class AdminService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly staffProvisioning: StaffProvisioningService,
+    @Optional() private readonly notifications?: NotificationPublisher,
+    @Optional() private readonly auditLog?: AuditLogService,
   ) {}
 
   /**
@@ -266,14 +273,16 @@ export class AdminService {
         });
       }
 
-      await tx.notification.create({
-        data: {
+      await publishNotification(
+        tx,
+        {
           userId: request.userId,
           title: 'Yêu cầu nâng cấp Người bán (Seller) đã được phê duyệt! 🎉',
           content: `Chúc mừng bạn! Yêu cầu đăng ký gian hàng "${request.storeName}" đã được Quản trị viên phê duyệt. Bạn hiện đã trở thành Người bán chính thức trên Project Nexus và có toàn quyền chuyển đổi giữa giao diện Người bán và Người mua.`,
           type: NotificationType.SYSTEM,
         },
-      });
+        this.notifications,
+      );
 
       return { updatedRequest, updatedUser };
     });
@@ -328,14 +337,16 @@ export class AdminService {
         },
       });
 
-      await tx.notification.create({
-        data: {
+      await publishNotification(
+        tx,
+        {
           userId: request.userId,
           title: 'Yêu cầu nâng cấp Người bán (Seller) bị từ chối',
           content: `Yêu cầu đăng ký gian hàng "${request.storeName}" của bạn không được phê duyệt. Lý do: ${dto.rejectionReason.trim()}. Bạn có thể chuẩn bị lại thông tin và gửi lại yêu cầu mới.`,
           type: NotificationType.SYSTEM,
         },
-      });
+        this.notifications,
+      );
 
       return rejected;
     });
@@ -501,8 +512,9 @@ export class AdminService {
         },
       });
 
-      await tx.notification.create({
-        data: {
+      await publishNotification(
+        tx,
+        {
           userId: req.userId,
           title:
             dto.status === WithdrawalStatus.REJECTED
@@ -515,7 +527,23 @@ export class AdminService {
           type: NotificationType.PAYMENT,
           targetUrl: req.user.role === 'SELLER' ? '/seller/finance' : '/buyer/wallet',
         },
-      });
+        this.notifications,
+      );
+
+      await this.auditLog?.record(
+        {
+          eventName: 'admin.withdrawal.reviewed',
+          operatorId: adminId,
+          payload: {
+            withdrawalId: id,
+            targetUserId: req.userId,
+            status: dto.status,
+            amount: Number(amount),
+            rejectionReason: dto.rejectionReason ?? null,
+          },
+        },
+        tx,
+      );
     });
 
     return {

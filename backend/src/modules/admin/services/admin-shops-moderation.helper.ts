@@ -1,5 +1,10 @@
+import {
+  NotificationPublisher,
+  publishNotification,
+} from '../../../core/notifications/notification-publisher.service';
+import { AuditLogService } from '../../../core/audit/audit-log.service';
 import { ShopViolationPenaltyLevel } from '@prisma/client';
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import {
   NotificationType,
   ProductStatus,
@@ -23,6 +28,8 @@ export class AdminShopsModerationHelper {
   constructor(
     private readonly prisma: PrismaService,
     private readonly reputation: ReputationService,
+    @Optional() private readonly notifications?: NotificationPublisher,
+    @Optional() private readonly auditLog?: AuditLogService,
   ) {}
 
   /**
@@ -89,8 +96,9 @@ export class AdminShopsModerationHelper {
         },
       });
 
-      await tx.notification.create({
-        data: {
+      await publishNotification(
+        tx,
+        {
           userId: sellerId,
           title: isSuspending
             ? 'Gian hàng của bạn đã bị tạm đình chỉ hoạt động ⚠️'
@@ -100,7 +108,17 @@ export class AdminShopsModerationHelper {
             : `Gian hàng "${storeName}" đã được khôi phục. Sản phẩm bị ẩn do đình chỉ đã được hiển thị lại; sản phẩm bị ẩn riêng vẫn giữ nguyên.`,
           type: NotificationType.SYSTEM,
         },
-      });
+        this.notifications,
+      );
+
+      await this.auditLog?.record(
+        {
+          eventName: 'admin.shop.status_updated',
+          operatorId: adminId,
+          payload: { sellerId, storeName, isSuspending, reason: actionReason },
+        },
+        tx,
+      );
 
       return updatedUser;
     });
@@ -181,8 +199,9 @@ export class AdminShopsModerationHelper {
         },
       });
 
-      await tx.notification.create({
-        data: {
+      await publishNotification(
+        tx,
+        {
           userId: sellerId,
           title: 'Cảnh cáo vi phạm quy định gian hàng ⚠️',
           content: `Gian hàng "${storeName}" đã nhận cảnh cáo từ Quản trị viên. Lý do: ${dto.reason.trim()}.${
@@ -190,7 +209,17 @@ export class AdminShopsModerationHelper {
           } Vui lòng rà soát lại thông tin và hoạt động kinh doanh để tránh bị tạm đình chỉ.`,
           type: NotificationType.SYSTEM,
         },
-      });
+        this.notifications,
+      );
+
+      await this.auditLog?.record(
+        {
+          eventName: 'admin.shop.warned',
+          operatorId: adminId,
+          payload: { sellerId, storeName, reason: dto.reason.trim(), penaltyPoints },
+        },
+        tx,
+      );
 
       return createdLog;
     });
@@ -253,8 +282,9 @@ export class AdminShopsModerationHelper {
         },
       });
 
-      await tx.notification.create({
-        data: {
+      await publishNotification(
+        tx,
+        {
           userId: sellerId,
           title: 'Xác nhận vi phạm quy chế sàn thương mại điện tử ⚠️',
           content: `Gian hàng "${storeName}" vừa bị lập biên bản vi phạm: "${dto.title}". Mức xử lý: ${
@@ -262,7 +292,8 @@ export class AdminShopsModerationHelper {
           }.${dto.resolutionNotes ? ` Hướng giải quyết: ${dto.resolutionNotes}` : ''}`,
           type: NotificationType.SYSTEM,
         },
-      });
+        this.notifications,
+      );
 
       return v;
     });
@@ -386,14 +417,25 @@ export class AdminShopsModerationHelper {
         },
       });
 
-      await tx.notification.create({
-        data: {
+      await publishNotification(
+        tx,
+        {
           userId: sellerId,
           title: 'Tài khoản gian hàng đã được khôi phục!',
           content: `Giải trình của bạn đã được Ban Quản Trị chấp thuận. Gian hàng "${storeName}" đã được mở khóa và khôi phục điểm uy tín lên ${targetScore} (${newTrustLevel}). Danh sách sản phẩm của bạn đã hoạt động trở lại.`,
           type: NotificationType.SYSTEM,
         },
-      });
+        this.notifications,
+      );
+
+      await this.auditLog?.record(
+        {
+          eventName: 'admin.shop.appeal_resolved',
+          operatorId: adminId,
+          payload: { sellerId, storeName, restoredScore: targetScore, newTrustLevel },
+        },
+        tx,
+      );
 
       return { updatedUser, actionLog };
     });

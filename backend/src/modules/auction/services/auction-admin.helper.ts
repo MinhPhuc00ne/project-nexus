@@ -1,4 +1,8 @@
 import {
+  NotificationPublisher,
+  publishNotifications,
+} from '../../../core/notifications/notification-publisher.service';
+import {
   BadRequestException,
   Injectable,
   Logger,
@@ -34,6 +38,7 @@ export class AuctionAdminHelper {
     private readonly prisma: PrismaService,
     private readonly auctionGateway: AuctionGateway,
     @Optional() private readonly domainEvents?: DomainEventsService,
+    @Optional() private readonly notifications?: NotificationPublisher,
   ) {}
 
   /**
@@ -122,8 +127,9 @@ export class AuctionAdminHelper {
         const deadlineLabel = consignmentDeadline
           ? consignmentDeadline.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })
           : startTime.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
-        await tx.notification.createMany({
-          data: eligibleSellers.map((seller) => ({
+        await publishNotifications(
+          tx,
+          eligibleSellers.map((seller) => ({
             userId: seller.id,
             auctionId: created.id,
             targetUrl: auctionTargetUrl(created.id),
@@ -138,7 +144,8 @@ export class AuctionAdminHelper {
               consignmentDeadline: consignmentDeadline?.toISOString() ?? null,
             },
           })),
-        });
+          this.notifications,
+        );
       }
 
       return created;
@@ -210,8 +217,9 @@ export class AuctionAdminHelper {
           ? consignmentDeadline.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })
           : startTime.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
         const endTimeLabel = endTime.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
-        await this.prisma.notification.createMany({
-          data: consignedItems.map((s) => ({
+        await publishNotifications(
+          this.prisma,
+          consignedItems.map((s) => ({
             userId: s.sellerId,
             auctionId: updated.id,
             targetUrl: auctionTargetUrl(updated.id),
@@ -226,7 +234,8 @@ export class AuctionAdminHelper {
               endTime: endTime.toISOString(),
             },
           })),
-        });
+          this.notifications,
+        );
       }
 
       await this.prisma.eventBanner.updateMany({
@@ -419,8 +428,9 @@ export class AuctionAdminHelper {
       });
 
       if (consignedItems.length > 0) {
-        await this.prisma.notification.createMany({
-          data: consignedItems.map((s) => ({
+        await publishNotifications(
+          this.prisma,
+          consignedItems.map((s) => ({
             userId: s.sellerId,
             title: `Phiên đấu giá đã bị hủy: ${existing.title} ⚠️`,
             content: `Phiên đấu giá "${existing.title}" đã bị Admin hủy bỏ. Các vật phẩm bạn đã gửi ký gửi vào phiên này đã được hoàn trả về kho của bạn.`,
@@ -431,7 +441,8 @@ export class AuctionAdminHelper {
               auctionTitle: existing.title,
             },
           })),
-        });
+          this.notifications,
+        );
       }
 
       await this.prisma.eventBanner.updateMany({
@@ -507,7 +518,7 @@ export class AuctionAdminHelper {
     }
 
     if (notifications.length > 0) {
-      await this.prisma.notification.createMany({ data: notifications });
+      await publishNotifications(this.prisma, notifications, this.notifications);
     }
   }
 }

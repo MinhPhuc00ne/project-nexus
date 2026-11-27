@@ -1,4 +1,8 @@
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  NotificationPublisher,
+  publishNotification,
+} from '../../../core/notifications/notification-publisher.service';
+import { BadRequestException, ForbiddenException, Injectable, Optional } from '@nestjs/common';
 import { NotificationType, OrderRefund, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { notifyAllAdmins } from '../../../core/notifications/admin-notification.util';
@@ -12,6 +16,7 @@ export class RefundService {
     private readonly prisma: PrismaService,
     private readonly treasury: TreasuryService,
     private readonly store: AfterSalesStoreService,
+    @Optional() private readonly notifications?: NotificationPublisher,
   ) {}
 
   async issue(
@@ -151,15 +156,17 @@ export class RefundService {
         completedAt: input.toWallet ? new Date() : null,
       },
     });
-    await tx.notification.create({
-      data: {
+    await publishNotification(
+      tx,
+      {
         userId: input.buyerId,
         type: 'PAYMENT',
         channel: 'IN_APP',
         title: input.toWallet ? 'Đã hoàn tiền vào ví' : 'Đang xử lý hoàn tiền về nguồn',
         content: `Đơn #${input.orderId.slice(0, 8)}: ${input.amount.toString()} VND. ${input.toWallet ? 'Đã ghi có ví NEXUS.' : 'Khoản hoàn đang chờ xác nhận chuyển tiền, chưa hoàn tất.'}`,
       },
-    });
+      this.notifications,
+    );
     if (!input.toWallet) {
       await notifyAllAdmins(tx, {
         title: 'Khoản hoàn tiền ngoại sàn chờ Admin xác nhận',

@@ -1,9 +1,14 @@
 import {
+  NotificationPublisher,
+  publishNotification,
+} from '../../../core/notifications/notification-publisher.service';
+import {
   BadGatewayException,
   BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 
 import { ProviderConfigService } from '../../../core/providers/provider-config.service';
@@ -41,6 +46,7 @@ export class ShipmentTrackingService {
     private readonly prisma: PrismaService,
     private readonly ghn: GhnOrderApiService,
     private readonly providers: ProviderConfigService,
+    @Optional() private readonly notifications?: NotificationPublisher,
   ) {}
 
   async view(orderId: string, actor: ShipmentActor): Promise<TrackingResult> {
@@ -217,8 +223,9 @@ export class ShipmentTrackingService {
             },
           });
         }
-        await tx.notification.create({
-          data: {
+        await publishNotification(
+          tx,
+          {
             userId: current.buyerId,
             type: NotificationType.ORDER,
             channel: NotificationChannel.IN_APP,
@@ -228,7 +235,8 @@ export class ShipmentTrackingService {
                 : 'Cập nhật vận chuyển GHN',
             content: `Đơn #${orderId.slice(0, 8)}: ${detail.status}. Mã vận đơn: ${waybill}.`,
           },
-        });
+          this.notifications,
+        );
       }
       return {
         orderId,

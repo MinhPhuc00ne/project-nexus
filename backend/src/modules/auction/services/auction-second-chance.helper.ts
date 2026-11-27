@@ -1,4 +1,8 @@
 import {
+  NotificationPublisher,
+  publishNotification,
+} from '../../../core/notifications/notification-publisher.service';
+import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
@@ -47,6 +51,7 @@ export class AuctionSecondChanceHelper {
     private readonly treasury: TreasuryService,
     _auctionStock?: AuctionStockService,
     @Optional() private readonly domainEvents?: DomainEventsService,
+    @Optional() private readonly notifications?: NotificationPublisher,
   ) {}
 
   async respondSecondChance(awardId: string, buyerId: string, accept: boolean) {
@@ -128,8 +133,9 @@ export class AuctionSecondChanceHelper {
       });
       const missingAmount = roundCurrency(Math.max(0, requiredDeposit - currentBalance));
 
-      await tx.notification.create({
-        data: {
+      await publishNotification(
+        tx,
+        {
           userId: buyerId,
           auctionId: award.auctionId,
           targetUrl: '/wallet',
@@ -150,7 +156,8 @@ export class AuctionSecondChanceHelper {
             canChatWithShop: true,
           },
         },
-      });
+        this.notifications,
+      );
 
       await notifyUsersTx(tx, [sellerId, award.auction.createdByAdminId], {
         auctionId: award.auctionId,
@@ -384,8 +391,9 @@ export class AuctionSecondChanceHelper {
       const itemTitle = current.auctionItem?.title ?? current.auction.title;
       const itemLabel = lotLabel(current.auctionItem?.lotNumber, itemTitle);
 
-      await tx.notification.create({
-        data: {
+      await publishNotification(
+        tx,
+        {
           userId: buyerId,
           auctionId: current.auctionId,
           targetUrl: `/auction/${current.auctionId}`,
@@ -404,10 +412,12 @@ export class AuctionSecondChanceHelper {
             canFileComplaint: true,
           },
         },
-      });
+        this.notifications,
+      );
 
-      await tx.notification.create({
-        data: {
+      await publishNotification(
+        tx,
+        {
           userId: sellerId,
           auctionId: current.auctionId,
           targetUrl: `/auction/${current.auctionId}`,
@@ -425,7 +435,8 @@ export class AuctionSecondChanceHelper {
             sellerCompensation,
           },
         },
-      });
+        this.notifications,
+      );
 
       if (current.tier === AuctionAwardTier.PRIMARY_WINNER) {
         const secondChance = await this.inviteSecondChanceBuyerTx(tx, {
@@ -458,8 +469,9 @@ export class AuctionSecondChanceHelper {
       }
       await syncAuctionCompletionStatusTx(tx, current.auctionId);
 
-      await tx.notification.create({
-        data: {
+      await publishNotification(
+        tx,
+        {
           userId: sellerId,
           auctionId: current.auctionId,
           targetUrl: `/seller/auctions`,
@@ -468,7 +480,8 @@ export class AuctionSecondChanceHelper {
           type: NotificationType.AUCTION,
           channel: NotificationChannel.IN_APP,
         },
-      });
+        this.notifications,
+      );
 
       return {
         defaultedAwardId: current.id,
@@ -577,8 +590,9 @@ export class AuctionSecondChanceHelper {
       }
       await syncAuctionCompletionStatusTx(tx, award.auctionId);
 
-      await tx.notification.create({
-        data: {
+      await publishNotification(
+        tx,
+        {
           userId: buyerId,
           auctionId: award.auctionId,
           targetUrl: `/auction/${award.auctionId}`,
@@ -597,11 +611,13 @@ export class AuctionSecondChanceHelper {
             refundedDeposit,
           },
         },
-      });
+        this.notifications,
+      );
 
       if (sellerId) {
-        await tx.notification.create({
-          data: {
+        await publishNotification(
+          tx,
+          {
             userId: sellerId,
             auctionId: award.auctionId,
             targetUrl: `/seller/auctions`,
@@ -616,7 +632,8 @@ export class AuctionSecondChanceHelper {
               auctionItemId: award.auctionItemId,
             },
           },
-        });
+          this.notifications,
+        );
       }
 
       return updated;
@@ -769,8 +786,9 @@ export class AuctionSecondChanceHelper {
       ? `Nạp tiền thành công! Hệ thống đã tự động trừ 30% tiền cọc (${formatVnd(depositAmount)}) cho ${itemLabel} thuộc phiên "${award.auction.title}". Cảm ơn bạn! Vui lòng thanh toán đầy đủ 70% còn lại (${formatVnd(remainingProductAmount)}) + phí vận chuyển trong vòng 24 giờ.`
       : `Đã giữ 30% tiền cọc (${formatVnd(depositAmount)}) cho ${itemLabel}. Cảm ơn bạn đã xác nhận mua! Vui lòng hoàn tất thanh toán 70% còn lại (${formatVnd(remainingProductAmount)}) + phí vận chuyển trong vòng 24 giờ.`;
 
-    await tx.notification.create({
-      data: {
+    await publishNotification(
+      tx,
+      {
         userId: buyerId,
         auctionId: award.auctionId,
         targetUrl: `/auction/${award.auctionId}`,
@@ -791,7 +809,8 @@ export class AuctionSecondChanceHelper {
           canChatWithShop: true,
         },
       },
-    });
+      this.notifications,
+    );
 
     await notifyUsersTx(tx, [sellerId, award.auction.createdByAdminId], {
       auctionId: award.auctionId,
@@ -859,8 +878,9 @@ export class AuctionSecondChanceHelper {
       },
     });
 
-    await tx.notification.create({
-      data: {
+    await publishNotification(
+      tx,
+      {
         userId: candidateBid.bidderId,
         auctionId: params.auctionId,
         targetUrl: `/auction/${params.auctionId}`,
@@ -882,7 +902,8 @@ export class AuctionSecondChanceHelper {
           canChatWithShop: true,
         },
       },
-    });
+      this.notifications,
+    );
 
     await notifyUsersTx(tx, [params.sellerId, params.adminId], {
       auctionId: params.auctionId,

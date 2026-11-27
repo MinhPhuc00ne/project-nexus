@@ -1,9 +1,14 @@
 import {
+  NotificationPublisher,
+  publishNotification,
+} from '../../../core/notifications/notification-publisher.service';
+import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import {
   AuctionComplaintStatus,
@@ -25,7 +30,10 @@ import {
  */
 @Injectable()
 export class AuctionComplaintService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly notifications?: NotificationPublisher,
+  ) {}
 
   /**
    * Submits a formal auction complaint from a Seller (with an item in the auction)
@@ -206,8 +214,9 @@ export class AuctionComplaintService {
       const decisionLabel = isAccepted ? 'Đã tiếp nhận / Chấp thuận' : 'Đã từ chối';
       const noteText = dto.adminNote?.trim() ? ` Ghi chú từ Admin: ${dto.adminNote.trim()}` : '';
 
-      await tx.notification.create({
-        data: {
+      await publishNotification(
+        tx,
+        {
           userId: existing.reporterId,
           auctionId: existing.auctionId,
           targetUrl: `/auction/${existing.auctionId}`,
@@ -224,7 +233,8 @@ export class AuctionComplaintService {
             adminNote: updated.adminNote,
           },
         },
-      });
+        this.notifications,
+      );
 
       return updated;
     });
