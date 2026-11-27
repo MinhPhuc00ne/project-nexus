@@ -35,6 +35,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check:cycles": "npm run check:cycles --workspace=nexus-backend",
+    "env:check": "npm run env:check --workspace=nexus-backend",
     "i18n:check": "node frontend/scripts/check-i18n-parity.mjs",
     "test": "turbo test",
     "test:backend": "npm test --workspace=nexus-backend",

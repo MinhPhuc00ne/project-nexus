@@ -221,10 +221,10 @@ The backend Dockerfile builds three things from one file:
 | `migrator` | the Prisma CLI, ts-node, the migrations and the system seed | the `migrate` service |
 | `builder`  | the full toolchain; an intermediate stage                   | the two above         |
 
-The server image carries no build tools, no Prisma CLI and no seeds — not even
-the system one — and runs as a non-root user. Its health check asks
-`/api/v1/health`, which reports PostgreSQL, Redis and the outbox, rather than
-the Swagger page, which answers even when the database is unreachable.
+The server image carries no build tools and no demo seeds and runs as a
+non-root user. Its health check asks `/api/v1/health/ready`, which probes
+PostgreSQL and Redis readiness rather than the Swagger page, which answers even
+when the database is unreachable.
 
 ---
 

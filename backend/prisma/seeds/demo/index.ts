@@ -28,10 +28,12 @@ import { seedReviewsChatAndEngagement } from './05-reviews-chat-engagement';
 /**
  * Refuses to run where demo credentials would be a breach.
  *
- * @throws Error when NODE_ENV is production without an explicit override.
+ * @throws Error when APP_ENV is production (or NODE_ENV is production with APP_ENV unset) without an explicit override.
  */
 export function assertNotProduction(env: NodeJS.ProcessEnv = process.env): void {
-  if (env.NODE_ENV !== 'production') return;
+  const appEnv = env.APP_ENV?.trim();
+  const isProduction = appEnv === 'production' || (!appEnv && env.NODE_ENV === 'production');
+  if (!isProduction) return;
   if (env.ALLOW_DEMO_SEED === 'true') {
     console.warn(
       'WARNING: seeding demo data into a production environment because ALLOW_DEMO_SEED=true.',
@@ -40,7 +42,7 @@ export function assertNotProduction(env: NodeJS.ProcessEnv = process.env): void 
     return;
   }
   throw new Error(
-    'Refusing to seed demo data with NODE_ENV=production. ' +
+    'Refusing to seed demo data in production (APP_ENV=production or NODE_ENV=production). ' +
       'Demo accounts share one printed password. Set ALLOW_DEMO_SEED=true only if you truly intend this.',
   );
 }
@@ -111,7 +113,6 @@ async function resetDatabase(prisma: PrismaClient): Promise<void> {
       await tx.reputationLog.deleteMany();
       await tx.refreshToken.deleteMany();
       await tx.userAddress.deleteMany();
-      await tx.outboxEvent.deleteMany();
       await tx.eventLog.deleteMany();
       await tx.systemSetting.deleteMany();
       await tx.user.deleteMany();

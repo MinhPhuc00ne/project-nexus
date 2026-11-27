@@ -2,7 +2,7 @@ import { Activity, Database, RefreshCw, Server, Wifi } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   SystemHealthBreakdown,
-  OutboxCard,
+  SystemRuntimeCard,
 } from '../../components/adminDashboard/System/SystemCards';
 import { Badge, Button, Panel } from '../../components/adminDashboard/shared/AdminUI';
 import { useSystemHealth } from '../../features/health/api';
@@ -85,7 +85,7 @@ export default function AdminSystemPage() {
 
       <div className="grid items-start gap-5 xl:grid-cols-2">
         <SystemHealthBreakdown health={health} />
-        <OutboxCard health={health} />
+        <SystemRuntimeCard health={health} />
       </div>
     </div>
   );

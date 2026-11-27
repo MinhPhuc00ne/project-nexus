@@ -30,6 +30,7 @@ services:
       # so rather than quietly filling one with shared-password accounts.
       ALLOW_DEMO_SEED: ${ALLOW_DEMO_SEED:-true}
       DEMO_SEED_PASSWORD: ${DEMO_SEED_PASSWORD:-}
+      APP_ENV: ${APP_ENV:-demo}
       NODE_ENV: development
     # The demo seed is not in the image — the server's stage ships no seeds at
     # all, and the migrator carries only the system one — so it is mounted from

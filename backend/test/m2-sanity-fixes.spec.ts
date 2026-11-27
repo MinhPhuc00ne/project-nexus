@@ -514,7 +514,6 @@ describe('M2 Sanity Defect Fixes', () => {
         db: { status: status === 'down' ? 'down' : 'ok', latencyMs: 4 },
         redis: { status: 'ok', latencyMs: 2 },
         sockets: { connectedClients: 0 },
-        outbox: { pendingCount: 0 },
         uptimeSeconds: 120,
         timestamp: new Date().toISOString(),
       };

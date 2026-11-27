@@ -149,7 +149,6 @@ describe('M1 @nexus/contracts & NestJS 12 Standard Schema validation', () => {
       db: { status: 'ok', latencyMs: 2 },
       redis: { status: 'ok', latencyMs: 1 },
       sockets: { connectedClients: 0 },
-      outbox: { pendingCount: 0 },
       uptimeSeconds: 12.5,
       timestamp: TEST_ISO_TIMESTAMP,
     });

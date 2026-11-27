@@ -26,11 +26,32 @@ export const HealthCheckSchema = z.object({
   sockets: z.object({
     connectedClients: z.number().int().nonnegative(),
   }),
-  outbox: z.object({
-    pendingCount: z.number().int().nonnegative(),
-  }),
   uptimeSeconds: z.number().nonnegative(),
   timestamp: z.iso.datetime(),
 });
 
 export type HealthCheck = z.infer<typeof HealthCheckSchema>;
+
+/**
+ * Zero-I/O process liveness response contract returned by `GET /api/v1/health/live`.
+ */
+export const LivenessHealthSchema = z.object({
+  status: z.literal('ok'),
+  uptimeSeconds: z.number().nonnegative(),
+  timestamp: z.iso.datetime(),
+});
+
+export type LivenessHealth = z.infer<typeof LivenessHealthSchema>;
+
+/**
+ * Dependency readiness response contract returned by `GET /api/v1/health/ready`.
+ */
+export const ReadinessHealthSchema = z.object({
+  status: HealthStatusSchema,
+  db: DependencyHealthSchema,
+  redis: DependencyHealthSchema,
+  uptimeSeconds: z.number().nonnegative(),
+  timestamp: z.iso.datetime(),
+});
+
+export type ReadinessHealth = z.infer<typeof ReadinessHealthSchema>;
