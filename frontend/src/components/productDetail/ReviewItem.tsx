@@ -2,10 +2,15 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Star } from 'lucide-react';
 import { getIntlLocale } from '../../i18n/config';
+import { getStoredToken } from '@/features/auth/services/auth';
 import type { ProductReviewItem } from '@/features/reviews/services/reviews.service';
+import ReviewMediaAndReplies from '../reviews/ReviewMediaAndReplies';
 
 export const ReviewItem: React.FC<{ rev: ProductReviewItem }> = ({ rev }) => {
   const { t, i18n } = useTranslation('guest');
+  const formatDate = (value: string): string =>
+    new Date(value).toLocaleDateString(getIntlLocale(i18n.language));
+
   return (
     <div className="py-4 space-y-2.5">
       <div className="flex items-center justify-between">
@@ -48,6 +53,17 @@ export const ReviewItem: React.FC<{ rev: ProductReviewItem }> = ({ rev }) => {
       </div>
 
       <p className="text-xs text-slate-700 leading-relaxed pl-10.5">{rev.comment}</p>
+      <div className="pl-10.5">
+        <ReviewMediaAndReplies
+          reviewId={rev.id}
+          kind="product"
+          media={rev.media}
+          mediaUrls={rev.mediaUrls}
+          sellerReply={rev.sellerReply}
+          canReply={Boolean(getStoredToken())}
+          formatDate={formatDate}
+        />
+      </div>
     </div>
   );
 };
