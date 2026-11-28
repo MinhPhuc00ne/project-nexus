@@ -28,7 +28,7 @@ export class AdminReviewsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
   @ApiOperation({
-    summary: 'Admin/Staff tra cứu danh sách bình luận/đánh giá toàn sàn kèm điểm uy tín tác giả',
+    summary: 'List marketplace reviews with author reputation scores (Admin & Support Staff)',
   })
   adminListReviews(
     @ZodQuery(QueryAdminReviewsSchema) query: QueryAdminReviewsInput,
@@ -42,7 +42,8 @@ export class AdminReviewsController {
   @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Admin/Staff xóa bình luận sản phẩm vi phạm, trừ điểm uy tín tác giả và gửi thông báo',
+    summary:
+      'Delete a violating product review, deduct author reputation, and notify (Admin & Support Staff)',
   })
   adminDeleteProductReview(
     @CurrentUser('id') adminId: string,
@@ -60,7 +61,7 @@ export class AdminReviewsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary:
-      'Admin/Staff gỡ phản hồi (sellerReply) vi phạm trên đánh giá sản phẩm, trừ điểm uy tín Seller và gửi thông báo',
+      'Remove a violating seller reply on a product review, deduct seller reputation, and notify (Admin & Support Staff)',
   })
   adminRemoveSellerReply(
     @CurrentUser('id') adminId: string,
@@ -77,7 +78,8 @@ export class AdminReviewsController {
   @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Admin/Staff xóa đánh giá gian hàng vi phạm, trừ điểm uy tín tác giả và gửi thông báo',
+    summary:
+      'Delete a violating shop review, deduct author reputation, and notify (Admin & Support Staff)',
   })
   adminDeleteShopReview(
     @CurrentUser('id') adminId: string,
@@ -95,7 +97,7 @@ export class AdminReviewsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary:
-      'Admin/Staff ẩn hoặc bỏ ẩn đánh giá sản phẩm tiêu cực (không xóa, tác giả vẫn xem được trạng thái bị ẩn)',
+      'Hide or unhide a negative product review without deletion; the author can still view its hidden status (Admin & Support Staff)',
   })
   adminHideProductReview(
     @CurrentUser('id') adminId: string,
@@ -111,7 +113,9 @@ export class AdminReviewsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Admin/Staff ẩn hoặc bỏ ẩn đánh giá gian hàng tiêu cực (không xóa)' })
+  @ApiOperation({
+    summary: 'Hide or unhide a negative shop review without deletion (Admin & Support Staff)',
+  })
   adminHideShopReview(
     @CurrentUser('id') adminId: string,
     @CurrentUser('role') actorRole: string,
@@ -127,7 +131,7 @@ export class AdminReviewsController {
   @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Admin/Staff ẩn hoặc bỏ ẩn tin nhắn phản hồi tiêu cực trong đánh giá (không xóa)',
+    summary: 'Hide or unhide a negative review reply without deletion (Admin & Support Staff)',
   })
   adminHideReviewReply(
     @CurrentUser('id') adminId: string,

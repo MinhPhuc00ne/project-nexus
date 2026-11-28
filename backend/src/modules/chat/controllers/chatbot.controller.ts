@@ -31,7 +31,7 @@ export class ChatbotController {
   @Post('guest/messages')
   @HttpCode(200)
   @ApiOperation({
-    summary: 'Hội thoại AI cho khách chưa đăng nhập; chỉ hướng dẫn chung, không tra cứu đơn',
+    summary: 'Guest AI chat for general guidance without order lookups',
     security: [],
   })
   guestReply(
@@ -49,7 +49,7 @@ export class ChatbotController {
    * @returns Topic catalog and AI availability state.
    */
   @Get('capabilities')
-  @ApiOperation({ summary: 'Chủ đề hỗ trợ và tình trạng cấu hình AI' })
+  @ApiOperation({ summary: 'Supported chatbot topics and AI configuration status' })
   capabilities(): ReturnType<ChatbotService['capabilities']> {
     return this.chatbot.capabilities();
   }
@@ -63,8 +63,7 @@ export class ChatbotController {
   @Post('messages')
   @HttpCode(200)
   @ApiOperation({
-    summary:
-      'Hội thoại, lịch sử đặt hàng cho mọi role, đơn bán và giỏ hàng cá nhân; tối đa 20 tin/phút',
+    summary: 'AI chat, personal order/cart lookups, and seller order queries (max 20 messages/min)',
   })
   reply(
     @CurrentUser('id') userId: string,

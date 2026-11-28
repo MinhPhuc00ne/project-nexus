@@ -48,18 +48,18 @@ export class ChatController {
 
   @Post('conversations')
   @ApiOperation({
-    summary: 'Tạo hoặc mở cuộc trò chuyện trực tiếp (Buyer - Seller)',
+    summary: 'Create or open a direct conversation (Buyer - Seller)',
     description:
-      'Chặn Staff tự ý tạo chat trực tiếp với người dùng. Chặn người dùng chat trực tiếp với Admin. Đảm bảo mỗi tranh chấp chỉ tạo đúng 1 hội thoại.',
+      'Prevents staff from initiating direct chats with users and blocks direct messaging to Admin. Ensures a single conversation per dispute.',
   })
-  @ApiResponse({ status: 201, description: 'Khởi tạo hoặc trả về cuộc trò chuyện hiện có.' })
+  @ApiResponse({ status: 201, description: 'Created or returned existing conversation.' })
   @ApiResponse({
     status: 400,
-    description: 'Không thể tự chat hoặc không thể nhắn tin trực tiếp cho Admin.',
+    description: 'Self-chat or direct Admin messaging is not allowed.',
   })
   @ApiResponse({
     status: 403,
-    description: 'Nhân viên chỉ có thể phản hồi yêu cầu do người dùng gửi lên.',
+    description: 'Staff may only respond to user-submitted support requests.',
   })
   async createConversation(
     @CurrentUser('id') userId: string,
@@ -67,28 +67,28 @@ export class ChatController {
     @ZodBody(CreateConversationSchema) dto: CreateConversationInput,
   ) {
     const data = await this.chatService.createOrGetConversation(userId, role, dto);
-    return { message: 'Khởi tạo cuộc trò chuyện thành công.', data };
+    return { message: 'Conversation initialized successfully.', data };
   }
 
   @Post('request-support')
   @ApiOperation({
-    summary: 'Buyer / Seller gửi yêu cầu hỗ trợ lên Nhân viên CSKH (Đưa vào Hàng đợi FIFO)',
+    summary: 'Submit a support request to the Support Staff FIFO queue (Buyer / Seller)',
     description:
-      'Tạo yêu cầu hỗ trợ với trạng thái OPEN. Hệ thống tự động ưu tiên gán cho Staff nào đang Online trước nhất. Đảm bảo mỗi tranh chấp chỉ có 1 cuộc trò chuyện.',
+      'Creates an OPEN support conversation, prioritizing online staff assignment and enforcing one conversation per dispute.',
   })
-  @ApiResponse({ status: 201, description: 'Yêu cầu hỗ trợ đã được tạo và đưa vào hàng đợi.' })
+  @ApiResponse({ status: 201, description: 'Support request created and queued.' })
   async requestSupport(
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: string,
     @ZodBody(RequestSupportSchema) dto: RequestSupportInput,
   ) {
     const data = await this.chatService.requestSupport(userId, role, dto);
-    return { message: 'Yêu cầu hỗ trợ đã được gửi thành công.', data };
+    return { message: 'Support request submitted successfully.', data };
   }
 
   @Post('support/request')
   @ApiOperation({
-    summary: 'Alias gửi yêu cầu hỗ trợ (tương thích format đường dẫn RESTful)',
+    summary: 'Alias for submitting a support request',
   })
   async requestSupportAlias(
     @CurrentUser('id') userId: string,
@@ -96,33 +96,32 @@ export class ChatController {
     @ZodBody(RequestSupportSchema) dto: RequestSupportInput,
   ) {
     const data = await this.chatService.requestSupport(userId, role, dto);
-    return { message: 'Yêu cầu hỗ trợ đã được gửi thành công.', data };
+    return { message: 'Support request submitted successfully.', data };
   }
 
   @Post('disputes/:disputeId/conversation')
   @ApiOperation({
-    summary: 'Tạo hoặc lấy duy nhất 1 cuộc trò chuyện hỗ trợ cho Khiếu nại / Tranh chấp',
+    summary: 'Get or create the single support conversation for a dispute',
     description:
-      'Đảm bảo mỗi tranh chấp chỉ tạo DUY NHẤT một hội thoại. Trả về ngay hội thoại hiện có nếu đã tồn tại.',
+      'Ensures each dispute maps to a single conversation, returning the existing one if present.',
   })
-  @ApiParam({ name: 'disputeId', description: 'ID của khiếu nại tranh chấp' })
-  @ApiResponse({ status: 200, description: 'Hội thoại tranh chấp duy nhất.' })
+  @ApiParam({ name: 'disputeId', description: 'Dispute ID' })
+  @ApiResponse({ status: 200, description: 'Dispute conversation retrieved.' })
   async getDisputeConversation(
     @ZodParam('disputeId', UuidParamSchema) disputeId: string,
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: string,
   ) {
     const data = await this.chatService.getOrCreateDisputeConversation(disputeId, userId, role);
-    return { message: 'Truy xuất hội thoại khiếu nại thành công.', data };
+    return { message: 'Dispute conversation retrieved successfully.', data };
   }
 
   @Get('queue')
   @ApiOperation({
-    summary: '[STAFF / ADMIN] Xem danh sách Hàng đợi yêu cầu hỗ trợ (FIFO Queue)',
-    description:
-      'Lấy danh sách các ticket đang chờ (status = OPEN, chưa có staff nhận), xếp theo thứ tự thời gian ai gửi trước đứng trước (FIFO) kèm thời gian chờ tính bằng giây.',
+    summary: '[STAFF / ADMIN] List the support request FIFO queue',
+    description: 'Lists unassigned OPEN support tickets ordered FIFO with wait time in seconds.',
   })
-  @ApiResponse({ status: 200, description: 'Danh sách hàng đợi hỗ trợ kèm phân trang.' })
+  @ApiResponse({ status: 200, description: 'Paginated support queue.' })
   async getQueue(
     @CurrentUser('role') role: string,
     @ZodQuery(QueryQueueSchema) query: QueryQueueInput,
@@ -132,27 +131,27 @@ export class ChatController {
 
   @Post('conversations/:id/claim')
   @ApiOperation({
-    summary: '[STAFF / ADMIN] Tiếp nhận (Claim) cuộc trò chuyện từ hàng đợi',
+    summary: '[STAFF / ADMIN] Claim an OPEN conversation from the support queue',
     description:
-      'Nhân viên chủ động tiếp nhận xử lý ticket đang OPEN. Trạng thái chuyển thành IN_PROGRESS và gán assignedStaffId cho nhân viên này.',
+      'Assigns the ticket to the claiming staff member and transitions status to IN_PROGRESS.',
   })
-  @ApiParam({ name: 'id', description: 'ID cuộc trò chuyện cần tiếp nhận' })
+  @ApiParam({ name: 'id', description: 'Conversation ID to claim' })
   async claimConversation(
     @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser('id') staffId: string,
     @CurrentUser('role') role: string,
   ) {
     const data = await this.chatService.claimConversation(id, staffId, role);
-    return { message: 'Tiếp nhận cuộc trò chuyện thành công.', data };
+    return { message: 'Conversation claimed successfully.', data };
   }
 
   @Patch('conversations/:id/status')
   @ApiOperation({
-    summary: 'Cập nhật trạng thái cuộc trò chuyện (OPEN, IN_PROGRESS, RESOLVED, CLOSED)',
+    summary: 'Update conversation status (OPEN, IN_PROGRESS, RESOLVED, CLOSED)',
     description:
-      'Staff phụ trách hoặc Admin có quyền cập nhật trạng thái. Khi chuyển thành RESOLVED/CLOSED, giải phóng slot của Staff và tự động kéo ticket tiếp theo trong hàng đợi về cho Staff đó.',
+      'Assigned Staff or Admin may update status. Transitioning to RESOLVED or CLOSED frees the staff slot and assigns the next queued ticket.',
   })
-  @ApiParam({ name: 'id', description: 'ID cuộc trò chuyện' })
+  @ApiParam({ name: 'id', description: 'Conversation ID' })
   async updateStatus(
     @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser('id') userId: string,
@@ -160,14 +159,14 @@ export class ChatController {
     @ZodBody(UpdateConversationStatusSchema) dto: UpdateConversationStatusInput,
   ) {
     const data = await this.chatService.updateConversationStatus(id, userId, role, dto);
-    return { message: 'Cập nhật trạng thái cuộc trò chuyện thành công.', data };
+    return { message: 'Conversation status updated successfully.', data };
   }
 
   @Get('conversations')
   @ApiOperation({
-    summary: 'Lấy danh sách các cuộc trò chuyện của người dùng hiện tại',
+    summary: 'List conversations for the authenticated user',
     description:
-      'BỎ HOÀN TOÀN CHAT CHUNG: Nhân viên chỉ thấy các cuộc trò chuyện mà chính mình phụ trách. Khách hàng chỉ thấy hội thoại của mình.',
+      'Staff see only their assigned conversations; customers see only their own conversations.',
   })
   async listConversations(
     @CurrentUser('id') userId: string,
@@ -178,16 +177,15 @@ export class ChatController {
   }
 
   @Get('unread-count')
-  @ApiOperation({ summary: 'Lấy tổng số tin nhắn chưa đọc của người dùng' })
+  @ApiOperation({ summary: 'Get total unread message count for the authenticated user' })
   async getTotalUnreadCount(@CurrentUser('id') userId: string) {
     return this.chatService.getTotalUnreadCount(userId);
   }
 
   @Get('conversations/:id')
   @ApiOperation({
-    summary: 'Xem chi tiết một cuộc trò chuyện theo ID',
-    description:
-      'Ẩn danh thông tin nhân viên hỗ trợ với khách hàng. Chỉ Admin mới thấy thông tin thực.',
+    summary: 'Get conversation details by ID',
+    description: 'Anonymizes Support Staff identity for customers; only Admin sees real identity.',
   })
   async getConversation(
     @ZodParam('id', UuidParamSchema) id: string,
@@ -200,9 +198,9 @@ export class ChatController {
 
   @Get('conversations/:id/messages')
   @ApiOperation({
-    summary: 'Lấy lịch sử tin nhắn của cuộc trò chuyện',
+    summary: 'List conversation message history',
     description:
-      'Tin nhắn từ nhân viên hỗ trợ được ẩn danh thành "Nhân viên Hỗ trợ" đối với khách hàng. Chỉ Admin mới thấy ID và tên thật nhân viên.',
+      'Support Staff messages are anonymized to customers; only Admin sees staff ID and real name.',
   })
   async listMessages(
     @ZodParam('id', UuidParamSchema) id: string,
@@ -216,9 +214,9 @@ export class ChatController {
 
   @Post('conversations/:id/messages')
   @ApiOperation({
-    summary: 'Gửi tin nhắn mới vào cuộc trò chuyện',
+    summary: 'Send a new message in a conversation',
     description:
-      'Tự động kiểm duyệt từ cấm/nhạy cảm. Nếu Staff phản hồi một hội thoại đang OPEN, hệ thống sẽ tự động gán và chuyển trạng thái sang IN_PROGRESS.',
+      'Applies content moderation automatically. When Staff replies to an OPEN conversation, it is assigned and moved to IN_PROGRESS.',
   })
   async sendMessage(
     @ZodParam('id', UuidParamSchema) id: string,
@@ -227,12 +225,12 @@ export class ChatController {
     @ZodBody(SendMessageSchema) dto: SendMessageInput,
   ) {
     const data = await this.chatService.sendMessage(userId, role, { ...dto, conversationId: id });
-    return { message: 'Gửi tin nhắn thành công.', data };
+    return { message: 'Message sent successfully.', data };
   }
 
   @Post('messages')
   @ApiOperation({
-    summary: 'Gửi tin nhắn mới (Alias hỗ trợ truyền conversationId trong Body)',
+    summary: 'Send a new message (alias accepting conversationId in body)',
   })
   async sendMessageDirect(
     @CurrentUser('id') userId: string,
@@ -240,11 +238,11 @@ export class ChatController {
     @ZodBody(SendMessageSchema) dto: SendMessageInput,
   ) {
     const data = await this.chatService.sendMessage(userId, role, dto);
-    return { message: 'Gửi tin nhắn thành công.', data };
+    return { message: 'Message sent successfully.', data };
   }
 
   @Patch('conversations/:id/read')
-  @ApiOperation({ summary: 'Đánh dấu đã đọc toàn bộ tin nhắn trong cuộc trò chuyện' })
+  @ApiOperation({ summary: 'Mark all messages in a conversation as read' })
   async markAsRead(
     @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser('id') userId: string,
@@ -254,7 +252,7 @@ export class ChatController {
   }
 
   @Post('upload')
-  @ApiOperation({ summary: 'Upload hình ảnh đính kèm chat lên Cloudinary (Tối đa 5 ảnh)' })
+  @ApiOperation({ summary: 'Upload chat image attachments to Cloudinary (max 5 images)' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -263,7 +261,7 @@ export class ChatController {
         files: {
           type: 'array',
           items: { type: 'string', format: 'binary' },
-          description: 'Danh sách tối đa 5 file ảnh tải lên',
+          description: 'Up to 5 image files',
         },
       },
     },

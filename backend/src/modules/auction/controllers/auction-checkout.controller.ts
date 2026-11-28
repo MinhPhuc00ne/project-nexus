@@ -25,7 +25,7 @@ export class AuctionCheckoutController {
 
   /** Lists the current buyer's active or paid auction awards. @returns The owned awards and orders. */
   @Get()
-  @ApiOperation({ summary: 'Danh sách quyền mua và đơn thắng đấu giá của tôi' })
+  @ApiOperation({ summary: 'List my auction awards and winning orders' })
   list(@CurrentUser('id') userId: string): ReturnType<AuctionCheckoutService['list']> {
     return this.checkoutService.list(userId);
   }
@@ -34,7 +34,7 @@ export class AuctionCheckoutController {
   @Post(':id/quote')
   @HttpCode(200)
   @ApiOperation({
-    summary: 'Báo giá phí vận chuyển GHN và số tiền 70% còn lại cần thanh toán',
+    summary: 'Quote GHN shipping fee and remaining 70% payment balance',
   })
   quote(
     @ZodParam('id', UuidParamSchema) id: string,
@@ -48,7 +48,7 @@ export class AuctionCheckoutController {
   @Post(':id/checkout')
   @HttpCode(200)
   @ApiOperation({
-    summary: 'Xác nhận địa chỉ, tính phí GHN và thanh toán 70% còn lại trong 24 giờ',
+    summary: 'Confirm shipping address, calculate GHN fee, and pay remaining 70% within 24 hours',
   })
   checkout(
     @ZodParam('id', UuidParamSchema) id: string,
@@ -62,7 +62,7 @@ export class AuctionCheckoutController {
   @Post(':id/respond')
   @HttpCode(200)
   @ApiOperation({
-    summary: 'Người mua thứ hai xác nhận đồng ý hoặc từ chối quyền mua món hàng đấu giá',
+    summary: 'Second-chance buyer accepts or declines the auction purchase offer',
   })
   respond(
     @ZodParam('id', UuidParamSchema) id: string,
@@ -76,7 +76,8 @@ export class AuctionCheckoutController {
   @Post(':id/decline')
   @HttpCode(200)
   @ApiOperation({
-    summary: 'Người mua thứ hai từ chối lời mời mua món hàng đấu giá (không bị trừ uy tín)',
+    summary:
+      'Second-chance buyer declines the auction purchase invitation without reputation penalty',
   })
   decline(
     @ZodParam('id', UuidParamSchema) id: string,

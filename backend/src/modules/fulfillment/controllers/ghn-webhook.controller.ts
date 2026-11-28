@@ -39,20 +39,20 @@ export class GhnWebhookController {
   @HttpCode(200)
   @ApiOperation({
     summary:
-      'Nhận callback GHN (chiều giao đi và chiều hoàn hàng); xác minh lại trạng thái qua API GHN',
+      'Receive GHN webhook callbacks for forward and return shipments and re-verify status via GHN API',
   })
   async receive(
     @Headers('x-ghn-webhook-secret') secret: string | undefined,
     @ZodBody(GhnWebhookSchema) body: GhnWebhookPayload,
   ): Promise<{ success: boolean }> {
     const expected = this.config.get<string>('GHN_WEBHOOK_SECRET');
-    if (!expected) throw new ServiceUnavailableException('Webhook GHN chưa được cấu hình.');
+    if (!expected) throw new ServiceUnavailableException('GHN webhook is not configured.');
     if (
       !secret ||
       Buffer.byteLength(secret) !== Buffer.byteLength(expected) ||
       !timingSafeEqual(Buffer.from(secret), Buffer.from(expected))
     )
-      throw new UnauthorizedException('Webhook GHN không hợp lệ.');
+      throw new UnauthorizedException('Invalid GHN webhook secret.');
     // The payload shape is validated by GhnWebhookSchema before the handler
     // runs, so what is left to check is whether this waybill belongs to the
     // shop the caller claims.
@@ -81,7 +81,7 @@ export class GhnWebhookController {
 
     const context = shipmentGhnContext(shipment.metadata);
     if (Number(body.ShopID) !== context.shopId)
-      throw new UnauthorizedException('Shop GHN không khớp vận đơn.');
+      throw new UnauthorizedException('GHN shop does not match shipment.');
     await this.tracking.refresh(shipment.orderId, undefined, mockStatus);
     return { success: true };
   }
@@ -98,14 +98,16 @@ export class GhnWebhookController {
         })
       : null;
     if (!afterSales) {
-      throw new ServiceUnavailableException('Vận đơn chưa được lưu, GHN cần gửi lại callback.');
+      throw new ServiceUnavailableException(
+        'Waybill is not persisted yet; GHN should retry the callback.',
+      );
     }
 
     const forwardShipment = afterSales.order.shipment;
     if (forwardShipment) {
       const context = shipmentGhnContext(forwardShipment.metadata);
       if (shopId !== context.shopId) {
-        throw new UnauthorizedException('Shop GHN không khớp vận đơn.');
+        throw new UnauthorizedException('GHN shop does not match shipment.');
       }
     }
 

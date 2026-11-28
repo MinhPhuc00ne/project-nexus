@@ -23,9 +23,9 @@ export class AuctionImageController {
   /** Persists a previously uploaded image. @returns Updated session image reference. */
   @Patch(':id/image')
   @ApiOperation({
-    summary: 'Admin/Staff cập nhật ảnh phiên chưa bắt đầu',
+    summary: 'Update image for an unstarted auction session (Admin & Support Staff)',
     description:
-      'Upload ảnh qua POST /media/upload trước, sau đó gửi imageUrl. Không thay đổi giá hoặc lịch phiên.',
+      'Upload the image via POST /media/upload first, then submit imageUrl. Does not alter pricing or session schedule.',
   })
   update(
     @CurrentUser('id') actorId: string,

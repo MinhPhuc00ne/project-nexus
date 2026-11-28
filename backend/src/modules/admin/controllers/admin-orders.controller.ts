@@ -17,7 +17,9 @@ export class AdminOrdersController {
   constructor(private readonly orders: AdminOrdersService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Admin & Nhân viên hỗ trợ tra cứu đơn toàn sàn, lọc và phân trang' })
+  @ApiOperation({
+    summary: 'List marketplace orders with filters and pagination (Admin & Support Staff)',
+  })
   list(
     @ZodQuery(QueryAdminOrdersSchema) query: QueryAdminOrdersInput,
   ): ReturnType<AdminOrdersService['list']> {
@@ -27,7 +29,7 @@ export class AdminOrdersController {
   @Get(':id')
   @ApiOperation({
     summary:
-      'Admin & Nhân viên hỗ trợ xem chi tiết đơn, thanh toán, vận chuyển, hậu mãi và lịch sử thao tác',
+      'Get order details including payment, shipping, after-sales, and action history (Admin & Support Staff)',
   })
   detail(@ZodParam('id', UuidParamSchema) id: string): ReturnType<AdminOrdersService['detail']> {
     return this.orders.detail(id);

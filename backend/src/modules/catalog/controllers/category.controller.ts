@@ -27,11 +27,11 @@ export class CategoryController {
   @Get()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[CATALOG] Lấy cây phân cấp danh mục sản phẩm (Tối đa 3 cấp)',
+    summary: '[CATALOG] Get the product category hierarchy (up to 3 levels)',
     description:
-      'Trả về danh sách danh mục phân cấp (Cha - Con - Cháu) phục vụ menu tìm kiếm và form đăng bán sản phẩm của Seller.',
+      'Returns the nested category tree for search filters and seller product creation forms.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy cây danh mục thành công' })
+  @ApiResponse({ status: 200, description: 'Category tree retrieved successfully' })
   async getCategories(): Promise<CategoryTreeItem[]> {
     return this.categoryService.getCategoryTree();
   }
@@ -43,16 +43,16 @@ export class CategoryController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
-    summary: '[ADMIN] Tạo mới danh mục hàng hóa (tối đa 3 cấp)',
+    summary: '[ADMIN] Create a product category (up to 3 levels)',
     description:
-      'Chỉ Admin có quyền tạo danh mục mới. Hỗ trợ tạo danh mục gốc (level 1) hoặc danh mục con (truyền parentId của cha).',
+      'Admin-only endpoint to create a root category (level 1) or child category via parentId.',
   })
-  @ApiResponse({ status: 201, description: 'Tạo danh mục thành công' })
+  @ApiResponse({ status: 201, description: 'Category created successfully' })
   @ApiResponse({
     status: 400,
-    description: 'Vượt quá giới hạn 3 tầng danh mục hoặc dữ liệu không hợp lệ',
+    description: 'Exceeds 3-level hierarchy limit or invalid input',
   })
-  @ApiResponse({ status: 409, description: 'Tên danh mục đã tồn tại' })
+  @ApiResponse({ status: 409, description: 'Category name already exists' })
   async createCategory(@ZodBody(CreateCategorySchema) dto: CreateCategoryInput) {
     return this.categoryService.createCategory(dto);
   }
@@ -64,13 +64,13 @@ export class CategoryController {
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[ADMIN] Cập nhật danh mục hoặc điều chuyển danh mục cha (re-parenting)',
+    summary: '[ADMIN] Update or re-parent a category',
     description:
-      'Admin chỉnh sửa tên, slug hoặc dời danh mục sang danh mục cha khác (parentId). Hệ thống tự động tính toán lại cấp độ level.',
+      'Updates category name, slug, or parentId and automatically recalculates hierarchy levels.',
   })
-  @ApiResponse({ status: 200, description: 'Cập nhật danh mục thành công' })
-  @ApiResponse({ status: 400, description: 'Không thể chuyển vì gây vòng lặp hoặc vượt quá 3 cấp' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy danh mục' })
+  @ApiResponse({ status: 200, description: 'Category updated successfully' })
+  @ApiResponse({ status: 400, description: 'Cycle detected or exceeds 3-level hierarchy limit' })
+  @ApiResponse({ status: 404, description: 'Category not found' })
   async updateCategory(
     @ZodParam('id', UuidParamSchema) id: string,
     @ZodBody(UpdateCategorySchema) dto: UpdateCategoryInput,
@@ -85,16 +85,15 @@ export class CategoryController {
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[ADMIN] Xóa danh mục hàng hóa',
-    description:
-      'Chỉ được xóa danh mục khi không chứa danh mục con và không có sản phẩm nào đang liên kết.',
+    summary: '[ADMIN] Delete a product category',
+    description: 'Permitted only when the category has no child categories and no linked products.',
   })
-  @ApiResponse({ status: 200, description: 'Xóa danh mục thành công' })
+  @ApiResponse({ status: 200, description: 'Category deleted successfully' })
   @ApiResponse({
     status: 400,
-    description: 'Danh mục đang có danh mục con hoặc còn sản phẩm liên kết',
+    description: 'Category still contains subcategories or linked products',
   })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy danh mục' })
+  @ApiResponse({ status: 404, description: 'Category not found' })
   async deleteCategory(@ZodParam('id', UuidParamSchema) id: string) {
     return this.categoryService.deleteCategory(id);
   }

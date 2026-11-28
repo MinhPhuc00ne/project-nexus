@@ -27,7 +27,7 @@ export class ReportModerationController {
   /** Retrieves the moderation queue for authorized staff. @returns Filtered report queue. */
   @Get('admin/reports')
   @Roles('ADMIN', 'SUPPORT_STAFF')
-  @ApiOperation({ summary: 'Danh sách báo cáo vi phạm cần xử lý' })
+  @ApiOperation({ summary: 'List violation reports pending moderation' })
   list(
     @ZodQuery(QueryReportsSchema) query: QueryReportsInput,
   ): ReturnType<ReportModerationService['list']> {
@@ -37,7 +37,7 @@ export class ReportModerationController {
   /** Records an authorized moderation verdict. @returns The persisted decision. */
   @Patch('admin/reports/:id/review')
   @Roles('ADMIN', 'SUPPORT_STAFF')
-  @ApiOperation({ summary: 'Xử lý báo cáo: đang điều tra, xác nhận hoặc bác bỏ' })
+  @ApiOperation({ summary: 'Review a report: mark investigating, confirm, or dismiss' })
   review(
     @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() actor: ReportModerator,

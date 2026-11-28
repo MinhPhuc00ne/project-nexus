@@ -50,7 +50,8 @@ export class ReviewsController {
   @ApiConsumes(...REVIEW_CONSUMES_TYPES)
   @UseInterceptors(AnyFilesInterceptor())
   @ApiOperation({
-    summary: 'Đánh giá gian hàng sau khi mua thành công từ 2 sản phẩm (hỗ trợ đính kèm ảnh/video)',
+    summary:
+      'Submit a shop review after purchasing at least 2 items (supports image/video attachments)',
   })
   shopReview(
     @CurrentUser('id') id: string,
@@ -65,7 +66,7 @@ export class ReviewsController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.BUYER, Role.SELLER)
-  @ApiOperation({ summary: 'Chỉnh sửa đánh giá gian hàng của chính mình' })
+  @ApiOperation({ summary: 'Edit my shop review' })
   updateShopReview(
     @CurrentUser('id') id: string,
     @ZodParam('orderId', UuidParamSchema) orderId: string,
@@ -78,7 +79,7 @@ export class ReviewsController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.BUYER, Role.SELLER)
-  @ApiOperation({ summary: 'Xóa đánh giá gian hàng của chính mình' })
+  @ApiOperation({ summary: 'Delete my shop review' })
   deleteShopReview(
     @CurrentUser('id') id: string,
     @ZodParam('orderId', UuidParamSchema) orderId: string,
@@ -93,7 +94,7 @@ export class ReviewsController {
   @ApiConsumes(...REVIEW_CONSUMES_TYPES)
   @UseInterceptors(AnyFilesInterceptor())
   @ApiOperation({
-    summary: 'Đánh giá sản phẩm đã mua (hỗ trợ đính kèm ảnh/video multipart/form-data)',
+    summary: 'Submit a product review for a purchased item (supports multipart/form-data media)',
   })
   productReview(
     @CurrentUser('id') id: string,
@@ -109,7 +110,7 @@ export class ReviewsController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.BUYER, Role.SELLER)
-  @ApiOperation({ summary: 'Chỉnh sửa đánh giá sản phẩm của chính mình' })
+  @ApiOperation({ summary: 'Edit my product review' })
   updateProductReview(
     @CurrentUser('id') id: string,
     @ZodParam('orderId', UuidParamSchema) orderId: string,
@@ -123,7 +124,7 @@ export class ReviewsController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.BUYER, Role.SELLER)
-  @ApiOperation({ summary: 'Xóa đánh giá sản phẩm của chính mình' })
+  @ApiOperation({ summary: 'Delete my product review' })
   deleteProductReview(
     @CurrentUser('id') id: string,
     @ZodParam('orderId', UuidParamSchema) orderId: string,
@@ -137,7 +138,7 @@ export class ReviewsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.BUYER, Role.SELLER)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Bình chọn / bỏ bình chọn đánh giá sản phẩm hữu ích' })
+  @ApiOperation({ summary: 'Toggle helpful vote on a product review' })
   toggleHelpfulProductReview(
     @CurrentUser('id') userId: string,
     @ZodParam('reviewId', UuidParamSchema) reviewId: string,
@@ -153,8 +154,7 @@ export class ReviewsController {
   @UseInterceptors(AnyFilesInterceptor())
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary:
-      'Buyer hoặc Seller gửi phản hồi 2 chiều trên đánh giá sản phẩm (hỗ trợ đính kèm ảnh/video)',
+    summary: 'Submit a two-way reply on a product review (Buyer or Seller, supports media)',
   })
   createProductReviewReply(
     @CurrentUser('id') userId: string,
@@ -173,8 +173,7 @@ export class ReviewsController {
   @UseInterceptors(AnyFilesInterceptor())
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary:
-      'Buyer hoặc Seller gửi phản hồi 2 chiều trên đánh giá gian hàng (hỗ trợ đính kèm ảnh/video)',
+    summary: 'Submit a two-way reply on a shop review (Buyer or Seller, supports media)',
   })
   createShopReviewReply(
     @CurrentUser('id') userId: string,

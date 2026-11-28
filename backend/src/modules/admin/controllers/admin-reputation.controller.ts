@@ -38,7 +38,7 @@ export class AdminReputationController {
 
   /** Applies an attributed adjustment. @returns Updated reputation standing. */
   @Patch()
-  @ApiOperation({ summary: 'Admin điều chỉnh điểm uy tín, có nhật ký người thực hiện' })
+  @ApiOperation({ summary: 'Adjust user reputation score with actor audit log (Admin)' })
   adjust(
     @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser('id') adminId: string,

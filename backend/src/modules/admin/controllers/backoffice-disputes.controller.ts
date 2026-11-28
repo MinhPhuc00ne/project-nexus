@@ -22,11 +22,11 @@ export class BackofficeDisputesController {
   @Get('disputes')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[STAFF / ADMIN] Tra cứu danh sách khiếu nại toàn sàn (Backoffice API)',
+    summary: '[STAFF / ADMIN] List marketplace disputes (Backoffice API)',
     description:
-      'API theo quy chuẩn SRS Backoffice để Staff/Admin truy xuất toàn bộ khiếu nại đang chờ xử lý và lịch sử xử lý tranh chấp trên nền tảng.',
+      'Backoffice endpoint for Staff and Admin to query pending disputes and dispute resolution history across the platform.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách khiếu nại thành công' })
+  @ApiResponse({ status: 200, description: 'Disputes retrieved successfully' })
   async getDisputes(@ZodQuery(QueryAdminDisputesSchema) query: QueryAdminDisputesInput) {
     return this.adminDisputesService.getDisputes(query);
   }

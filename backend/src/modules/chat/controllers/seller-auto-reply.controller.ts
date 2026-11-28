@@ -22,8 +22,8 @@ export class SellerAutoReplyController {
   constructor(private readonly autoReplyService: ChatAutoReplyService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Lấy danh sách các mẫu tin nhắn tự động của gian hàng' })
-  @ApiResponse({ status: 200, description: 'Danh sách tin nhắn tự động.' })
+  @ApiOperation({ summary: 'List shop auto-reply templates (Seller)' })
+  @ApiResponse({ status: 200, description: 'Auto-reply templates.' })
   async getMyAutoReplies(@CurrentUser('id') sellerId: string) {
     const data = await this.autoReplyService.getSellerAutoReplies(sellerId);
     return { data };
@@ -31,23 +31,26 @@ export class SellerAutoReplyController {
 
   @Post()
   @ApiOperation({
-    summary: 'Tạo mới tin nhắn tự động cho gian hàng (Tối đa 10 mẫu)',
-    description: 'Tự động kiểm duyệt, chặn từ ngữ cấm hoặc nội dung nhạy cảm.',
+    summary: 'Create a shop auto-reply template (max 10 templates)',
+    description: 'Automatically moderates prohibited or sensitive content.',
   })
-  @ApiResponse({ status: 201, description: 'Tạo tin nhắn tự động thành công.' })
-  @ApiResponse({ status: 400, description: 'Nội dung chứa từ cấm hoặc vượt quá giới hạn 10 mẫu.' })
+  @ApiResponse({ status: 201, description: 'Auto-reply created successfully.' })
+  @ApiResponse({
+    status: 400,
+    description: 'Content contains prohibited words or exceeds the 10-template limit.',
+  })
   async createAutoReply(
     @CurrentUser('id') sellerId: string,
     @ZodBody(CreateAutoReplySchema) dto: CreateAutoReplyInput,
   ) {
     const data = await this.autoReplyService.createSellerAutoReply(sellerId, dto);
-    return { message: 'Tạo tin nhắn tự động thành công.', data };
+    return { message: 'Auto-reply created successfully.', data };
   }
 
   @Put(':id')
   @ApiOperation({
-    summary: 'Chỉnh sửa cấu hình tin nhắn tự động của gian hàng',
-    description: 'Không thể chỉnh sửa nếu tin nhắn đã bị Quản trị viên khóa do vi phạm.',
+    summary: 'Update a shop auto-reply configuration',
+    description: 'Cannot be edited if locked by Admin due to a policy violation.',
   })
   async updateAutoReply(
     @CurrentUser('id') sellerId: string,
@@ -55,11 +58,11 @@ export class SellerAutoReplyController {
     @ZodBody(UpdateAutoReplySchema) dto: UpdateAutoReplyInput,
   ) {
     const data = await this.autoReplyService.updateSellerAutoReply(sellerId, id, dto);
-    return { message: 'Cập nhật tin nhắn tự động thành công.', data };
+    return { message: 'Auto-reply updated successfully.', data };
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Xóa cấu hình tin nhắn tự động của gian hàng' })
+  @ApiOperation({ summary: 'Delete a shop auto-reply configuration' })
   async deleteAutoReply(
     @CurrentUser('id') sellerId: string,
     @ZodParam('id', UuidParamSchema) id: string,
@@ -68,14 +71,14 @@ export class SellerAutoReplyController {
   }
 
   @Patch(':id/toggle')
-  @ApiOperation({ summary: 'Bật / Tắt trạng thái kích hoạt tin nhắn tự động' })
+  @ApiOperation({ summary: 'Enable or disable an auto-reply template' })
   async toggleAutoReply(
     @CurrentUser('id') sellerId: string,
     @ZodParam('id', UuidParamSchema) id: string,
   ) {
     const data = await this.autoReplyService.toggleSellerAutoReply(sellerId, id);
     return {
-      message: `Đã ${data.isActive ? 'bật' : 'tắt'} tin nhắn tự động thành công.`,
+      message: `Auto-reply ${data.isActive ? 'enabled' : 'disabled'} successfully.`,
       data,
     };
   }

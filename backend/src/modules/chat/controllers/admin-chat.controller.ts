@@ -31,34 +31,33 @@ export class AdminChatController {
 
   @Get('auto-replies')
   @ApiOperation({
-    summary: 'Quản trị viên xem danh sách tin nhắn tự động toàn sàn',
+    summary: 'List marketplace auto-replies (Admin)',
     description:
-      'Có thể lọc theo scope (SYSTEM/SHOP), trạng thái (ACTIVE/CANCELLED_BY_ADMIN), hoặc theo gian hàng cụ thể.',
+      'Supports filtering by scope (SYSTEM or SHOP), status (ACTIVE or CANCELLED_BY_ADMIN), or specific shop.',
   })
-  @ApiResponse({ status: 200, description: 'Danh sách tin nhắn tự động kèm phân trang.' })
+  @ApiResponse({ status: 200, description: 'Paginated list of auto-replies.' })
   async listAutoReplies(@ZodQuery(QueryAutoRepliesSchema) query: QueryAutoRepliesInput) {
     return this.autoReplyService.listAutoRepliesForAdmin(query);
   }
 
   @Post('auto-replies/system')
   @ApiOperation({
-    summary: 'Tạo tin nhắn tự động chung của hệ thống (cho nhân viên CSKH)',
-    description:
-      'Tự động gửi lời chào khi người dùng (Buyer hoặc Seller) bắt đầu nhắn tin với đội ngũ hỗ trợ.',
+    summary: 'Create a system-wide auto-reply for Support Staff',
+    description: 'Automatically sends a greeting when a Buyer or Seller initiates a support chat.',
   })
   async createSystemAutoReply(
     @CurrentUser('id') adminId: string,
     @ZodBody(CreateAutoReplySchema) dto: CreateAutoReplyInput,
   ) {
     const data = await this.autoReplyService.createSystemAutoReply(adminId, dto);
-    return { message: 'Tạo tin nhắn tự động hệ thống thành công.', data };
+    return { message: 'System auto-reply created successfully.', data };
   }
 
   @Patch('auto-replies/:id/cancel')
   @ApiOperation({
-    summary: 'Hủy/Khóa tin nhắn tự động của Seller kèm lý do vi phạm',
+    summary: 'Cancel or lock a seller auto-reply with violation reason (Admin)',
     description:
-      'Chuyển trạng thái thành CANCELLED_BY_ADMIN, ghi nhận người hủy, thời gian và lý do hủy.',
+      'Transitions status to CANCELLED_BY_ADMIN and records actor, timestamp, and reason.',
   })
   async cancelSellerAutoReply(
     @CurrentUser('id') adminId: string,
@@ -66,11 +65,11 @@ export class AdminChatController {
     @ZodBody(CancelAutoReplySchema) dto: CancelAutoReplyInput,
   ) {
     const data = await this.autoReplyService.cancelSellerAutoReply(adminId, id, dto);
-    return { message: 'Đã hủy tin nhắn tự động của gian hàng thành công.', data };
+    return { message: 'Seller auto-reply canceled successfully.', data };
   }
 
   @Get('auto-replies/:id/history')
-  @ApiOperation({ summary: 'Xem lịch sử hủy và lý do vi phạm của tin nhắn tự động' })
+  @ApiOperation({ summary: 'Get cancellation history and violation reason for an auto-reply' })
   async getAutoReplyHistory(@ZodParam('id', UuidParamSchema) id: string) {
     const data = await this.autoReplyService.getAutoReplyHistory(id);
     return { data };
@@ -78,9 +77,9 @@ export class AdminChatController {
 
   @Get('conversations/:id/audit')
   @ApiOperation({
-    summary: 'Giám sát chi tiết cuộc trò chuyện (Hiển thị đích danh nhân viên CSKH)',
+    summary: 'Audit conversation messages with Support Staff identity (Admin)',
     description:
-      'Admin có thể xem chính xác tài khoản nhân viên (ID, tên thật, email) nào đã gửi từng tin nhắn trong ca trực.',
+      'Allows Admin to inspect the exact staff account (ID, full name, email) for each message.',
   })
   async auditConversation(
     @ZodParam('id', UuidParamSchema) id: string,
@@ -88,6 +87,6 @@ export class AdminChatController {
     @ZodQuery(QueryMessagesSchema) query: QueryMessagesInput,
   ) {
     const data = await this.chatService.listMessages(id, adminId, Role.ADMIN, query);
-    return { message: 'Truy vấn nhật ký tin nhắn cuộc trò chuyện thành công.', data };
+    return { message: 'Conversation audit log retrieved successfully.', data };
   }
 }

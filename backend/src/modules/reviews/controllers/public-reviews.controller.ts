@@ -43,7 +43,7 @@ export class PublicReviewsController {
   @Public()
   @ApiOperation({
     summary:
-      'Danh sách đánh giá gian hàng kèm averageRating và phân bố sao 1-5 (ẩn review tiêu cực đã bị admin ẩn)',
+      'List shop reviews with averageRating and 1-5 star breakdown (excluding admin-hidden reviews)',
   })
   async shopReviews(
     @ZodParam('id', UuidParamSchema) id: string,
@@ -65,7 +65,7 @@ export class PublicReviewsController {
 
   @Get('catalog/product-reviews/:reviewId/replies')
   @Public()
-  @ApiOperation({ summary: 'Lấy danh sách phản hồi 2 chiều (có phân trang) cho đánh giá sản phẩm' })
+  @ApiOperation({ summary: 'List paginated two-way replies for a product review' })
   async listProductReviewReplies(
     @ZodParam('reviewId', UuidParamSchema) reviewId: string,
     @ZodQuery(FeedbackPageSchema) query: FeedbackPageInput,
@@ -82,7 +82,7 @@ export class PublicReviewsController {
   @Get('catalog/shop-reviews/:reviewId/replies')
   @Public()
   @ApiOperation({
-    summary: 'Lấy danh sách phản hồi 2 chiều (có phân trang) cho đánh giá gian hàng',
+    summary: 'List paginated two-way replies for a shop review',
   })
   async listShopReviewReplies(
     @ZodParam('reviewId', UuidParamSchema) reviewId: string,

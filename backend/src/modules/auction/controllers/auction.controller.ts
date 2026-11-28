@@ -72,34 +72,36 @@ export class AuctionController {
 
   @Public()
   @Get()
-  @ApiOperation({ summary: 'Danh sách phiên đấu giá công khai (hỗ trợ phân trang & lọc)' })
+  @ApiOperation({ summary: 'List public auction sessions with pagination and filters' })
   getAuctions(@ZodQuery(AuctionQuerySchema) query: AuctionQueryInput) {
     return this.auctionService.getAuctions(query);
   }
 
   @Get('my-bids')
-  @ApiOperation({ summary: 'Lịch sử đặt giá và trạng thái quyền mua của tôi' })
+  @ApiOperation({ summary: 'Get my bid history and auction award statuses' })
   getMyBids(@CurrentUser('id') userId: string) {
     return this.auctionService.getMyBids(userId);
   }
 
   @Roles(Role.SELLER, Role.ADMIN)
   @Get('seller/my-items')
-  @ApiOperation({ summary: 'Danh sách vật phẩm đã ký gửi vào các phiên đấu giá của Người bán' })
+  @ApiOperation({ summary: 'List consigned auction items for the authenticated seller' })
   getSellerConsignments(@CurrentUser('id') sellerId: string) {
     return this.auctionService.getSellerConsignments(sellerId);
   }
 
   @Roles(Role.SUPPORT_STAFF, Role.ADMIN)
   @Get('staff/overview')
-  @ApiOperation({ summary: 'Bảng theo dõi hỗ trợ đấu giá 3D dành cho Nhân viên hỗ trợ & Admin' })
+  @ApiOperation({ summary: 'Get 3D auction support overview (Support Staff & Admin)' })
   getStaffOverview() {
     return this.auctionService.getStaffOverview();
   }
 
   @Roles(Role.SUPPORT_STAFF, Role.ADMIN)
   @Patch('staff/items/:itemId/note')
-  @ApiOperation({ summary: 'Nhân viên hỗ trợ cập nhật ghi chú kiểm tra / hỗ trợ trên lô hàng' })
+  @ApiOperation({
+    summary: 'Update inspection or support note on an auction lot (Support Staff & Admin)',
+  })
   staffAddItemNote(
     @ZodParam('itemId', UuidParamSchema) itemId: string,
     @CurrentUser('id') staffId: string,
@@ -111,7 +113,7 @@ export class AuctionController {
   @Roles(Role.BUYER, Role.SELLER, Role.SUPPORT_STAFF, Role.ADMIN)
   @Get('complaints')
   @ApiOperation({
-    summary: 'Danh sách khiếu nại đấu giá (Admin/Staff xem toàn bộ, người dùng xem đơn của mình)',
+    summary: 'List auction complaints (Admin and Staff see all; users see their own)',
   })
   listComplaints(
     @CurrentUser() user: AuthenticatedUserPayload,
@@ -125,7 +127,7 @@ export class AuctionController {
 
   @Roles(Role.ADMIN)
   @Patch('complaints/:complaintId/resolve')
-  @ApiOperation({ summary: 'Admin tiếp nhận (chấp thuận) hoặc từ chối khiếu nại đấu giá' })
+  @ApiOperation({ summary: 'Approve or reject an auction complaint (Admin)' })
   resolveComplaint(
     @ZodParam('complaintId', UuidParamSchema) complaintId: string,
     @CurrentUser('id') adminId: string,
@@ -137,7 +139,7 @@ export class AuctionController {
   @Roles(Role.ADMIN)
   @Post('admin')
   @ApiOperation({
-    summary: 'Admin tạo mới phòng đấu giá đa lô (gửi thông báo tới Người bán để ký gửi)',
+    summary: 'Create a multi-lot auction room and notify sellers for consignment (Admin)',
   })
   adminCreateAuction(
     @CurrentUser('id') adminId: string,
@@ -148,7 +150,7 @@ export class AuctionController {
 
   @Roles(Role.ADMIN)
   @Patch('admin/:id')
-  @ApiOperation({ summary: 'Admin cập nhật thông tin phiên đấu giá trước khi bắt đầu' })
+  @ApiOperation({ summary: 'Update auction session details before start (Admin)' })
   adminUpdateAuction(
     @ZodParam('id', UuidParamSchema) id: string,
     @ZodBody(AdminUpdateAuctionSchema) dto: AdminUpdateAuctionInput,
@@ -160,7 +162,8 @@ export class AuctionController {
   @Post('admin/:id/lock-consignment')
   @HttpCode(200)
   @ApiOperation({
-    summary: 'Admin & Nhân viên hỗ trợ khóa đăng ký ký gửi vật phẩm sớm cho phiên đấu giá',
+    summary:
+      'Lock item consignment registration early for an auction session (Admin & Support Staff)',
   })
   adminLockConsignment(@ZodParam('id', UuidParamSchema) id: string) {
     return this.auctionService.adminLockConsignment(id);
@@ -170,8 +173,7 @@ export class AuctionController {
   @Post('admin/:id/start')
   @HttpCode(200)
   @ApiOperation({
-    summary:
-      'Admin & Nhân viên hỗ trợ bấm bắt đầu phiên đấu giá thủ công và gửi thông báo tới Người mua',
+    summary: 'Manually start an auction session and notify buyers (Admin & Support Staff)',
   })
   adminStartAuction(@ZodParam('id', UuidParamSchema) id: string) {
     return this.auctionService.adminStartAuction(id);
@@ -179,7 +181,7 @@ export class AuctionController {
 
   @Roles(Role.ADMIN)
   @Delete('admin/:id')
-  @ApiOperation({ summary: 'Admin xóa phòng đấu giá chưa diễn ra và chưa có lượt đặt giá' })
+  @ApiOperation({ summary: 'Delete an unstarted auction room with no bids (Admin)' })
   adminDeleteAuction(@ZodParam('id', UuidParamSchema) id: string) {
     return this.auctionService.adminDeleteAuction(id);
   }
@@ -187,7 +189,7 @@ export class AuctionController {
   @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
   @Get('admin/:id/items')
   @ApiOperation({
-    summary: 'Admin & Nhân viên hỗ trợ xem danh sách toàn bộ vật phẩm ký gửi trong phiên',
+    summary: 'List all consigned items in an auction session (Admin & Support Staff)',
   })
   adminGetAuctionItems(@ZodParam('id', UuidParamSchema) id: string) {
     return this.auctionService.adminGetAuctionItems(id);
@@ -197,7 +199,7 @@ export class AuctionController {
   @Post('admin/items/:itemId/review')
   @HttpCode(200)
   @ApiOperation({
-    summary: 'Admin & Nhân viên hỗ trợ duyệt hoặc từ chối vật phẩm ký gửi của Người bán',
+    summary: 'Approve or reject a seller consigned item (Admin & Support Staff)',
   })
   adminReviewAuctionItem(
     @ZodParam('itemId', UuidParamSchema) itemId: string,
@@ -211,7 +213,7 @@ export class AuctionController {
   @Post('admin/:id/items/:itemId/end')
   @HttpCode(200)
   @ApiOperation({
-    summary: 'Admin & Nhân viên hỗ trợ kết thúc riêng từng lô đấu giá',
+    summary: 'End an individual auction lot (Admin & Support Staff)',
   })
   adminEndLot(
     @ZodParam('id', UuidParamSchema) auctionId: string,
@@ -223,7 +225,7 @@ export class AuctionController {
 
   @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
   @Get('admin/awards')
-  @ApiOperation({ summary: 'Danh sách quyền mua sau đấu giá cho Admin & Nhân viên hỗ trợ' })
+  @ApiOperation({ summary: 'List post-auction awards (Admin & Support Staff)' })
   listAdminAwards(@ZodQuery(OptionalAuctionIdQuerySchema) query: OptionalAuctionIdQuery) {
     return this.checkoutService!.listAwardsForAdmin(query.auctionId);
   }
@@ -233,7 +235,7 @@ export class AuctionController {
   @HttpCode(200)
   @ApiOperation({
     summary:
-      'Admin xác nhận người mua quá hạn thanh toán 24h (mất 30% cọc, trừ 10đ uy tín, chuyển người thứ 2)',
+      'Confirm 24-hour payment default: forfeit 30% deposit, deduct 10 reputation, and offer second chance (Admin)',
   })
   confirmPaymentDefault(
     @ZodParam('awardId', UuidParamSchema) awardId: string,
@@ -241,7 +243,9 @@ export class AuctionController {
     @ZodBody(AdminAwardActionSchema) dto: AdminAwardActionInput,
   ) {
     if (!dto.confirmed) {
-      throw new BadRequestException('Cần xác nhận chắc chắn trước khi chốt quá hạn thanh toán.');
+      throw new BadRequestException(
+        'Explicit confirmation is required before marking payment default.',
+      );
     }
     return this.checkoutService!.markPaymentDefault(awardId, adminId, dto.note);
   }
@@ -251,7 +255,7 @@ export class AuctionController {
   @HttpCode(200)
   @ApiOperation({
     summary:
-      'Admin xác nhận khách hàng thứ hai không mua nữa (hoàn cọc 30% nếu đã đóng và đóng lô hàng)',
+      'Confirm second-chance buyer withdrawal, refund 30% deposit if paid, and close the lot (Admin)',
   })
   confirmSecondChanceNotBuying(
     @ZodParam('awardId', UuidParamSchema) awardId: string,
@@ -259,13 +263,17 @@ export class AuctionController {
     @ZodBody(AdminAwardActionSchema) dto: AdminAwardActionInput,
   ) {
     if (!dto.confirmed) {
-      throw new BadRequestException('Cần xác nhận chắc chắn trước khi chốt khách không mua nữa.');
+      throw new BadRequestException(
+        'Explicit confirmation is required before marking buyer withdrawal.',
+      );
     }
     return this.checkoutService!.withdrawSecondChanceByAdmin(awardId, adminId, dto.note);
   }
 
   @Get(':id/eligibility')
-  @ApiOperation({ summary: 'Kiểm tra điều kiện uy tín, ví và chế độ Người mua trước khi đặt giá' })
+  @ApiOperation({
+    summary: 'Check buyer reputation, wallet balance, and buyer mode before bidding',
+  })
   checkBuyerEligibility(
     @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser('id') buyerId: string,
@@ -275,7 +283,7 @@ export class AuctionController {
 
   @Public()
   @Get(':id/intro-showcase')
-  @ApiOperation({ summary: 'Lấy dữ liệu đồng bộ màn giới thiệu 3D khi vào phòng đấu giá' })
+  @ApiOperation({ summary: 'Get 3D intro showcase synchronization data for an auction room' })
   @ApiOkResponse({ standardSchema: AuctionIntroShowcaseResponseSchema })
   getAuctionIntroShowcase(@ZodParam('id', UuidParamSchema) id: string) {
     return this.auctionService.getAuctionIntroShowcase(id);
@@ -283,7 +291,7 @@ export class AuctionController {
 
   @Public()
   @Get(':id')
-  @ApiOperation({ summary: 'Chi tiết phòng đấu giá đa lô theo từng lô hàng và lịch sử trả giá' })
+  @ApiOperation({ summary: 'Get multi-lot auction room details with lots and bid history' })
   getAuctionDetail(
     @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() user?: AuthenticatedUserPayload,
@@ -294,7 +302,8 @@ export class AuctionController {
   @Roles(Role.SELLER, Role.ADMIN)
   @Post(':id/register-item')
   @ApiOperation({
-    summary: 'Người bán ký gửi vật phẩm đấu giá (kèm kích thước đóng gói GHN & chứng thư)',
+    summary:
+      'Consign an auction item with GHN shipping dimensions and appraisal certificate (Seller)',
   })
   registerAuctionItem(
     @ZodParam('id', UuidParamSchema) auctionId: string,
@@ -308,7 +317,7 @@ export class AuctionController {
   @Post(':id/bids')
   @HttpCode(200)
   @ApiOperation({
-    summary: 'Người mua đặt giá cho một lô hàng trong phòng đấu giá (chế độ Người bán chỉ xem)',
+    summary: 'Place a bid on an auction lot (Seller mode is read-only)',
   })
   placeBid(
     @ZodParam('id', UuidParamSchema) auctionId: string,
@@ -321,7 +330,7 @@ export class AuctionController {
   @Roles(Role.BUYER, Role.SELLER)
   @Post(':id/items/:itemId/bids')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Người mua đặt giá trực tiếp theo ID lô hàng trong phòng đấu giá' })
+  @ApiOperation({ summary: 'Place a bid directly on a specific auction lot ID' })
   placeLotBid(
     @ZodParam('id', UuidParamSchema) auctionId: string,
     @ZodParam('itemId', UuidParamSchema) itemId: string,
@@ -334,7 +343,7 @@ export class AuctionController {
   @Roles(Role.BUYER, Role.SELLER)
   @Post(':id/complaints')
   @ApiOperation({
-    summary: 'Người bán hoặc Người mua gửi yêu cầu khiếu nại liên quan đến phiên đấu giá',
+    summary: 'Submit an auction complaint (Buyer or Seller)',
   })
   createComplaint(
     @ZodParam('id', UuidParamSchema) auctionId: string,
@@ -352,7 +361,7 @@ export class AuctionController {
   @Roles(Role.BUYER, Role.SELLER)
   @Post(':id/support-chat')
   @ApiOperation({
-    summary: 'Mở cuộc trò chuyện hỗ trợ trực tiếp với Nhân viên hỗ trợ cho phòng đấu giá',
+    summary: 'Open a live support chat with Support Staff for an auction room',
   })
   requestSupportChat(
     @ZodParam('id', UuidParamSchema) auctionId: string,

@@ -51,7 +51,7 @@ export class SellerReviewsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SELLER)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Seller phản hồi đánh giá sản phẩm của khách hàng' })
+  @ApiOperation({ summary: 'Reply to a customer product review (Seller)' })
   replyProductReview(
     @CurrentUser('id') sellerId: string,
     @ZodParam('reviewId', UuidParamSchema) reviewId: string,
