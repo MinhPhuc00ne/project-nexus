@@ -59,7 +59,7 @@ export function SystemRuntimeCard({ health }: { health?: HealthCheck }) {
           </Badge>
         </div>
         <div className="flex justify-between gap-2">
-          <span className="text-slate-500">Overall Status</span>
+          <span className="text-slate-500">{t('system.overallStatus')}</span>
           <Badge tone={probeTone(health?.status)}>{health?.status ?? 'unknown'}</Badge>
         </div>
       </div>

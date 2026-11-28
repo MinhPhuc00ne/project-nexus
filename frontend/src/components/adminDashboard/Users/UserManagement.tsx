@@ -115,12 +115,7 @@ export function StaffInvite({ actions }: AdminTabProps) {
   );
 }
 
-const roleLabels: Record<AdminUserRole, string> = {
-  BUYER: 'Buyer',
-  SELLER: 'Seller',
-  SUPPORT_STAFF: 'Staff',
-  ADMIN: 'Admin',
-};
+const ADMIN_USER_ROLES: readonly AdminUserRole[] = ['BUYER', 'SELLER', 'SUPPORT_STAFF', 'ADMIN'];
 
 // Cả trang người dùng và preview tổng quan đều lấy dữ liệu thật từ backend.
 export function UserSecurity({ actions, preview = false }: AdminTabProps & { preview?: boolean }) {
@@ -164,9 +159,9 @@ export function UserSecurity({ actions, preview = false }: AdminTabProps & { pre
               className="rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs"
             >
               <option value="">{t('users.security.allRoles')}</option>
-              {Object.entries(roleLabels).map(([value, label]) => (
+              {ADMIN_USER_ROLES.map((value) => (
                 <option key={value} value={value}>
-                  {label}
+                  {t(`roles.${value}`)}
                 </option>
               ))}
             </select>
@@ -224,7 +219,7 @@ export function UserSecurity({ actions, preview = false }: AdminTabProps & { pre
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="break-words text-xs font-semibold">{user.fullName || user.email}</p>
-                  <Badge>{roleLabels[user.role]}</Badge>
+                  <Badge>{t(`roles.${user.role}`)}</Badge>
                   <Badge tone={user.isLocked ? 'red' : 'green'}>
                     {user.isLocked
                       ? t('users.security.lockedBadge')

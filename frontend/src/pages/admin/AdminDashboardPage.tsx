@@ -7,12 +7,7 @@ import { useAdminContext } from '../../components/adminDashboard/shared/useAdmin
 import useOverviewData from '../../components/adminDashboard/Overview/useOverviewData';
 import OverviewCharts from '../../components/adminDashboard/Overview/OverviewCharts';
 
-const roleLabels = {
-  BUYER: 'Buyer',
-  SELLER: 'Seller',
-  SUPPORT_STAFF: 'Staff',
-  ADMIN: 'Admin',
-} as const;
+const ADMIN_ROLE_KEYS = ['BUYER', 'SELLER', 'SUPPORT_STAFF', 'ADMIN'] as const;
 
 export default function AdminDashboardPage() {
   const { t, i18n } = useTranslation('admin');
@@ -141,12 +136,10 @@ export default function AdminDashboardPage() {
           </p>
           <p className="mt-2 text-[10px] text-slate-500">{t('overview.usersDesc')}</p>
           <div className="mt-5 grid grid-cols-4 gap-1 rounded-lg bg-blue-50/80 p-3 text-center text-[10px]">
-            {Object.entries(roleLabels).map(([role, label]) => (
+            {ADMIN_ROLE_KEYS.map((role) => (
               <div key={role}>
-                <b className="text-primary">
-                  {data.users?.roles[role as keyof typeof roleLabels] ?? 0}
-                </b>
-                <p className="mt-1 text-slate-500">{label}</p>
+                <b className="text-primary">{data.users?.roles[role] ?? 0}</b>
+                <p className="mt-1 text-slate-500">{t(`roles.${role}`)}</p>
               </div>
             ))}
           </div>

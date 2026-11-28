@@ -472,7 +472,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
               </svg>
 
               <p className="text-[11px] font-mono uppercase tracking-[0.38em] text-cyan-300">
-                OFFICIAL LIVE AUCTION BROADCAST
+                {t('showcase.broadcast.officialLive')}
               </p>
               <h1 className="mt-3 bg-gradient-to-r from-amber-100 via-yellow-300 to-amber-200 bg-clip-text text-2xl font-black leading-tight tracking-tight text-transparent sm:text-4xl md:text-5xl">
                 {auctionTitle}
@@ -717,7 +717,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
             {climaxStep === 1 && (
               <div className="climax-title-anim space-y-2">
                 <p className="text-xs font-mono uppercase tracking-[0.42em] text-emerald-400">
-                  AUTHENTICATION COMPLETE
+                  {t('showcase.broadcast.authComplete')}
                 </p>
                 <h2 className="text-3xl font-black text-white sm:text-5xl">
                   {t('showcase.climaxAuthComplete')}
@@ -728,7 +728,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
             {climaxStep === 2 && (
               <div className="climax-title-anim space-y-2">
                 <p className="text-xs font-mono uppercase tracking-[0.42em] text-cyan-400">
-                  ARE YOU READY TO BID?
+                  {t('showcase.broadcast.readyToBid')}
                 </p>
                 <h2 className="bg-gradient-to-r from-cyan-300 via-white to-amber-300 bg-clip-text text-3xl font-black text-transparent sm:text-5xl">
                   {t('showcase.climaxReady')}
@@ -739,7 +739,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
             {climaxStep === 3 && (
               <div className="climax-title-anim space-y-4">
                 <p className="text-xs font-mono uppercase tracking-[0.38em] text-amber-300">
-                  AUCTION ROOM IS NOW OPEN
+                  {t('showcase.broadcast.roomOpen')}
                 </p>
                 <div className="text-6xl font-black text-amber-400 drop-shadow-[0_0_40px_rgba(251,191,36,0.85)] sm:text-8xl">
                   {climaxCountdown === 'START' ? t('showcase.climaxStart') : climaxCountdown}

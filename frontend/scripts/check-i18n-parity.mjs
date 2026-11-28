@@ -8,9 +8,22 @@ const baseLang = 'vi';
 
 function flattenKeys(obj, prefix = '') {
   const result = new Map();
+  if (Array.isArray(obj)) {
+    obj.forEach((item, index) => {
+      const fullKey = `${prefix}[${index}]`;
+      if (item !== null && typeof item === 'object') {
+        for (const [childKey, childVal] of flattenKeys(item, fullKey)) {
+          result.set(childKey, childVal);
+        }
+      } else {
+        result.set(fullKey, String(item ?? ''));
+      }
+    });
+    return result;
+  }
   for (const [key, value] of Object.entries(obj)) {
     const fullKey = prefix ? `${prefix}.${key}` : key;
-    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    if (value !== null && typeof value === 'object') {
       for (const [childKey, childVal] of flattenKeys(value, fullKey)) {
         result.set(childKey, childVal);
       }

@@ -250,7 +250,10 @@ export default function SearchPage() {
   return (
     <main className="mx-auto max-w-[1280px] space-y-5 px-3 sm:px-4 py-5 sm:py-7">
       {/* Breadcrumb Navigation */}
-      <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
+      <nav
+        aria-label={t('search.breadcrumbAria')}
+        className="flex items-center gap-2 text-xs text-slate-500"
+      >
         <Link
           to="/"
           className="inline-flex items-center gap-1 text-slate-600 hover:text-blue-600 transition"
