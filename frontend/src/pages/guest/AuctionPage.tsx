@@ -123,6 +123,13 @@ export const AuctionPage: React.FC = () => {
     if (lot) setCurrentPrice(Number(lot.currentHighestBid) || 0);
   }, [user, activeAuction, selectedLotIndex, resolveLeadingBidderLabel]);
 
+  const tRef = useRef(t);
+  tRef.current = t;
+  const languageRef = useRef(i18n.language);
+  languageRef.current = i18n.language;
+  const resolveLeadingBidderLabelRef = useRef(resolveLeadingBidderLabel);
+  resolveLeadingBidderLabelRef.current = resolveLeadingBidderLabel;
+
   useEffect(() => {
     let socketClient: ReturnType<typeof createAuctionSocket> | null = null;
     let isMounted = true;
@@ -167,7 +174,7 @@ export const AuctionPage: React.FC = () => {
             ? Number(firstLot?.currentHighestBid) || Number(auctionData.currentHighestBid) || 0
             : 0;
           setCurrentPrice(price);
-          setLeadingBidder(resolveLeadingBidderLabel(firstLot, auctionData));
+          setLeadingBidder(resolveLeadingBidderLabelRef.current(firstLot, auctionData));
           const isTimeOver = Boolean(
             auctionData.endTime && new Date(auctionData.endTime).getTime() <= Date.now(),
           );
@@ -226,7 +233,9 @@ export const AuctionPage: React.FC = () => {
                     }
                   : prev,
               );
-              setBidSuccessToast(t('page.auctionStartedToast', { title: payload.title }));
+              setBidSuccessToast(
+                tRef.current('page.auctionStartedToast', { title: payload.title }),
+              );
               if (auctionData.endTime) {
                 const remaining = Math.max(
                   0,
@@ -255,7 +264,7 @@ export const AuctionPage: React.FC = () => {
               (currentUser?.id && payload.bidderId === currentUser.id) ||
               (currentUser?.fullName && payload.bidderName === currentUser.fullName);
             setLeadingBidder(
-              isMe ? `${payload.bidderName} ${t('page.youSuffix')}` : payload.bidderName,
+              isMe ? `${payload.bidderName} ${tRef.current('page.youSuffix')}` : payload.bidderName,
             );
 
             setActiveAuction((prev) => {
@@ -311,7 +320,7 @@ export const AuctionPage: React.FC = () => {
               };
             });
             setBidSuccessToast(
-              t('page.antiSnipingExtendedToast', { seconds: payload.extendedBySeconds }),
+              tRef.current('page.antiSnipingExtendedToast', { seconds: payload.extendedBySeconds }),
             );
             setTimeout(() => setBidSuccessToast(null), 4000);
           });
@@ -340,17 +349,19 @@ export const AuctionPage: React.FC = () => {
                 id: a.id,
                 badge: {
                   text: isLive
-                    ? t('page.badgeLive')
+                    ? tRef.current('page.badgeLive')
                     : a.status === 'SCHEDULED'
-                      ? t('page.badgeUpcoming')
-                      : t('page.badgeEnded'),
+                      ? tRef.current('page.badgeUpcoming')
+                      : tRef.current('page.badgeEnded'),
                   type: isLive ? 'live' : a.status === 'SCHEDULED' ? 'upcoming' : 'buy-now',
                 },
-                brand: a.product?.category?.name || t('page.defaultBrand'),
+                brand: a.product?.category?.name || tRef.current('page.defaultBrand'),
                 title: a.title,
                 image: img,
-                priceLabel: isLive ? t('page.priceLabelCurrent') : t('page.priceLabelStart'),
-                price: formatCurrency(currentBid, i18n.language),
+                priceLabel: isLive
+                  ? tRef.current('page.priceLabelCurrent')
+                  : tRef.current('page.priceLabelStart'),
+                price: formatCurrency(currentBid, languageRef.current),
                 usdPrice: (() => {
                   if (currentBid <= 0) return '(≈ $0 USD)';
                   const rawUsd = currentBid / 24000;
@@ -370,12 +381,14 @@ export const AuctionPage: React.FC = () => {
                           }).format(Math.round(rawUsd));
                   return `(≈ $${formatted} USD)`;
                 })(),
-                statusLabel: isLive ? t('page.statusLabelLive') : t('page.statusLabelTime'),
+                statusLabel: isLive
+                  ? tRef.current('page.statusLabelLive')
+                  : tRef.current('page.statusLabelTime'),
                 statusVal: isLive
-                  ? t('page.statusLive')
+                  ? tRef.current('page.statusLive')
                   : a.status === 'SCHEDULED'
-                    ? t('page.statusUpcoming')
-                    : t('page.statusEnded'),
+                    ? tRef.current('page.statusUpcoming')
+                    : tRef.current('page.statusEnded'),
                 statusType: isLive ? 'blue' : 'green',
                 hasItems: aHasItems,
                 hasVideo: Boolean(a.videoUrl && a.videoUrl.trim().length > 0),
@@ -389,7 +402,7 @@ export const AuctionPage: React.FC = () => {
           setSimilarList([]);
         }
       } catch (err: unknown) {
-        console.error('Không thể tải phiên đấu giá từ database:', err);
+        console.error('Failed to load auction session:', err);
         if (isMounted) setActiveAuction(null);
       } finally {
         if (isMounted) setIsLoading(false);
@@ -402,7 +415,7 @@ export const AuctionPage: React.FC = () => {
       isMounted = false;
       socketClient?.disconnect();
     };
-  }, [id, resolveLeadingBidderLabel, upsertBidList, t, i18n.language]);
+  }, [id, upsertBidList]);
 
   useEffect(() => {
     const timer = setInterval(() => {

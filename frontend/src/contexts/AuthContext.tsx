@@ -19,6 +19,7 @@ import { getMe, toggleSellerMode } from '@/features/account/services/users';
 import { mergeGuestCartAfterLogin, resetCartSync } from '@/features/cart/services/cart';
 import { syncGuestWishlist } from '@/features/wishlist/services/wishlist.service';
 import type { AuthUser, UserProfile } from '@/features/account/types/user.types';
+import i18n from '@/i18n';
 import { useToast } from '../components/ToastNotification';
 
 const ACTIVE_MODE_PREFIX = 'nexus:active-mode:';
@@ -114,7 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const pendingToastName = sessionStorage.getItem('nexus:login-toast');
       if (pendingToastName) {
         sessionStorage.removeItem('nexus:login-toast');
-        toast.success(`Đăng nhập thành công! Chào mừng ${pendingToastName} quay trở lại.`);
+        toast.success(i18n.t('auth:login.oauthWelcomeToast', { name: pendingToastName }));
       }
     } catch {
       // Ignore storage errors

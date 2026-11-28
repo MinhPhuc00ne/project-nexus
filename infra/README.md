@@ -43,7 +43,7 @@ Backend engineers require the database and Redis instances to run migrations, bu
 From the repository root:
 
 ```bash
-npm run docker:up
+npm run docker:infra
 ```
 
 Starts `nexus-postgres` and `nexus-redis` in detached mode (`-d`).
@@ -53,7 +53,7 @@ Starts `nexus-postgres` and `nexus-redis` in detached mode (`-d`).
 Once the PostgreSQL container is healthy:
 
 ```bash
-npm run prisma:migrate
+npm run db:migrate
 ```
 
 Applies all pending migrations from `backend/prisma/migrations` to the `nexus_main` database.
@@ -86,7 +86,7 @@ Frontend engineers run two commands to have a fully operational backend API and 
 
 ```bash
 # 1. Start database and Redis
-npm run docker:up
+npm run docker:infra
 
 # 2. Start the Backend API and WebSocket server
 npm run dev:backend
@@ -125,19 +125,19 @@ When you need to completely wipe test products, auction records, and reset the d
 
    ```bash
    npm run docker:clean
-   # Equivalent to: docker compose down -v
+   # Equivalent to: docker compose -f infra/docker-compose.yml down -v
    ```
 
 2. Spin up fresh containers:
 
    ```bash
-   npm run docker:up
+   npm run docker:infra
    ```
 
 3. Re-apply database migrations from scratch:
 
    ```bash
-   npm run prisma:migrate
+   npm run db:migrate
    ```
 
 ### Scenario 3: Fast Database Reset (Without Restarting Docker)
@@ -190,7 +190,8 @@ everything, which is what a reviewer or a deployment needs.
 
 ```bash
 # Database, cache, migrations, backend and web client
-docker compose --profile full up --build
+npm run docker:full
+# Equivalent to: docker compose -f infra/docker-compose.yml --profile full up --build
 ```
 
 The `migrate` service runs first and completes before the backend starts. It
@@ -230,15 +231,15 @@ when the database is unreachable.
 
 ## 6. Command Quick Reference Cheat Sheet
 
-| Task                          | NPM Script (Recommended) | Equivalent Docker Command                  |
-| :---------------------------- | :----------------------- | :----------------------------------------- |
-| Start Services Detached       | `npm run docker:up`      | `docker compose up -d`                     |
-| Stop Services (Keep Data)     | `npm run docker:down`    | `docker compose down`                      |
-| Reset Services (Wipe Volumes) | `npm run docker:clean`   | `docker compose down -v`                   |
-| View Service Logs             | `npm run docker:logs`    | `docker compose logs -f`                   |
-| Inspect Running Containers    | -                        | `docker ps`                                |
-| Inspect Resource Usage        | -                        | `docker stats`                             |
-| Run the Whole Platform        | -                        | `docker compose --profile full up --build` |
+| Task                          | NPM Script (Recommended) | Equivalent Docker Command                                              |
+| :---------------------------- | :----------------------- | :--------------------------------------------------------------------- |
+| Start Services Detached       | `npm run docker:infra`   | `docker compose -f infra/docker-compose.yml up -d`                     |
+| Stop Services (Keep Data)     | `npm run docker:down`    | `docker compose -f infra/docker-compose.yml down`                      |
+| Reset Services (Wipe Volumes) | `npm run docker:clean`   | `docker compose -f infra/docker-compose.yml down -v`                   |
+| View Service Logs             | `npm run docker:logs`    | `docker compose -f infra/docker-compose.yml logs -f`                   |
+| Inspect Running Containers    | -                        | `docker ps`                                                            |
+| Inspect Resource Usage        | -                        | `docker stats`                                                         |
+| Run the Whole Platform        | `npm run docker:full`    | `docker compose -f infra/docker-compose.yml --profile full up --build` |
 
 ---
 
@@ -258,9 +259,9 @@ Resolution: Inspect port bindings via PowerShell:
 Get-NetTCPConnection -LocalPort 5432
 ```
 
-Terminate conflicting background processes or run `docker compose down`.
+Terminate conflicting background processes or run `docker compose -f infra/docker-compose.yml down`.
 
 ### 3. `Authentication failed against database server`
 
 Root Cause: Password mismatch between `.env` and an existing persistent PostgreSQL volume.
-Resolution: Run `npm run docker:clean` to purge the mismatched volume, then restart via `npm run docker:up`.
+Resolution: Run `npm run docker:clean` to purge the mismatched volume, then restart via `npm run docker:infra`.
