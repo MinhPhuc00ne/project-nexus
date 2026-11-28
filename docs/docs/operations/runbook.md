@@ -55,10 +55,10 @@ This runbook documents remediation steps for common development, integration, an
 
 ## 6. Health Probes and Portable Deployment
 
-- **Liveness Probe**: `GET /api/v1/health/live` verifies the Node.js process is responsive.
-- **Readiness Probe**: `GET /api/v1/health/ready` verifies PostgreSQL (`SELECT 1`) and Redis (`PING`), returning `503` when dependencies are unavailable.
-- **Environment Check**: Run `npm run env:check` before deploying, or sync Railway variables with `node infra/scripts/sync-railway-env.mjs`.
-- **Release Automation**: `infra/Dockerfile.backend` and `infra/railway.toml` run `prisma migrate deploy`, `db:bootstrap`, and `db:verify` before starting the API server.
+- Liveness probe at `GET /api/v1/health/live` verifies the Node.js process is responsive.
+- Readiness probe at `GET /api/v1/health/ready` verifies PostgreSQL (`SELECT 1`) and Redis (`PING`), returning `503` when dependencies are unavailable.
+- Run `npm run env:check` before deploying, or sync Railway variables with `node infra/scripts/sync-railway-env.mjs`.
+- `infra/Dockerfile.backend` and `infra/railway.toml` run `prisma migrate deploy`, `db:bootstrap`, and `db:verify` before starting the API server.
 
 ## 7. Regenerating OpenAPI and Validating Documentation
 

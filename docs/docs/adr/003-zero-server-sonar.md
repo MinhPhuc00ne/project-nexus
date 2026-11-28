@@ -1,24 +1,24 @@
 ---
-title: 'ADR-003: Zero-Server Sonar Quality Gate'
+title: 'ADR-003: Zero-Server ESLint SonarJS Quality Gate'
 ---
 
-# ADR-003: Three-Tier Zero-Server Sonar Quality Gate
+# ADR-003: Zero-Server ESLint SonarJS Quality Gate
 
-Status: Accepted.
+Status: Accepted (updated for Repository Hygiene).
 
 ## Context
 
-The repository requires SonarQube-grade static analysis for code smells, cognitive complexity, security rules, and test coverage without provisioning and maintaining a dedicated SonarQube server during local development.
+The repository requires static analysis for code smells, cognitive complexity, security rules, and test coverage without provisioning and maintaining a dedicated SonarQube server. Additionally, tracking IDE-specific configuration under `.vscode/` or unused SonarCloud templates at the repository root imposes editor preferences and stale cloud metadata on open-source contributors.
 
 ## Decision
 
-Adopt a three-tier zero-server Sonar quality gate:
+Adopt a lint-and-coverage static quality gate without server or IDE lock-in:
 
-1. Tier 1 (IDE realtime): recommend `SonarSource.sonarlint-vscode` via `.vscode/extensions.json` and `.vscode/settings.json`.
-2. Tier 2 (local and CI lint gate): integrate `eslint-plugin-sonarjs` in `eslint.config.mjs` alongside Prettier, Husky (`pre-commit` and `commit-msg` commitlint), and `npm run test:coverage` generating `lcov.info`.
-3. Tier 3 (online dashboard ready): maintain `sonar-project.properties` and `infra/templates/sonarcloud.yml.example` so SonarQube Cloud can be activated later by providing `SONAR_TOKEN`.
+1. Enforce `eslint-plugin-sonarjs` in `eslint.config.mjs` alongside TypeScript ESLint, Prettier, Husky (`pre-commit` and `commit-msg` commitlint), and `npm run test:coverage` generating `lcov.info`.
+2. Retire unused Tier 3 SonarCloud templates (`sonar-project.properties` and `infra/templates/sonarcloud.yml.example`).
+3. Remove `.vscode/` from git tracking and ignore `.vscode/` in `.gitignore` so contributors keep personal IDE and SonarLint settings local.
 
 ## Consequences
 
-- Positive: contributors catch code smells at edit and commit time with zero infrastructure overhead.
-- Trade-off: contributors must run `npm run lint` and `npm run test:coverage` locally or in CI before merging.
+- Positive: contributors catch code smells and complexity regressions during local lint and CI runs with zero server overhead and zero forced IDE settings.
+- Trade-off: contributors who want real-time in-editor Sonar diagnostics configure their own IDE extensions locally.
