@@ -542,11 +542,10 @@
     "disableBtn": "Tắt",
     "enableBtn": "Bật",
     "statuses": {
-      "Đang hiển thị": "Đang hiển thị",
-      "Đã lên lịch": "Đã lên lịch",
-      "Đã tắt": "Đã tắt",
-      "Đã hết hạn": "Đã hết hạn",
-      "Hết hạn": "Hết hạn"
+      "active": "Đang hiển thị",
+      "scheduled": "Đã lên lịch",
+      "disabled": "Đã tắt",
+      "expired": "Đã hết hạn"
     },
     "form": {
       "uploadErr": "Không thể tải ảnh banner lên.",

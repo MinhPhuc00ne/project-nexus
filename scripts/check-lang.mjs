@@ -20,6 +20,8 @@ const strictTargets = [
   ...walk(path.join(ROOT, 'packages/contracts/src')),
   path.join(ROOT, 'backend/prisma/seeds/system.ts'),
   path.join(ROOT, 'backend/prisma/seeds/admin-create.ts'),
+  path.join(ROOT, 'frontend/index.html'),
+  path.join(ROOT, 'frontend/src/features/catalog/services/banners.ts'),
   path.join(ROOT, 'frontend/src/pages/staff/staffNavigationData.ts'),
 ];
 
@@ -54,6 +56,9 @@ for (const file of walk(enLocaleDir)) {
     }
     if (node && typeof node === 'object') {
       for (const [k, v] of Object.entries(node)) {
+        if (VI_RE.test(k)) {
+          violations.push(`${rel} [${[...keyPath, k].join('.')}]: Vietnamese key "${k}"`);
+        }
         checkValues(v, [...keyPath, k]);
       }
     }

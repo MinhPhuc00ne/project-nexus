@@ -542,11 +542,10 @@
     "disableBtn": "Disable",
     "enableBtn": "Enable",
     "statuses": {
-      "Đang hiển thị": "Active",
-      "Đã lên lịch": "Scheduled",
-      "Đã tắt": "Disabled",
-      "Đã hết hạn": "Expired",
-      "Hết hạn": "Expired"
+      "active": "Active",
+      "scheduled": "Scheduled",
+      "disabled": "Disabled",
+      "expired": "Expired"
     },
     "form": {
       "uploadErr": "Unable to upload banner image.",
