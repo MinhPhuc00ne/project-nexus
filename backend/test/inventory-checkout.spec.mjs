@@ -114,7 +114,7 @@ test('InventoryService.reserveStock throws when availableQty is insufficient', a
   const inventoryService = new InventoryService({});
   await assert.rejects(
     inventoryService.reserveStock(tx, 'prod-1', 5, 'order-456'),
-    (err) => err.getStatus() === 400 && err.message.includes('không đủ'),
+    (err) => err.getStatus() === 400 && err.message.includes('Insufficient stock'),
   );
 });
 

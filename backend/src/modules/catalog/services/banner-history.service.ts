@@ -68,8 +68,8 @@ export class BannerHistoryService {
         userId: id,
         type: 'SYSTEM' as const,
         channel: 'IN_APP' as const,
-        title: 'Staff đã tắt banner',
-        content: `${actor.fullName} (${actor.id}) đã tắt banner "${banner.title}" (${banner.id}) của ${banner.creator.fullName} lúc ${history.createdAt.toISOString()}. Mã lịch sử: ${history.id}.`,
+        title: 'Staff disabled a banner',
+        content: `${actor.fullName} (${actor.id}) disabled banner "${banner.title}" (${banner.id}) created by ${banner.creator.fullName} at ${history.createdAt.toISOString()}. History ID: ${history.id}.`,
         targetUrl: '/admin/banners',
       })),
       this.notifications,
@@ -84,7 +84,7 @@ export class BannerHistoryService {
    */
   async list(query: QueryBannerHistoryInput): Promise<BannerHistoryPageDto> {
     if (query.from && query.to && new Date(query.from) > new Date(query.to))
-      throw new BadRequestException('Thời gian bắt đầu phải trước thời gian kết thúc.');
+      throw new BadRequestException('Start date must be before end date.');
     const where: Prisma.BannerDisableHistoryWhereInput = {
       bannerId: query.bannerId,
       actorId: query.actorId,

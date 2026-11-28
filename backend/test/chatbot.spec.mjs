@@ -107,7 +107,7 @@ test('FAQ understands Vietnamese accents, cancellation precedence and whole word
   assert.equal(matchChatbotTopic('shipping unrelated english fragment'), null);
   const f = fixture();
   const reply = await f.bot.reply('buyer', { message: 'HỦY ĐƠN đã xác nhận được không?' });
-  assert.match(reply.reply, /Admin duyệt/);
+  assert.match(reply.reply, /Admin approval/);
   assert.equal(reply.engine, 'FAQ');
   const paymentReply = await f.bot.reply('buyer', { message: 'Các phương thức thanh toán là gì?' });
   assert.equal(paymentReply.topic, 'PAYMENT');
@@ -219,9 +219,9 @@ test('Gemini conversation is opt-in, separates system prompt and history and val
     assert.equal(url.includes('test-key'), false);
     assert.equal(options.headers['x-goog-api-key'], 'test-key');
     const payload = JSON.parse(options.body);
-    assert.match(payload.systemInstruction.parts[0].text, /trợ lý AI hội thoại/);
-    assert.match(payload.systemInstruction.parts[0].text, /Kiến thức NEXUS/);
-    assert.match(payload.systemInstruction.parts[0].text, /Không tự bịa thông tin/);
+    assert.match(payload.systemInstruction.parts[0].text, /conversational AI assistant/);
+    assert.match(payload.systemInstruction.parts[0].text, /NEXUS knowledge/);
+    assert.match(payload.systemInstruction.parts[0].text, /Never fabricate information/);
     assert.equal(payload.contents[1].role, 'model');
     assert.equal(payload.contents[0].parts[0].text, 'Tôi muốn trả hàng');
     assert.equal(payload.contents.at(-1).parts[0].text, 'Tôi cần chuẩn bị gì?');
@@ -284,7 +284,7 @@ test('AI handles keyword matches, greetings and follow-up questions for authenti
     assert.equal(reply.engine, 'GEMINI');
     assert.equal(reply.reply, 'Bạn cho mình biết shop đã xác nhận đơn chưa nhé?');
     assert.deepEqual(f.ai.answer.mock.calls.at(-1).arguments, [message, history, true]);
-    assert.deepEqual(reply.sources, [{ id: 'CANCELLATION', title: 'Hủy đơn hàng' }]);
+    assert.deepEqual(reply.sources, [{ id: 'CANCELLATION', title: 'Order Cancellation' }]);
   }
   const guest = await f.bot.replyGuest('guest', { message: 'Rồi, giờ làm sao?', history });
   assert.equal(guest.engine, 'GEMINI');
@@ -332,7 +332,7 @@ test('credential formats and English security labels never reach AI for members 
       ],
     });
     const passedHistory = f.ai.answer.mock.calls[0].arguments[1];
-    assert.ok(passedHistory.every((turn) => turn.content === '[Nội dung bảo mật đã được ẩn.]'));
+    assert.ok(passedHistory.every((turn) => turn.content === '[Sensitive content hidden.]'));
   }
 });
 
@@ -397,7 +397,7 @@ test('auto reply persists message and preview/unread together and is explicitly 
     'seller',
     'Hello',
   );
-  assert.match(message.body, /^\[Trả lời tự động\]/);
+  assert.match(message.body, /^\[Auto-reply\]/);
   assert.deepEqual(changes[0].data.unreadCountUser1, { increment: 1 });
   assert.equal(changes[0].data.lastMessage, message.body);
 });
@@ -493,7 +493,7 @@ test('all knowledge topics including auction, wallet, reputation, seller and sec
   const auction = await f.bot.reply('buyer', { message: 'Luật đấu giá 3D và anti sniping?' });
   assert.equal(auction.topic, 'AUCTION');
   assert.match(auction.reply, /40/);
-  assert.match(auction.reply, /2 phút/);
+  assert.match(auction.reply, /2 minutes/);
   const wallet = await f.bot.reply('buyer', {
     message: 'Ký quỹ và rút tiền ví NEXUS Pay thế nào?',
   });
@@ -501,10 +501,10 @@ test('all knowledge topics including auction, wallet, reputation, seller and sec
   assert.match(wallet.reply, /7%/);
   const reputation = await f.bot.reply('buyer', { message: 'Điểm uy tín tính thế nào?' });
   assert.equal(reputation.topic, 'REPUTATION');
-  assert.match(reputation.reply, /100 điểm/);
+  assert.match(reputation.reply, /100 reputation points/);
   const seller = await f.bot.reply('buyer', { message: 'Cách bật chế độ người bán?' });
   assert.equal(seller.topic, 'SELLER');
-  assert.match(seller.reply, /50 điểm/);
+  assert.match(seller.reply, /50 reputation points/);
   const securityTopic = await f.bot.reply('buyer', { message: 'Bảo mật tài khoản' });
   assert.equal(securityTopic.topic, 'SECURITY');
   assert.equal(securityTopic.engine, 'FAQ');

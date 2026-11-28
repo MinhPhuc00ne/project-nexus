@@ -42,7 +42,7 @@ export function normalizeGhnWardCode(code: string | number | undefined | null): 
 
 /** Packaging estimate: stack units vertically; GHN determines billable weight and price. */
 export function buildGhnParcel(items: GhnParcelItem[]): GhnParcel {
-  if (!items.length) throw new BadRequestException('Không có sản phẩm để tính cước GHN.');
+  if (!items.length) throw new BadRequestException('No items provided for GHN fee calculation.');
   for (const item of items) {
     if (
       [item.quantity, item.weight, item.length, item.width, item.height].some(
@@ -51,7 +51,7 @@ export function buildGhnParcel(items: GhnParcelItem[]): GhnParcel {
       !Number.isFinite(item.price) ||
       item.price < 0
     ) {
-      throw new BadRequestException('Khối lượng, kích thước hoặc số lượng sản phẩm không hợp lệ.');
+      throw new BadRequestException('Invalid item weight, dimensions, or quantity.');
     }
   }
   const weightGrams = items.reduce((sum, item) => sum + item.weight * item.quantity, 0);
@@ -60,7 +60,7 @@ export function buildGhnParcel(items: GhnParcelItem[]): GhnParcel {
     items.reduce((sum, item) => sum + item.price * item.quantity, 0),
   );
   if (![weightGrams, heightCm, insuranceValue].every(Number.isSafeInteger)) {
-    throw new BadRequestException('Kiện hàng vượt giới hạn dữ liệu cho phép.');
+    throw new BadRequestException('Parcel dimensions or value exceed allowed limits.');
   }
   return {
     weightGrams,

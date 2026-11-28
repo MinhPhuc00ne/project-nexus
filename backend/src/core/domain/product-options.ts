@@ -15,7 +15,7 @@ export function productChoiceLabel(title: string, selections: unknown): string {
 export function normalizeOptions(options: ProductChoice[]): ProductChoice[] {
   if (options.length > 6) {
     throw new BadRequestException({
-      message: 'Tối đa 6 nhóm lựa chọn.',
+      message: 'Maximum of 6 option groups allowed.',
       errorCode: AppErrorCode.VALIDATION_ERROR,
     });
   }
@@ -37,7 +37,7 @@ export function normalizeOptions(options: ProductChoice[]): ProductChoice[] {
       new Set(option.values).size !== option.values.length
     )
       throw new BadRequestException({
-        message: 'Nhóm lựa chọn/giá trị không hợp lệ hoặc bị trùng.',
+        message: 'Option group or values are invalid or duplicated.',
         errorCode: AppErrorCode.VALIDATION_ERROR,
       });
     names.add(name);
@@ -51,7 +51,7 @@ export function validateSelections(
   if (selections === null || selections === undefined) selections = {};
   if (!selections || typeof selections !== 'object' || Array.isArray(selections)) {
     throw new BadRequestException({
-      message: 'Lựa chọn sản phẩm phải là đối tượng tên lựa chọn/giá trị.',
+      message: 'Product selections must be an option-name/value object.',
       errorCode: AppErrorCode.VALIDATION_ERROR,
     });
   }
@@ -64,7 +64,7 @@ export function validateSelections(
     })
   )
     throw new BadRequestException({
-      message: 'Vui lòng chọn đầy đủ và đúng màu/kích thước của sản phẩm.',
+      message: 'Please select all valid product options (color, size, etc.).',
       errorCode: AppErrorCode.VALIDATION_ERROR,
     });
   const result = Object.fromEntries(

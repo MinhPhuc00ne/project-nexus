@@ -79,17 +79,19 @@ export class AuctionSecondChanceHelper {
         },
       });
       if (!award) {
-        throw new NotFoundException('Không tìm thấy lời mời mua hàng đấu giá.');
+        throw new NotFoundException('Auction purchase offer not found.');
       }
       if (award.buyerId !== buyerId) {
-        throw new ForbiddenException('Bạn không có quyền phản hồi lời mời mua hàng này.');
+        throw new ForbiddenException(
+          'You do not have permission to respond to this purchase offer.',
+        );
       }
       if (award.tier !== AuctionAwardTier.SECOND_CHANCE) {
-        throw new BadRequestException('Thao tác này chỉ áp dụng cho người mua dự bị.');
+        throw new BadRequestException('This action only applies to second-chance buyers.');
       }
       if (award.status !== AuctionAwardStatus.AWAITING_ACCEPTANCE) {
         throw new ConflictException({
-          message: 'Lời mời mua hàng này đã được phản hồi hoặc không còn hiệu lực.',
+          message: 'This purchase offer has already been answered or is no longer valid.',
           errorCode: AppErrorCode.CONFLICT,
         });
       }
@@ -105,7 +107,7 @@ export class AuctionSecondChanceHelper {
           data: {
             status: AuctionAwardStatus.DECLINED,
             completedAt: now,
-            resolutionNote: 'Người mua tiếp theo đã từ chối nhận quyền mua.',
+            resolutionNote: 'Second-chance buyer declined the purchase offer.',
           },
         });
         if (award.auctionItemId) {
@@ -157,8 +159,8 @@ export class AuctionSecondChanceHelper {
           userId: buyerId,
           auctionId: award.auctionId,
           targetUrl: '/wallet',
-          title: `Cần nạp đủ 30% tiền cọc để mua ${itemLabel}`,
-          content: `Bạn đã xác nhận muốn mua ${itemLabel}. Vui lòng nạp đủ 30% tiền cọc tương đương ${formatVnd(requiredDeposit)} (còn thiếu ${formatVnd(missingAmount)}). Ngay khi nạp đủ, hệ thống sẽ tự động trừ cọc và mở thanh toán 24 giờ.`,
+          title: `30% deposit required to purchase ${itemLabel}`,
+          content: `You confirmed interest in purchasing ${itemLabel}. Please deposit the full 30% (${formatVnd(requiredDeposit)}, missing ${formatVnd(missingAmount)}). Once funded, the deposit will be locked automatically and 24-hour checkout will open.`,
           type: NotificationType.PAYMENT,
           channel: NotificationChannel.IN_APP,
           metadata: {
@@ -183,8 +185,8 @@ export class AuctionSecondChanceHelper {
         {
           auctionId: award.auctionId,
           targetUrl: `/auction/${award.auctionId}`,
-          title: `Người mua kế tiếp đã đồng ý mua ${itemLabel} (chờ nạp cọc)`,
-          content: `Người mua dự bị đã xác nhận muốn mua ${itemLabel} với mức giá ${formatVnd(Number(award.offerAmount))} và đang tiến hành nạp đủ 30% tiền cọc (${formatVnd(requiredDeposit)}).`,
+          title: `Second-chance buyer accepted ${itemLabel} (awaiting deposit)`,
+          content: `The backup buyer confirmed interest in purchasing ${itemLabel} at ${formatVnd(Number(award.offerAmount))} and is topping up the 30% deposit (${formatVnd(requiredDeposit)}).`,
           metadata: {
             actionType: 'SECOND_CHANCE_AWAITING_DEPOSIT',
             awardId: award.id,
@@ -284,7 +286,7 @@ export class AuctionSecondChanceHelper {
     const sellerId = award.auctionItem?.sellerId ?? award.auction.sellerId;
     if (!sellerId) {
       throw new ConflictException({
-        message: 'Không xác định được người bán cho lô đấu giá.',
+        message: 'Unable to identify the seller for this auction lot.',
         errorCode: AppErrorCode.CONFLICT,
       });
     }
@@ -311,7 +313,7 @@ export class AuctionSecondChanceHelper {
         amount: -depositAmount,
         status: WalletTransactionStatus.SUCCESS,
         referenceId: award.auctionId,
-        description: `Khóa 30% tiền cọc (${formatVnd(depositAmount)}) cho quyền mua ${itemLabel} (${award.auction.title}).`,
+        description: `Locked 30% deposit (${formatVnd(depositAmount)}) for purchase right to ${itemLabel} (${award.auction.title}).`,
       },
     });
 
@@ -335,8 +337,8 @@ export class AuctionSecondChanceHelper {
     });
 
     const buyerMessage = fromAutoDeposit
-      ? `Nạp tiền thành công! Hệ thống đã tự động trừ 30% tiền cọc (${formatVnd(depositAmount)}) cho ${itemLabel} thuộc phiên "${award.auction.title}". Cảm ơn bạn! Vui lòng thanh toán đầy đủ 70% còn lại (${formatVnd(remainingProductAmount)}) + phí vận chuyển trong vòng 24 giờ.`
-      : `Đã giữ 30% tiền cọc (${formatVnd(depositAmount)}) cho ${itemLabel}. Cảm ơn bạn đã xác nhận mua! Vui lòng hoàn tất thanh toán 70% còn lại (${formatVnd(remainingProductAmount)}) + phí vận chuyển trong vòng 24 giờ.`;
+      ? `Top-up successful! 30% deposit (${formatVnd(depositAmount)}) has been automatically locked for ${itemLabel} in "${award.auction.title}". Thank you! Please pay the remaining 70% (${formatVnd(remainingProductAmount)}) plus shipping within 24 hours.`
+      : `30% deposit (${formatVnd(depositAmount)}) has been locked for ${itemLabel}. Thank you for confirming! Please complete payment for the remaining 70% (${formatVnd(remainingProductAmount)}) plus shipping within 24 hours.`;
 
     await publishNotification(
       tx,
@@ -344,7 +346,7 @@ export class AuctionSecondChanceHelper {
         userId: buyerId,
         auctionId: award.auctionId,
         targetUrl: `/auction/${award.auctionId}`,
-        title: `Đã thanh toán cọc 30% cho ${itemLabel}`,
+        title: `30% deposit paid for ${itemLabel}`,
         content: buyerMessage,
         type: NotificationType.AUCTION,
         channel: NotificationChannel.IN_APP,
@@ -370,8 +372,8 @@ export class AuctionSecondChanceHelper {
       {
         auctionId: award.auctionId,
         targetUrl: `/auction/${award.auctionId}`,
-        title: `Người mua tiếp theo đã đóng 30% cọc cho ${itemLabel}`,
-        content: `Người mua dự bị đã đóng đủ 30% tiền cọc (${formatVnd(depositAmount)}) cho ${itemLabel} và bước vào thời hạn 24 giờ thanh toán phần còn lại.`,
+        title: `Second-chance buyer paid 30% deposit for ${itemLabel}`,
+        content: `The backup buyer has funded the 30% deposit (${formatVnd(depositAmount)}) for ${itemLabel} and entered the 24-hour window to pay the remaining balance.`,
         metadata: {
           actionType: 'SECOND_CHANCE_DEPOSIT_LOCKED',
           awardId: award.id,

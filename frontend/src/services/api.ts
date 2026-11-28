@@ -17,7 +17,7 @@ export const API_BASE_URL = (
 const api = axios.create({
   // Base API endpoint configured via frontend/.env (defaults to http://localhost:3000/api/v1).
   baseURL: API_BASE_URL,
-  // Chờ tối đa 20 giây; đây không phải thời hạn của mã OTP.
+  // Wait up to 20 seconds; this is the request timeout, not the OTP expiration window.
   timeout: 20000,
 });
 
@@ -156,7 +156,7 @@ function processQueue(error: unknown, token: string | null = null) {
   failedQueue = [];
 }
 
-// Request Interceptor: Tự động đính kèm Bearer token từ getStoredToken() nếu chưa có
+// Request Interceptor: Automatically attach Bearer token from getStoredToken() if missing
 api.interceptors.request.use((config) => {
   const token = getStoredToken();
   if (token && !config.headers.Authorization) {
@@ -166,7 +166,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Response Interceptor: Tự động refresh token khi nhận HTTP 401
+// Response Interceptor: Automatically refresh token on HTTP 401
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
@@ -276,5 +276,5 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   });
 }
 
-// Export để các service dùng chung cấu hình Axios.
+// Export shared Axios instance for services.
 export default api;

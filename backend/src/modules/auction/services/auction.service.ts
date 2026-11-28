@@ -259,7 +259,7 @@ export class AuctionService implements OnModuleInit {
     ]);
 
     if (!auction) {
-      throw new NotFoundException('Không tìm thấy phòng đấu giá.');
+      throw new NotFoundException('Auction room not found.');
     }
 
     const isPrivilegedViewer =
@@ -386,7 +386,7 @@ export class AuctionService implements OnModuleInit {
       },
     });
     if (!auction) {
-      throw new NotFoundException('Không tìm thấy phòng đấu giá.');
+      throw new NotFoundException('Auction room not found.');
     }
 
     const introState = computeIntroState(auction.status, auction.startTime, auction.items.length);

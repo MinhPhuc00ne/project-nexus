@@ -30,7 +30,9 @@ export class CloudinaryStorageService {
     // STORAGE_PROVIDER names where files go. Local disk is a deliberate
     // choice for a local or demo run, not what happens when a key is absent.
     if (this.providers.isLocalStorage()) {
-      this.logger.log('STORAGE_PROVIDER=local: lưu file vào thư mục static uploads/seller-proofs.');
+      this.logger.log(
+        'STORAGE_PROVIDER=local: saving file to static uploads/seller-proofs directory.',
+      );
       const appPublicUrl = resolveAppPublicUrl({
         APP_PUBLIC_URL: this.configService.get<string>('APP_PUBLIC_URL'),
         APP_ENV: this.configService.get<string>('APP_ENV') ?? process.env.APP_ENV,
@@ -59,10 +61,10 @@ export class CloudinaryStorageService {
 
     if (!cloudName || !apiKey || !apiSecret) {
       this.logger.error(
-        'STORAGE_PROVIDER=cloudinary nhưng thiếu cấu hình CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY hoặc CLOUDINARY_API_SECRET.',
+        'STORAGE_PROVIDER=cloudinary is set but CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, or CLOUDINARY_API_SECRET is missing.',
       );
       throw new ServiceUnavailableException(
-        'Chưa cấu hình đầy đủ thông tin Cloudinary để tải file lên.',
+        'Cloudinary credentials are not fully configured for file upload.',
       );
     }
 

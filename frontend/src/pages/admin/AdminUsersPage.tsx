@@ -3,24 +3,24 @@ import { useTranslation } from 'react-i18next';
 import { StaffInvite, UserSecurity } from '../../components/adminDashboard/Users/UserManagement';
 import { useAdminContext } from '../../components/adminDashboard/shared/useAdminContext';
 
-// Ghép form thêm Staff và danh sách tài khoản; hai khối cũng được dùng ở Tổng quan.
+// Combines the Staff invite form and users table; both blocks are also reused on Overview.
 export default function AdminUsersPage() {
   const { t } = useTranslation('admin');
   const { data, actions } = useAdminContext();
 
   return (
     <div className="space-y-5">
-      {/* Giới thiệu chức năng quản lý tài khoản. */}
+      {/* Account management overview banner. */}
       <div className="flex items-center gap-2 text-sm text-slate-500">
         <Users size={18} />
         {t('users.pageSubtitle')}
       </div>
       <div className="grid items-start gap-5 xl:grid-cols-[1fr_1.5fr]">
-        {/* Form gửi lời mời tạo tài khoản Staff qua API. */}
+        {/* Form to invite and create Support Staff accounts via API. */}
         <div className="min-w-0 xl:sticky xl:top-0">
           <StaffInvite data={data} actions={actions} />
         </div>
-        {/* Danh sách người dùng: tìm kiếm, lọc vai trò và khóa/mở khóa tài khoản. */}
+        {/* User directory: search, role filter, and lock/unlock accounts. */}
         <UserSecurity data={data} actions={actions} />
       </div>
     </div>

@@ -140,7 +140,7 @@ export function reviewAdminWithdrawal(
   });
 }
 
-// Không gửi mật khẩu: nhân viên tự đặt mật khẩu qua link gửi đến email cá nhân.
+// Never send a password: staff set their own password via the activation link sent to their email.
 export function inviteStaff(dto: InviteStaffDto): Promise<StaffInvitationResult> {
   return adminRequest<StaffInvitationResult>({
     url: '/admin/staff/invite',
@@ -229,7 +229,7 @@ export function unlockUser(id: string, reason?: string) {
 }
 
 /**
- * 1. Admin tạo tài khoản cho nhân viên hỗ trợ (Support Staff)
+ * 1. Admin creates a Support Staff account
  */
 export function createStaff(dto: CreateStaffDto): Promise<CreateStaffResult> {
   return adminRequest<CreateStaffResult>({
@@ -240,7 +240,7 @@ export function createStaff(dto: CreateStaffDto): Promise<CreateStaffResult> {
 }
 
 /**
- * 2. Lấy danh sách tài khoản Support Staff
+ * 2. Fetch the list of Support Staff accounts
  */
 export function listStaff(params?: QueryStaffParams): Promise<PaginatedResult<StaffUser>> {
   return adminRequest<PaginatedResult<StaffUser>>({
@@ -251,7 +251,7 @@ export function listStaff(params?: QueryStaffParams): Promise<PaginatedResult<St
 }
 
 /**
- * 3. Xem danh sách yêu cầu nâng cấp lên Seller (hỗ trợ lọc PENDING, APPROVED, REJECTED)
+ * 3. List Seller upgrade requests (supports filtering by PENDING, APPROVED, REJECTED)
  */
 export function getSellerRequests(
   params?: QuerySellerRequestsParams,
@@ -264,7 +264,7 @@ export function getSellerRequests(
 }
 
 /**
- * 4. Xem chi tiết một yêu cầu nâng cấp
+ * 4. View details of a Seller upgrade request
  */
 export function getSellerRequestById(id: string): Promise<SellerUpgradeRequest> {
   return adminRequest<SellerUpgradeRequest>({
@@ -274,7 +274,7 @@ export function getSellerRequestById(id: string): Promise<SellerUpgradeRequest> 
 }
 
 /**
- * 5. Admin phê duyệt yêu cầu nâng cấp lên Seller
+ * 5. Admin approves a Seller upgrade request
  */
 export function approveSellerRequest(id: string): Promise<SellerRequestReviewResult> {
   return adminRequest<SellerRequestReviewResult>({
@@ -284,7 +284,7 @@ export function approveSellerRequest(id: string): Promise<SellerRequestReviewRes
 }
 
 /**
- * 6. Admin từ chối yêu cầu nâng cấp lên Seller kèm lý do
+ * 6. Admin rejects a Seller upgrade request with a reason
  */
 export function rejectSellerRequest(
   id: string,

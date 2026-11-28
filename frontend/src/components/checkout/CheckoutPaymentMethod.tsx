@@ -19,7 +19,7 @@ export const CheckoutPaymentMethod: React.FC<CheckoutPaymentMethodProps> = ({
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="mb-3 text-sm font-bold text-slate-900">{t('checkout.paymentMethod')}</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {/* Lựa chọn 1: Thanh toán ngay qua PayOS */}
+          {/* Option 1: Instant payment via PayOS */}
           <button
             type="button"
             onClick={() => onSelectPaymentMethod('PAYOS')}
@@ -45,7 +45,7 @@ export const CheckoutPaymentMethod: React.FC<CheckoutPaymentMethodProps> = ({
             </p>
           </button>
 
-          {/* Lựa chọn 2: Thanh toán sau khi nhận hàng (COD) */}
+          {/* Option 2: Cash on Delivery (COD) */}
           <button
             type="button"
             onClick={() => onSelectPaymentMethod('COD')}
@@ -82,7 +82,7 @@ export const CheckoutPaymentMethod: React.FC<CheckoutPaymentMethodProps> = ({
         </div>
       </div>
 
-      {/* Thông tin bảo chứng theo phương thức đã chọn */}
+      {/* Protection information for the selected payment method */}
       {paymentMethod === 'COD' ? (
         <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 text-xs text-emerald-950">
           <Truck size={20} className="mt-0.5 shrink-0 text-emerald-600" />

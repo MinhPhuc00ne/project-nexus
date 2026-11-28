@@ -17,28 +17,28 @@ export const ORDER_STATUS_KEYS: SellerOrderStatus[] = [
 ];
 
 export const orderLabels: Record<SellerOrderStatus, string> = {
-  PENDING_PAYMENT: 'Chờ thanh toán',
-  PAID: 'Đã thanh toán',
-  PREPARING: 'Đang chuẩn bị',
-  SHIPPING: 'Đang giao',
-  DELIVERED: 'Đã giao',
-  CONFIRMED: 'Đã xác nhận nhận hàng',
-  CANCELLED: 'Đã hủy',
-  REFUNDED: 'Đã hoàn tiền',
+  PENDING_PAYMENT: 'Pending Payment',
+  PAID: 'Paid',
+  PREPARING: 'Preparing',
+  SHIPPING: 'Shipping',
+  DELIVERED: 'Delivered',
+  CONFIRMED: 'Delivery Confirmed',
+  CANCELLED: 'Cancelled',
+  REFUNDED: 'Refunded',
 };
 export const paymentLabels: Record<string, string> = {
-  PENDING: 'Chờ thanh toán',
-  SUCCESS: 'Thành công',
-  FAILED: 'Thất bại',
-  CANCELLED: 'Đã hủy',
+  PENDING: 'Pending Payment',
+  SUCCESS: 'Success',
+  FAILED: 'Failed',
+  CANCELLED: 'Cancelled',
 };
 export const shipmentLabels: Record<string, string> = {
-  CREATED: 'Đã tạo vận đơn',
-  PICKED_UP: 'Đã lấy hàng',
-  IN_TRANSIT: 'Đang vận chuyển',
-  DELIVERED: 'Đã giao',
-  FAILED: 'Giao thất bại',
-  RETURNED: 'Đã hoàn hàng',
+  CREATED: 'Waybill Created',
+  PICKED_UP: 'Picked Up',
+  IN_TRANSIT: 'In Transit',
+  DELIVERED: 'Delivered',
+  FAILED: 'Delivery Failed',
+  RETURNED: 'Returned',
 };
 export const money = (value: string | number) => formatCurrency(Number(value));
 export const date = (value: string) => new Date(value).toLocaleString(getIntlLocale(i18n.language));

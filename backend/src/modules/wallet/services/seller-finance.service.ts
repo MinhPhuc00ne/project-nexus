@@ -31,11 +31,11 @@ export class SellerFinanceService {
     });
 
     if (!seller) {
-      throw new NotFoundException('Không tìm thấy tài khoản người bán.');
+      throw new NotFoundException('Seller account not found.');
     }
 
     if (seller.role !== Role.SELLER && seller.role !== Role.ADMIN) {
-      throw new ForbiddenException('Chỉ tài khoản Người bán (Seller) mới có quyền xem doanh thu.');
+      throw new ForbiddenException('Only Seller accounts have permission to view revenue.');
     }
 
     let wallet = seller.wallet;

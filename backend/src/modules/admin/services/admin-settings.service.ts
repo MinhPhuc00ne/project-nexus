@@ -62,7 +62,7 @@ export class AdminSettingsService {
     // Stored in the database, so the change survives a cache flush.
     const updated = await this.platformSettings.update(dto, adminId);
 
-    this.logger.log(`Admin (${adminId}) đã cập nhật cấu hình hệ thống.`);
+    this.logger.log(`Admin (${adminId}) updated platform settings.`);
     await this.auditLog?.record({
       eventName: 'admin.settings.updated',
       operatorId: adminId,
@@ -89,29 +89,31 @@ export class AdminSettingsService {
         if (sellers.length > 0) {
           const oldFee = current.platformFeePercentage;
           const newFee = updated.platformFeePercentage;
-          const nowLabel = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+          const nowLabel = new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' });
           await publishNotifications(
             this.prisma,
             sellers.map((s) => ({
               userId: s.id,
-              title: 'Thông báo điều chỉnh biểu phí sàn giao dịch 📢',
-              content: `Sàn NEXUS thông báo: Tỷ lệ phí sàn đã được điều chỉnh từ ${oldFee}% sang ${newFee}%, áp dụng cho tất cả các đơn hàng mới phát sinh từ ${nowLabel}. Vui lòng kiểm tra lại mục Tài chính người bán để tối ưu giá bán sản phẩm.`,
+              title: 'Platform fee schedule update 📢',
+              content: `NEXUS notice: The platform fee rate has been adjusted from ${oldFee}% to ${newFee}%, effective for all new orders created from ${nowLabel}. Please review your Seller Finance dashboard to optimize product pricing.`,
               targetUrl: '/seller/finance',
               type: NotificationType.SYSTEM,
               channel: NotificationChannel.IN_APP,
             })),
             this.notifications,
           );
-          this.logger.log(`Đã gửi thông báo thay đổi phí sàn tới ${sellers.length} người bán.`);
+          this.logger.log(`Sent platform fee change notifications to ${sellers.length} sellers.`);
         }
       } catch (err) {
-        this.logger.error(`Gửi thông báo thay đổi phí sàn thất bại: ${(err as Error).message}`);
+        this.logger.error(
+          `Failed to send platform fee change notifications: ${(err as Error).message}`,
+        );
       }
     }
 
     return {
       success: true,
-      message: 'Cập nhật cấu hình sàn giao dịch thành công!',
+      message: 'Platform settings updated successfully!',
       settings: updated,
     };
   }

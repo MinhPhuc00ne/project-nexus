@@ -7,7 +7,7 @@ import {
   type StaffInvitationInfo,
 } from '@/features/staff/services/staff';
 
-// Link trong thư mời mở trang này; không đặt trong layout yêu cầu đăng nhập.
+// Invitation link opens this page; kept outside the authenticated layout.
 export default function StaffActivationPage() {
   const { t } = useTranslation('staff');
   const [params] = useSearchParams();

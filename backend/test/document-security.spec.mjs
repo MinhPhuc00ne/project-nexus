@@ -35,18 +35,18 @@ test('profile proof is short-lived, user/password-bound and cannot be used as an
   const proof = await service.issue(user, 'correct-password');
   assert.equal(proof.expiresIn, 300);
   await service.assert(user, proof);
-  await assert.rejects(service.issue(user, 'wrong'), /không chính xác/);
-  await assert.rejects(service.assert({ ...user, id: 'other' }, proof), /xác minh/);
+  await assert.rejects(service.issue(user, 'wrong'), /Incorrect verification password/);
+  await assert.rejects(service.assert({ ...user, id: 'other' }, proof), /re-verify/);
   await assert.rejects(
     service.assert({ ...user, passwordHash: await bcrypt.hash('new-password', 4) }, proof),
-    /xác minh/,
+    /re-verify/,
   );
   await assert.rejects(jwt.verifyAsync(proof.verificationToken));
   const access = jwt.sign({ sub: user.id, role: 'SELLER' });
-  await assert.rejects(service.assert(user, { verificationToken: access }), /xác minh/);
+  await assert.rejects(service.assert(user, { verificationToken: access }), /re-verify/);
   await assert.rejects(
     service.assert(user, { verificationToken: 'revoked-refresh-token' }),
-    /xác minh/,
+    /re-verify/,
   );
 });
 
@@ -57,11 +57,11 @@ test('recent login proof fails closed on expiry, password rotation and Redis fai
     get: () => 'secret',
   });
   await service.assert(user);
-  await assert.rejects(service.assert({ ...user, passwordHash: 'rotated' }), /xác minh/);
+  await assert.rejects(service.assert({ ...user, passwordHash: 'rotated' }), /re-verify/);
   cache = JSON.stringify({ ...JSON.parse(cache), verifiedAt: Date.now() - 301000 });
-  await assert.rejects(service.assert(user), /xác minh/);
+  await assert.rejects(service.assert(user), /re-verify/);
   cache = String(Date.now());
-  await assert.rejects(service.assert(user), /xác minh/);
+  await assert.rejects(service.assert(user), /re-verify/);
   const down = new ProfileReauthService(
     {
       get: async () => {
@@ -71,7 +71,7 @@ test('recent login proof fails closed on expiry, password rotation and Redis fai
     new JwtService(),
     { get: () => 'secret' },
   );
-  await assert.rejects(down.assert(user), /xác minh/);
+  await assert.rejects(down.assert(user), /re-verify/);
   await down.assert(user, { password: 'secret' });
 });
 
@@ -102,10 +102,13 @@ test('both profile update routes enforce seller reauthentication from actual DB 
   );
   assert.equal(writes, 0);
   user.role = 'SUPPORT_STAFF';
-  await assert.rejects(root.updateProfile(user.id, { fullName: 'New Name' }), /Buyer và Seller/);
+  await assert.rejects(
+    root.updateProfile(user.id, { fullName: 'New Name' }),
+    /Buyers? and Sellers?/,
+  );
   await assert.rejects(
     buyer.updateProfile(user.id, { fullName: 'New Name' }, 'BUYER'),
-    /Buyer và Seller/,
+    /Buyers? and Sellers?/,
   );
 });
 
@@ -223,7 +226,7 @@ test('seller toggle cannot undo suspension and manual buyer mode keeps seller id
     },
   };
   const prisma = { $transaction: async (fn) => fn(tx) };
-  await assert.rejects(toggleSellerState(prisma, user.id, true), /đình chỉ/);
+  await assert.rejects(toggleSellerState(prisma, user.id, true), /suspended/i);
   assert.equal(updated, false);
   const result = await toggleSellerState(prisma, user.id, false);
   assert.equal(result.isShopSuspended, true);

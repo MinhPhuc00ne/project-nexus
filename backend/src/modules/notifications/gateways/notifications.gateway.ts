@@ -154,7 +154,7 @@ export class NotificationsGateway
         const res = await this.notificationsService.getUnreadCount(userId);
         unreadCount = res.unreadCount;
       } catch {
-        // Giữ fallback đếm theo batch nếu truy vấn count tạm thời lỗi
+        // Keep batch count fallback if the count query temporarily fails
       }
 
       for (const rec of userRecords) {

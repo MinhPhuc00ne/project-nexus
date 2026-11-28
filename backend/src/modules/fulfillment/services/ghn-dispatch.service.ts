@@ -82,7 +82,8 @@ export class GhnDispatchService {
     urls: Awaited<ReturnType<GhnOrderApiService['label']>>;
   }> {
     const order = await this.load(sellerId, orderId);
-    if (!order.shipment?.waybillCode) throw new BadRequestException('Chưa có vận đơn GHN để in.');
+    if (!order.shipment?.waybillCode)
+      throw new BadRequestException('No GHN waybill available to print.');
     const context = shipmentGhnContext(order.shipment.metadata);
     const urls = await this.orders.label(
       order.shipment.waybillCode,
@@ -101,9 +102,9 @@ export class GhnDispatchService {
         payments: true,
       },
     });
-    if (!order) throw new NotFoundException('Không tìm thấy đơn hàng.');
+    if (!order) throw new NotFoundException('Order not found.');
     if (order.sellerId !== sellerId)
-      throw new ForbiddenException('Bạn không có quyền gửi đơn hàng này.');
+      throw new ForbiddenException('You do not have permission to dispatch this order.');
     return order;
   }
 
@@ -120,7 +121,7 @@ export class GhnDispatchService {
       : order.items.map(
           ({ product, auctionItem, titleSnapshot, quantity, unitPrice, selections }) => ({
             name: productChoiceLabel(
-              product?.title ?? auctionItem?.title ?? titleSnapshot ?? 'Vật phẩm đấu giá',
+              product?.title ?? auctionItem?.title ?? titleSnapshot ?? 'Auction item',
               selections,
             ),
             quantity,
@@ -149,7 +150,7 @@ export class GhnDispatchService {
     const order = await this.load(sellerId, orderId);
     if (![OrderStatus.PAID, OrderStatus.PREPARING].includes(order.status as 'PAID' | 'PREPARING')) {
       throw new BadRequestException(
-        'Chỉ báo giá gửi hàng cho đơn đã thanh toán hoặc đang chuẩn bị.',
+        'Shipping dispatch preview is only available for paid or preparing orders.',
       );
     }
     const quote = await this.quote(order, dto);
@@ -177,7 +178,7 @@ export class GhnDispatchService {
         objectValue(saved.data).order_code !== order.shipment.waybillCode
       ) {
         throw new ConflictException(
-          'Vận đơn cũ chưa được GHN xác minh. Cần kiểm tra trước khi gửi hàng.',
+          'Legacy waybill has not been verified by GHN. Inspect before dispatching.',
         );
       }
       return this.result(order, order.shipment);
@@ -187,13 +188,11 @@ export class GhnDispatchService {
       objectValue(order.shipment?.metadata).dispatchState !== 'REJECTED'
     ) {
       throw new ConflictException(
-        'Yêu cầu gửi hàng đã được ghi nhận. Hãy đối soát GHN trước khi gửi lại.',
+        'A dispatch request has already been recorded. Reconcile with GHN before retrying.',
       );
     }
     if (order.status !== OrderStatus.PAID && order.status !== OrderStatus.PREPARING) {
-      throw new BadRequestException(
-        'Đơn hàng phải đã thanh toán hoặc đang chuẩn bị trước khi gửi GHN.',
-      );
+      throw new BadRequestException('Order must be paid or preparing before dispatching to GHN.');
     }
     const quote = await this.quote(order, dto);
     const { origin, parcel, request } = quote;
@@ -205,7 +204,7 @@ export class GhnDispatchService {
       !address.street ||
       !address.recipientName
     ) {
-      throw new BadRequestException('Thiếu thông tin liên hệ hoặc địa chỉ gửi/nhận hàng.');
+      throw new BadRequestException('Missing sender or recipient contact/address details.');
     }
     const isCodOrder = order.payments?.some((p) => p.provider === PaymentProvider.COD);
     const codAmount = isCodOrder ? Math.round(Number(order.totalAmount)) : 0;
@@ -215,11 +214,11 @@ export class GhnDispatchService {
       payment_type_id: 1,
       cod_amount: codAmount,
       required_note: 'KHONGCHOXEMHANG',
-      note: dto?.note || 'Giao hàng Project Nexus',
+      note: dto?.note || 'Project Nexus Delivery',
       to_name: address.recipientName,
       to_phone: address.phone,
       to_address: address.street,
-      from_name: origin.storeName || origin.recipientName || 'Người bán Nexus',
+      from_name: origin.storeName || origin.recipientName || 'Nexus Seller',
       from_phone: origin.phone,
       from_address: origin.street || origin.formattedAddress,
       from_district_id: request.fromDistrictId,
@@ -242,14 +241,16 @@ export class GhnDispatchService {
         include: { shipment: true, afterSales: true },
       });
       if (current.afterSales && current.afterSales.status !== 'REJECTED')
-        throw new ConflictException('Đơn đang có yêu cầu hủy/trả hàng.');
+        throw new ConflictException('Order has an active cancellation or return request.');
       const state = objectValue(current.shipment?.metadata).dispatchState;
       if (
         current.shipment?.waybillCode ||
         (state && state !== 'REJECTED') ||
         (current.status !== OrderStatus.PAID && current.status !== OrderStatus.PREPARING)
       ) {
-        throw new ConflictException('Đơn đã được gửi hoặc đang chờ GHN xác nhận.');
+        throw new ConflictException(
+          'Order has already been dispatched or is awaiting GHN confirmation.',
+        );
       }
       const metadata = {
         dispatchState: 'CREATING',
@@ -279,7 +280,7 @@ export class GhnDispatchService {
       const data = objectValue(body.data);
       if (body.code !== 200 || typeof data.order_code !== 'string' || !data.order_code.trim()) {
         throw new BadGatewayException(
-          'GHN chưa xác nhận mã vận đơn. Hãy đối soát trước khi gửi lại.',
+          'GHN has not confirmed a waybill code yet. Reconcile before retrying.',
         );
       }
     } catch (error) {
@@ -307,7 +308,7 @@ export class GhnDispatchService {
     if (order.shipment?.waybillCode) return this.result(order, order.shipment);
     const metadata = objectValue(order.shipment?.metadata);
     if (!metadata.clientOrderCode)
-      throw new BadRequestException('Chưa có yêu cầu tạo vận đơn cần đối soát.');
+      throw new BadRequestException('No pending waybill creation request found to reconcile.');
     const context = shipmentGhnContext(metadata);
     const detail = await this.orders.byClientCode(
       String(metadata.clientOrderCode),
@@ -332,7 +333,7 @@ export class GhnDispatchService {
         where: { id: order.id },
         include: { shipment: true, afterSales: true },
       });
-      if (!current.shipment) throw new ConflictException('Không tìm thấy yêu cầu gửi hàng đã lưu.');
+      if (!current.shipment) throw new ConflictException('Saved dispatch request not found.');
       if (current.shipment.waybillCode) return { order: current, shipment: current.shipment };
       const metadata = objectValue(current.shipment.metadata);
       const confirmedFee =
@@ -366,8 +367,8 @@ export class GhnDispatchService {
           userId: order.buyerId,
           type: NotificationType.ORDER,
           channel: NotificationChannel.IN_APP,
-          title: 'Đã tạo vận đơn GHN',
-          content: `Đơn #${order.id.slice(0, 8)} có vận đơn ${shipment.waybillCode}, đang chờ GHN lấy hàng.`,
+          title: 'GHN waybill created',
+          content: `Order #${order.id.slice(0, 8)} has waybill ${shipment.waybillCode}, awaiting GHN pickup.`,
         },
         this.notifications,
       );
@@ -388,7 +389,7 @@ export class GhnDispatchService {
   ): GhnDispatchResult {
     return {
       success: true,
-      message: 'Vận đơn đã được GHN xác nhận; trạng thái lấy hàng được đồng bộ riêng.',
+      message: 'Waybill confirmed by GHN; pickup status is synced separately.',
       orderId: order.id,
       orderStatus: order.status,
       shipment: {

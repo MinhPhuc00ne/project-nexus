@@ -73,16 +73,16 @@ export class ChatMessageService {
     const attachments = dto.attachments || [];
     if (!text && attachments.length === 0) {
       throw new BadRequestException({
-        message: 'Nội dung tin nhắn hoặc tệp đính kèm không được để trống.',
+        message: 'Message content or attachment cannot be empty.',
         errorCode: AppErrorCode.BAD_REQUEST,
       });
     }
-    if (text) assertCleanContent(text, 'Nội dung tin nhắn');
+    if (text) assertCleanContent(text, 'Message content');
 
     const convId = dto.conversationId;
     if (!convId) {
       throw new BadRequestException({
-        message: 'Thiếu mã cuộc trò chuyện conversationId.',
+        message: 'Missing conversationId.',
         errorCode: AppErrorCode.BAD_REQUEST,
       });
     }
@@ -110,7 +110,7 @@ export class ChatMessageService {
     await this.prisma.chatConversation.update({
       where: { id: convId },
       data: {
-        lastMessage: text || '[Tệp đính kèm]',
+        lastMessage: text || '[Attachment]',
         lastMessageAt: new Date(),
         updatedAt: new Date(),
         ...(isUser1
@@ -202,7 +202,7 @@ export class ChatMessageService {
     reply: string,
   ): Promise<ChatMessage> {
     return this.prisma.$transaction(async (tx) => {
-      const body = `[Trả lời tự động] ${reply}`;
+      const body = `[Auto-reply] ${reply}`;
       const message = await tx.chatMessage.create({
         data: { conversationId: conv.id, senderId, body, attachments: [] },
         include: { sender: { select: { id: true, fullName: true, avatarUrl: true, role: true } } },
@@ -241,7 +241,7 @@ export class ChatMessageService {
     return {
       success: true,
       conversationId: convId,
-      message: 'Đã đánh dấu toàn bộ tin nhắn là đã đọc.',
+      message: 'All messages marked as read.',
     };
   }
 

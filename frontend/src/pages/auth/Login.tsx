@@ -88,13 +88,13 @@ const Login: React.FC = () => {
     try {
       const result = await login(values.email.trim(), values.password);
 
-      // Lưu session & nạp thông tin user
+      // Persist session & refresh user profile
       const sessionPromise = establishSession(result.user, result.accessToken, result.refreshToken);
 
-      // Hiển thị thông báo Toast thành công ngay lập tức
+      // Show success toast immediately
       toast.success(t('login.successToast', { name: result.user.fullName || result.user.email }));
 
-      // Xác định ngay trang đích trực tiếp không qua redirect trung gian
+      // Resolve direct destination route without intermediate redirect
       const redirectPath = (location.state as { from?: string })?.from;
       let target: string = ROUTES.HOME;
       if (redirectPath && redirectPath !== '/login') {

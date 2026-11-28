@@ -65,7 +65,10 @@ test('admin cannot activate product when fresh locked seller is suspended', asyn
     },
     $transaction: (fn) => fn(tx),
   });
-  await assert.rejects(service.updateProductStatus('p', 'admin', { status: 'ACTIVE' }), /đình chỉ/);
+  await assert.rejects(
+    service.updateProductStatus('p', 'admin', { status: 'ACTIVE' }),
+    /suspended/i,
+  );
   assert.equal(tx.product.update.mock.callCount(), 0);
 });
 
@@ -89,7 +92,7 @@ test('cart checks shared stock across different choices of the same product', as
   const service = new CartService({ $transaction: (fn) => fn(tx) });
   await assert.rejects(
     service.addToCart('buyer', { productId: 'p', quantity: 2, selections: { Color: 'White' } }),
-    /tồn kho/,
+    /stock/i,
   );
   assert.equal(tx.cartItem.upsert.mock.callCount(), 0);
 });
@@ -180,12 +183,12 @@ test('admin can reassign product category, validates existence, and notifies sel
 
   await assert.rejects(
     service.updateProductCategory('prod-1', 'admin-1', { categoryId: 'missing-cat' }),
-    /danh mục/,
+    /category/i,
   );
 
   productRecord = null;
   await assert.rejects(
     service.updateProductCategory('missing-prod', 'admin-1', { categoryId: 'cat-new' }),
-    /sản phẩm/,
+    /product/i,
   );
 });

@@ -98,7 +98,7 @@ export default function SellerShopEditor({
       >
         {section === 'store' ? (
           <>
-            {/* Ảnh đại diện riêng của Gian hàng (Shop Avatar) tách biệt với Avatar Seller */}
+            {/* Shop Avatar is kept separate from personal Seller Avatar */}
             <div className="rounded-lg border border-blue-200 bg-blue-50/40 p-4 space-y-3">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>

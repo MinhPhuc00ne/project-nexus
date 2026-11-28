@@ -22,7 +22,7 @@ export class RouteDistanceService {
       Math.abs(originLon) > 180 ||
       Math.abs(destLon) > 180
     ) {
-      throw new BadRequestException('Tọa độ đo khoảng cách không hợp lệ.');
+      throw new BadRequestException('Invalid distance coordinates.');
     }
     try {
       const url = `https://router.project-osrm.org/route/v1/driving/${originLon},${originLat};${destLon},${destLat}?overview=false`;

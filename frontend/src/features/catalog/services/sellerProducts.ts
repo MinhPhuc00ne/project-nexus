@@ -217,7 +217,7 @@ export async function publishSellerProduct(
     images,
     ...(cleanedOptions?.length ? { options: cleanedOptions } : { options: [] }),
   };
-  // Không điều chỉnh kho hoặc ghi nhật ký khi người bán chưa đổi tổng tồn kho.
+  // Do not adjust inventory or write logs when seller did not change total stock.
   if (edit && payload.quantity === edit.product.totalQty) delete body.quantity;
   return apiRequest<{ id: string; title: string }>(
     edit ? `/catalog/products/${encodeURIComponent(edit.product.id)}` : '/catalog/products',

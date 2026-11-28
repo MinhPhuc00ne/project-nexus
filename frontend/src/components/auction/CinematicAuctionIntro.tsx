@@ -52,7 +52,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
   const [currentTime, setCurrentTime] = useState<number>(initialTime);
   const [countdown, setCountdown] = useState<number>(15);
 
-  // Video của toàn bộ phiên đấu giá do Admin thiết lập
+  // Full auction session video configured by Admin
   const rawVideoUrl = auction?.videoUrl ? formatAuctionImage(auction.videoUrl) : '';
   const [videoError, setVideoError] = useState<boolean>(false);
 
@@ -64,7 +64,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
     ? `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&mute=1&enablejsapi=1`
     : '';
 
-  // Đồng bộ phát video khi mở modal
+  // Sync video playback when modal opens
   useEffect(() => {
     if (isOpen) {
       setVideoError(false);
@@ -89,7 +89,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
     onClose();
   }, [onClose, onTimeSync]);
 
-  // Phím tắt bàn phím: Esc để bỏ qua, Space để Pause, M để Mute
+  // Keyboard shortcuts: Esc to skip, Space to Pause, M to Mute
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -115,7 +115,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, handleClose]);
 
-  // Đếm ngược 15s tự động vào sàn
+  // 15s countdown before automatically entering the auction floor
   useEffect(() => {
     if (!isOpen) return;
     const interval = setInterval(() => {
@@ -179,7 +179,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
   const sessionCode = auction?.id ? `#${auction.id.slice(0, 8).toUpperCase()}` : '#LIVE';
   const isLive = auction?.status === 'ACTIVE' || auction?.status === 'EXTENDED';
 
-  // Tính tỷ lệ đếm ngược cho vòng tròn SVG
+  // Calculate countdown progress ratio for the SVG ring
   const countdownDashOffset = 44 - (44 * (15 - countdown)) / 15;
 
   return (
@@ -189,7 +189,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
 
       {/* Main Cinematic Frame Container */}
       <div className="relative w-full max-w-5xl max-h-[96vh] flex flex-col rounded-3xl border border-slate-700/80 bg-slate-900/95 shadow-[0_0_100px_rgba(0,0,0,0.95)] overflow-hidden">
-        {/* Top Header Bar: Thể hiện đây là Video của TOÀN BỘ PHIÊN ĐẤU GIÁ */}
+        {/* Top Header Bar: Indicates this is the full auction session intro video */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-slate-800/90 bg-slate-950/80 backdrop-blur-md z-30">
           <div className="flex items-center gap-3 min-w-0">
             <div className="h-9 w-9 rounded-2xl bg-gradient-to-tr from-rose-600 to-orange-500 flex items-center justify-center text-white shadow-lg shadow-rose-600/40 shrink-0">
@@ -223,7 +223,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
             </div>
           </div>
 
-          {/* NÚT BỎ QUA VIDEO KÈM VÒNG TRÒN TIẾN TRÌNH */}
+          {/* SKIP VIDEO BUTTON WITH PROGRESS RING */}
           <div className="flex items-center gap-3 shrink-0 ml-2">
             <span className="text-[11px] text-slate-400 hidden md:inline font-mono">
               {t('cinematic.pressEscPrefix')}{' '}
@@ -239,7 +239,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
               className="group relative flex items-center gap-2 px-3.5 sm:px-4 py-2 bg-gradient-to-r from-orange-500 via-amber-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 text-white text-xs sm:text-sm font-extrabold rounded-full shadow-lg shadow-orange-500/30 transition-all hover:scale-105 active:scale-95 cursor-pointer border border-white/30"
               title={t('cinematic.skipTitle')}
             >
-              {/* Vòng tròn đếm ngược SVG */}
+              {/* SVG countdown ring */}
               <div className="relative w-5 h-5 flex items-center justify-center shrink-0">
                 <svg className="w-5 h-5 -rotate-90">
                   <circle
@@ -271,7 +271,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
           </div>
         </div>
 
-        {/* Video Stage Area: 16:9 với max-height chống tràn */}
+        {/* Video Stage Area: 16:9 with max-height overflow guard */}
         <div className="relative aspect-video w-full max-h-[54vh] bg-black flex items-center justify-center overflow-hidden">
           {!rawVideoUrl || videoError ? (
             <div className="flex flex-col items-center justify-center p-6 text-center max-w-md">
@@ -342,7 +342,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
             </div>
           )}
 
-          {/* Unmute Prompt Pill nếu video đang tắt tiếng */}
+          {/* Unmute Prompt Pill when video is muted */}
           {Boolean(rawVideoUrl) && isMuted && !isYouTube && (
             <button
               type="button"
@@ -437,9 +437,9 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
           )}
         </div>
 
-        {/* BOTTOM SECTION: DANH MỤC CÁC HIỆN VẬT / SẢN PHẨM TRONG PHIÊN NÀY */}
+        {/* BOTTOM SECTION: CATALOG OF ARTIFACTS / LOTS IN THIS SESSION */}
         <div className="bg-slate-950 px-4 sm:px-6 py-3 border-t border-slate-800/90 flex flex-col gap-2.5">
-          {/* Thanh tiêu đề danh mục */}
+          {/* Catalog section header bar */}
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 min-w-0">
               <Layers className="w-4 h-4 text-sky-400 shrink-0" />
@@ -463,7 +463,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
             </button>
           </div>
 
-          {/* Dải danh sách các sản phẩm (Lots) xuất hiện trong phiên video */}
+          {/* Strip of lots featured in the intro video */}
           {sessionItems.length > 0 ? (
             <div className="flex items-center gap-2.5 overflow-x-auto pb-1 pt-0.5 scrollbar-thin scrollbar-thumb-slate-700">
               {sessionItems.map((lot, idx) => {
@@ -525,7 +525,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
               })}
             </div>
           ) : (
-            /* Thông báo khi Admin chỉ mới tạo phiên, người bán chưa niêm yết hiện vật */
+            /* Notice shown when Admin created the session without seller lots yet */
             <div className="flex items-center gap-3 p-2.5 px-3.5 rounded-xl border border-amber-500/30 bg-amber-950/20 text-amber-300 text-xs">
               <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
               <div className="min-w-0 flex-1">

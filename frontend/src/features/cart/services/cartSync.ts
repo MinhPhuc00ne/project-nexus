@@ -275,7 +275,7 @@ export async function synchronizeCart(scope: CartScope): Promise<void> {
     localStorage.removeItem('nexus:cart-items');
     emitCartChange();
   } catch (err) {
-    console.error('[CartSync] Gộp giỏ hàng vào Database thất bại:', err);
+    console.error('[CartSync] Failed to merge cart into database:', err);
     if (isCurrent(mergingScope)) await loadRemoteCart(scopeFor(scope.token));
   }
 }

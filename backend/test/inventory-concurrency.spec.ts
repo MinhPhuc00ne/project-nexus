@@ -158,7 +158,7 @@ describeIfDatabase('inventory stock is claimed atomically', () => {
           2,
         ),
       ),
-    ).rejects.toThrow(/tồn kho/);
+    ).rejects.toThrow(/reserved for uncompleted orders/);
 
     const after = await prisma.inventory.findFirstOrThrow({ where: { productId } });
     expect(after.availableQty).toBe(1);

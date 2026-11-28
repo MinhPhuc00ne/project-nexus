@@ -128,7 +128,7 @@ function buildPresetMesh(presetKey: Preset3DModelKey, accent: string, secondary:
 
   switch (presetKey) {
     case 'preset_watch': {
-      // Thân vỏ đồng hồ tròn nhiều lớp + mặt kính + càng nối + dây da 3D
+      // Multi-layered round watch case + crystal + lugs + 3D leather strap
       const frontRing = addRingLoop(vertices, edges, 0, 0, 18, 62, 24, 'xy', accent, 2.2, true);
       const backRing = addRingLoop(vertices, edges, 0, 0, -18, 62, 24, 'xy', accent, 1.4, false);
       addRingLoop(vertices, edges, 0, 0, 22, 50, 24, 'xy', secondary, 1.5, true);
@@ -138,12 +138,12 @@ function buildPresetMesh(presetKey: Preset3DModelKey, accent: string, secondary:
       for (let i = 0; i < 24; i += 2) {
         edges.push({ a: frontRing[i], b: backRing[i], color: accent, width: 1 });
       }
-      // Núm chỉnh giờ
+      // Watch crown
       addBox(vertices, edges, faces, 68, 0, 0, 14, 18, 16, accent, 'rgba(245, 158, 11, 0.3)', true);
-      // Dây đeo trên & dưới
+      // Top & bottom straps
       addBox(vertices, edges, faces, 0, -88, 0, 44, 52, 12, '#d97706', 'rgba(120, 53, 15, 0.45)');
       addBox(vertices, edges, faces, 0, 88, 0, 44, 52, 12, '#d97706', 'rgba(120, 53, 15, 0.45)');
-      // Kim đồng hồ
+      // Watch hands
       const cIdx = vertices.length;
       vertices.push({ x: 0, y: 0, z: 25 }, { x: 0, y: -38, z: 25 }, { x: 28, y: 14, z: 25 });
       edges.push(
@@ -154,7 +154,7 @@ function buildPresetMesh(presetKey: Preset3DModelKey, accent: string, secondary:
     }
 
     case 'preset_painting': {
-      // Khung tranh bảo tàng chạm khắc 3D nhiều lớp + giá đỡ vàng kim
+      // Multi-layered carved 3D museum picture frame + golden easel
       addBox(
         vertices,
         edges,
@@ -184,14 +184,14 @@ function buildPresetMesh(presetKey: Preset3DModelKey, accent: string, secondary:
         true,
       );
       addBox(vertices, edges, faces, 0, 0, 12, 108, 72, 2, '#fde68a', 'rgba(251, 191, 36, 0.14)');
-      // Đế giá tranh bảo tàng
+      // Museum easel base
       addBox(vertices, edges, faces, -48, 70, -10, 10, 36, 12, accent, 'rgba(245, 158, 11, 0.25)');
       addBox(vertices, edges, faces, 48, 70, -10, 10, 36, 12, accent, 'rgba(245, 158, 11, 0.25)');
       break;
     }
 
     case 'preset_car': {
-      // Khung thân siêu xe khí động học + khoang lái + 4 bánh xoay
+      // Aerodynamic supercar chassis + cockpit + 4 rotating wheels
       addBox(
         vertices,
         edges,
@@ -220,7 +220,7 @@ function buildPresetMesh(presetKey: Preset3DModelKey, accent: string, secondary:
         'rgba(56, 189, 248, 0.22)',
         true,
       );
-      // Cánh gió sau
+      // Rear spoiler
       addBox(
         vertices,
         edges,
@@ -235,7 +235,7 @@ function buildPresetMesh(presetKey: Preset3DModelKey, accent: string, secondary:
         'rgba(245, 158, 11, 0.3)',
         true,
       );
-      // 4 bánh xe 3D
+      // 4 3D wheels
       const wheels = [
         [-52, 26, 38],
         [52, 26, 38],
@@ -250,7 +250,7 @@ function buildPresetMesh(presetKey: Preset3DModelKey, accent: string, secondary:
     }
 
     case 'preset_diamond': {
-      // Viên kim cương giác cắt Brilliant 3D đa diện lấp lánh (Table -> Crown -> Girdle -> Pavilion -> Culet)
+      // Multi-faceted brilliant-cut 3D sparkling diamond (Table -> Crown -> Girdle -> Pavilion -> Culet)
       const table = addRingLoop(vertices, edges, 0, -56, 0, 38, 8, 'xz', '#ffffff', 2.2, true);
       const girdle = addRingLoop(vertices, edges, 0, -18, 0, 70, 8, 'xz', accent, 2.4, true);
       addRingLoop(vertices, edges, 0, -12, 0, 70, 8, 'xz', secondary, 1.4, true);
@@ -261,7 +261,7 @@ function buildPresetMesh(presetKey: Preset3DModelKey, accent: string, secondary:
       faces.push({ indices: table, fill: 'rgba(224, 242, 254, 0.36)' });
       for (let i = 0; i < 8; i++) {
         const next = (i + 1) % 8;
-        // Mặt Crown & Mặt Pavilion phản chiếu ánh sáng
+        // Light-reflecting Crown & Pavilion facets
         faces.push({
           indices: [table[i], table[next], girdle[next], girdle[i]],
           fill: i % 2 === 0 ? 'rgba(56, 189, 248, 0.28)' : 'rgba(186, 230, 253, 0.2)',
@@ -282,11 +282,11 @@ function buildPresetMesh(presetKey: Preset3DModelKey, accent: string, secondary:
     }
 
     case 'preset_diamond_ring': {
-      // Vòng nhẫn bạch kim + ổ chấu + viên kim cương bát diện lấp lánh
+      // Platinum band + prong setting + sparkling octahedral diamond
       addRingLoop(vertices, edges, 0, 20, 0, 54, 24, 'xy', secondary, 2.4, true);
       addRingLoop(vertices, edges, 0, 20, 8, 54, 24, 'xy', accent, 1.6);
       addRingLoop(vertices, edges, 0, 20, -8, 54, 24, 'xy', accent, 1.6);
-      // Viên kim cương trên đỉnh nhẫn (y = -48)
+      // Top-mounted diamond (y = -48)
       const base = vertices.length;
       vertices.push(
         { x: 0, y: -88, z: 0 },
@@ -335,7 +335,7 @@ function buildPresetMesh(presetKey: Preset3DModelKey, accent: string, secondary:
     }
 
     case 'preset_royal_ring': {
-      // Nhẫn vàng hoàng gia gắn ngọc vuông
+      // Royal gold ring with square gemstone
       addRingLoop(vertices, edges, 0, 18, 0, 56, 22, 'xy', secondary, 2.6, true);
       addRingLoop(vertices, edges, 0, 18, 12, 52, 22, 'xy', secondary, 1.5);
       addRingLoop(vertices, edges, 0, 18, -12, 52, 22, 'xy', secondary, 1.5);
@@ -371,9 +371,9 @@ function buildPresetMesh(presetKey: Preset3DModelKey, accent: string, secondary:
     }
 
     case 'preset_villa': {
-      // Biệt thự kiến trúc 2 tầng hiện đại + mái vát + hồ bơi
+      // Modern 2-story architectural villa + sloped roof + swimming pool
       addBox(vertices, edges, faces, 0, 48, 0, 168, 10, 120, '#94a3b8', 'rgba(15, 23, 42, 0.7)');
-      // Hồ bơi xanh ngọc phía trước
+      // Turquoise swimming pool in front
       addBox(
         vertices,
         edges,
@@ -388,7 +388,7 @@ function buildPresetMesh(presetKey: Preset3DModelKey, accent: string, secondary:
         'rgba(6, 182, 212, 0.35)',
         true,
       );
-      // Tầng 1
+      // First floor
       addBox(
         vertices,
         edges,
@@ -403,7 +403,7 @@ function buildPresetMesh(presetKey: Preset3DModelKey, accent: string, secondary:
         'rgba(16, 185, 129, 0.2)',
         true,
       );
-      // Tầng 2 nhô ban công
+      // Second floor overhanging balcony
       addBox(
         vertices,
         edges,
@@ -418,7 +418,7 @@ function buildPresetMesh(presetKey: Preset3DModelKey, accent: string, secondary:
         'rgba(251, 191, 36, 0.22)',
         true,
       );
-      // Mái hiện đại
+      // Modern roof
       addBox(
         vertices,
         edges,
@@ -437,11 +437,11 @@ function buildPresetMesh(presetKey: Preset3DModelKey, accent: string, secondary:
     }
 
     case 'preset_laptop': {
-      // Đế bàn phím nằm ngang + màn hình gập mở góc 110 độ
+      // Horizontal keyboard base + clamshell display opened at 110 degrees
       addBox(vertices, edges, faces, 0, 32, 18, 134, 8, 88, accent, 'rgba(30, 41, 59, 0.75)', true);
-      // Trackpad & phím mô phỏng
+      // Simulated trackpad & keys
       addBox(vertices, edges, faces, 0, 27, 42, 42, 2, 24, secondary, 'rgba(167, 139, 250, 0.25)');
-      // Màn hình dựng nghiêng về sau
+      // Display tilted back
       const base = vertices.length;
       vertices.push(
         { x: -67, y: 28, z: -26 },
@@ -479,7 +479,7 @@ function buildPresetMesh(presetKey: Preset3DModelKey, accent: string, secondary:
     }
 
     case 'preset_keyboard': {
-      // Khung bàn phím cơ CNC + các hàng keycap 3D nổi
+      // CNC mechanical keyboard frame + raised 3D keycap rows
       addBox(vertices, edges, faces, 0, 12, 0, 168, 18, 66, accent, 'rgba(15, 23, 42, 0.8)', true);
       for (let row = -1; row <= 1; row++) {
         for (let col = -3; col <= 3; col++) {
@@ -503,7 +503,7 @@ function buildPresetMesh(presetKey: Preset3DModelKey, accent: string, secondary:
     }
 
     case 'preset_phone': {
-      // Khung điện thoại Flagship Titanium + cụm 3 camera + màn hình OLED
+      // Titanium flagship smartphone frame + triple camera array + OLED display
       addBox(vertices, edges, faces, 0, 0, 0, 68, 136, 10, accent, 'rgba(30, 41, 59, 0.78)', true);
       addBox(
         vertices,
@@ -519,7 +519,7 @@ function buildPresetMesh(presetKey: Preset3DModelKey, accent: string, secondary:
         'rgba(34, 211, 238, 0.25)',
         true,
       );
-      // Cụm camera mặt lưng
+      // Rear camera module
       addBox(
         vertices,
         edges,
@@ -540,7 +540,7 @@ function buildPresetMesh(presetKey: Preset3DModelKey, accent: string, secondary:
     }
 
     case 'preset_headphone': {
-      // Vòng chụp đầu 3D + 2 củ tai hình trụ phát sáng
+      // 3D headband + 2 glowing cylindrical earcups
       const archPoints: number[] = [];
       const steps = 14;
       for (let i = 0; i <= steps; i++) {
@@ -561,7 +561,7 @@ function buildPresetMesh(presetKey: Preset3DModelKey, accent: string, secondary:
           glow: true,
         });
       }
-      // Hai củ loa hai bên
+      // Dual side speaker drivers
       addRingLoop(vertices, edges, -62, 16, 0, 26, 18, 'yz', accent, 2.2, true);
       addRingLoop(vertices, edges, -74, 16, 0, 22, 18, 'yz', secondary, 1.6, true);
       addRingLoop(vertices, edges, 62, 16, 0, 26, 18, 'yz', accent, 2.2, true);
@@ -617,7 +617,7 @@ interface Museum3DCanvasProps {
 }
 
 /**
- * Bộ dựng khối 3D thời gian thực bằng phép chiếu phối cảnh HTML5 Canvas (60 FPS).
+ * Real-time 3D mesh renderer using HTML5 Canvas perspective projection (60 FPS).
  */
 export const Museum3DCanvas: React.FC<Museum3DCanvasProps> = ({
   presetKey,
@@ -638,7 +638,7 @@ export const Museum3DCanvas: React.FC<Museum3DCanvasProps> = ({
     let animId = 0;
     let angle = 0;
 
-    // Hạt bụi vàng bay lơ lửng trong ánh đèn bảo tàng
+    // Golden dust particles floating in the museum spotlight
     const motes = Array.from({ length: 28 }, (_, i) => ({
       x: Math.sin(i * 1.9) * 140,
       y: Math.cos(i * 2.7) * 110,
@@ -669,7 +669,7 @@ export const Museum3DCanvas: React.FC<Museum3DCanvasProps> = ({
       const ry = angle;
       const rz = Math.sin(angle * 0.4) * 0.05;
 
-      // Chùm sáng rọi sân khấu từ trần chiếu xuống vật phẩm
+      // Stage spotlight beam shining down from ceiling onto artifact
       ctx.save();
       const coneGrad = ctx.createLinearGradient(cx, 0, cx, cy + 125 * scale);
       coneGrad.addColorStop(0, `${accentColor}26`);
@@ -685,7 +685,7 @@ export const Museum3DCanvas: React.FC<Museum3DCanvasProps> = ({
       ctx.fill();
       ctx.restore();
 
-      // Bục kính trưng bày cao cấp bên dưới vật thể kèm mặt gương & thước xoay 360°
+      // Luxury glass pedestal below artifact with mirror reflection & 360° degree ticks
       ctx.save();
       const pedestalY = cy + 106 * scale;
       const pedGrad = ctx.createRadialGradient(cx, pedestalY, 8, cx, pedestalY, 132 * scale);
@@ -709,7 +709,7 @@ export const Museum3DCanvas: React.FC<Museum3DCanvasProps> = ({
       ctx.ellipse(cx, pedestalY + 12 * scale, 114 * scale, 24 * scale, 0, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Vạch chia độ xoay quanh bục
+      // Degree tick marks around the pedestal
       for (let t = 0; t < 16; t++) {
         const deg = angle * 0.6 + (t * Math.PI * 2) / 16;
         const tx = cx + Math.cos(deg) * 107 * scale;
@@ -721,10 +721,10 @@ export const Museum3DCanvas: React.FC<Museum3DCanvasProps> = ({
       }
       ctx.restore();
 
-      // Chiếu điểm ảnh 3D của model
+      // Project 3D vertices of the model
       const projected = mesh.vertices.map((v) => projectPoint(v, rx, ry, rz, cx, cy, scale));
 
-      // Vẽ mặt đa giác (sắp xếp theo độ sâu z)
+      // Draw polygon faces (sorted by z-depth)
       if (mesh.faces && mesh.faces.length > 0) {
         const sortedFaces = mesh.faces
           .map((face) => {
@@ -749,7 +749,7 @@ export const Museum3DCanvas: React.FC<Museum3DCanvasProps> = ({
         }
       }
 
-      // Vẽ khung cạnh phát sáng 3D
+      // Draw glowing 3D wireframe edges
       for (const edge of mesh.edges) {
         const p1 = projected[edge.a];
         const p2 = projected[edge.b];
@@ -769,7 +769,7 @@ export const Museum3DCanvas: React.FC<Museum3DCanvasProps> = ({
         ctx.restore();
       }
 
-      // Vẽ hạt bụi ánh sáng xung quanh bục bảo tàng
+      // Draw ambient light particles around the museum pedestal
       motes.forEach((m, idx) => {
         const pt = projectPoint(
           {

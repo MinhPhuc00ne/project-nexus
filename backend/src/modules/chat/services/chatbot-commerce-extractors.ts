@@ -170,7 +170,7 @@ export function extractCartBudget(message: string): number | null {
   const normalized = message
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[đĐ]/g, 'd')
+    .replace(/[\u0111\u0110]/g, 'd')
     .toLowerCase();
 
   const unitMatch = normalized.match(/(\d+(?:[.,]\d+)?)\s*(ngan|nghin|k|trieu|tr|m|vnd|dong|d)\b/);

@@ -74,7 +74,7 @@ export class PaymentSandboxService {
   verifyWebhook(webhookBody: Webhook): WebhookData {
     const data = webhookBody?.data;
     if (!data || typeof data.orderCode !== 'number') {
-      throw new BadRequestException('Webhook sandbox thiếu dữ liệu orderCode.');
+      throw new BadRequestException('Sandbox webhook is missing orderCode.');
     }
     this.logger.warn(
       `[payment:sandbox] accepting unsigned webhook for orderCode=${data.orderCode}`,

@@ -218,11 +218,11 @@ export class SellerOrdersService {
     });
 
     if (!order) {
-      throw new NotFoundException('Không tìm thấy đơn hàng.');
+      throw new NotFoundException('Order not found.');
     }
 
     if (order.sellerId !== sellerId) {
-      throw new ForbiddenException('Bạn không có quyền xem đơn hàng này.');
+      throw new ForbiddenException('You do not have permission to view this order.');
     }
 
     return {
@@ -301,11 +301,11 @@ export class SellerOrdersService {
     });
 
     if (!order) {
-      throw new NotFoundException('Không tìm thấy đơn hàng.');
+      throw new NotFoundException('Order not found.');
     }
 
     if (order.sellerId !== sellerId) {
-      throw new ForbiddenException('Bạn không có quyền thao tác trên đơn hàng này.');
+      throw new ForbiddenException('You do not have permission to act on this order.');
     }
 
     const codPayment = await this.prisma.payment.findFirst({
@@ -319,10 +319,10 @@ export class SellerOrdersService {
 
     if (!allowedStatuses.includes(order.status as OrderStatus)) {
       throw new BadRequestException(
-        `Không thể xác nhận đơn hàng ở trạng thái '${order.status}'. ${
+        `Cannot confirm order in '${order.status}' status. ${
           isCod
-            ? 'Đơn hàng COD phải ở trạng thái PENDING_PAYMENT hoặc PREPARING.'
-            : 'Đơn hàng phải đã thanh toán (PAID).'
+            ? 'COD orders must be in PENDING_PAYMENT or PREPARING status.'
+            : 'Order must be PAID.'
         }`,
       );
     }
@@ -336,15 +336,17 @@ export class SellerOrdersService {
       data: { status: OrderStatus.PREPARING },
     });
     if (changed.count !== 1)
-      throw new BadRequestException('Đơn đã thay đổi hoặc đang có yêu cầu hủy/trả hàng.');
+      throw new BadRequestException(
+        'Order has changed or has an active cancellation/return request.',
+      );
     const updated = { id: orderId, status: OrderStatus.PREPARING };
 
     await publishNotification(
       this.prisma,
       {
         userId: order.buyerId,
-        title: 'Đơn hàng của bạn đã được người bán xác nhận',
-        content: `Đơn hàng #${order.id.slice(0, 8)} đã được người bán xác nhận và đang đóng gói chuẩn bị giao.`,
+        title: 'Your order has been confirmed by the seller',
+        content: `Order #${order.id.slice(0, 8)} has been confirmed by the seller and is being packed for shipping.`,
         type: NotificationType.ORDER,
         channel: NotificationChannel.IN_APP,
       },
@@ -353,7 +355,7 @@ export class SellerOrdersService {
 
     return {
       success: true,
-      message: 'Đã xác nhận đơn hàng thành công, sẵn sàng đóng gói và bàn giao GHN.',
+      message: 'Order confirmed successfully and ready for packing and GHN handover.',
       orderId: updated.id,
       status: updated.status,
     };
@@ -392,11 +394,13 @@ export class SellerOrdersService {
     });
 
     if (!order) {
-      throw new NotFoundException('Không tìm thấy đơn hàng.');
+      throw new NotFoundException('Order not found.');
     }
 
     if (order.sellerId !== sellerId) {
-      throw new ForbiddenException('Bạn không có quyền in vận đơn của đơn hàng này.');
+      throw new ForbiddenException(
+        'You do not have permission to print the waybill for this order.',
+      );
     }
 
     const seller = await this.prisma.user.findUnique({
@@ -435,32 +439,31 @@ export class SellerOrdersService {
       carrierData.order_code !== waybillCode
     ) {
       throw new BadRequestException(
-        'Đơn hàng chưa có vận đơn được GHN xác nhận. Chưa thể in phiếu.',
+        'Order does not have a GHN-confirmed waybill yet. Cannot print shipping label.',
       );
     }
 
     return {
       waybillCode,
-      carrier: 'Giao Hàng Nhanh (GHN Express)',
+      carrier: 'GHN Express',
       orderId: order.id,
       orderDate: order.createdAt,
       sender: {
-        storeName: storeInfo?.storeName || seller?.fullName || 'Gian hàng Project Nexus',
+        storeName: storeInfo?.storeName || seller?.fullName || 'Project Nexus Shop',
         phone: storeInfo?.phone || seller?.phoneNumber || '',
         address:
-          storeInfo?.formattedAddress || defaultAddress?.formattedAddress || 'Kho hàng người bán',
+          storeInfo?.formattedAddress || defaultAddress?.formattedAddress || 'Seller warehouse',
       },
       recipient: {
         name: shippingAddress?.recipientName || order.buyer?.fullName || '',
         phone: shippingAddress?.phone || order.buyer?.phoneNumber || '',
-        address:
-          shippingAddress?.street || shippingAddress?.formattedAddress || 'Địa chỉ nhận hàng',
+        address: shippingAddress?.street || shippingAddress?.formattedAddress || 'Delivery address',
         city: shippingAddress?.city || '',
         district: shippingAddress?.district || '',
         ward: shippingAddress?.ward || '',
       },
       items: order.items.map((it) => ({
-        name: it.product?.title || it.auctionItem?.title || it.titleSnapshot || 'Sản phẩm',
+        name: it.product?.title || it.auctionItem?.title || it.titleSnapshot || 'Product',
         quantity: it.quantity,
         unitPrice: Number(it.unitPrice),
         totalPrice: Number(it.totalPrice),
@@ -469,7 +472,7 @@ export class SellerOrdersService {
       shippingFee: Number(order.shippingFee),
       codAmount: 0,
       barcodeUrl: `https://barcode.tec-it.com/barcode.ashx?data=${waybillCode}&code=Code128&dpi=96`,
-      note: 'Cho xem hàng, không cho thử. Hàng chuyển phát nhanh qua Project Nexus.',
+      note: 'Inspection allowed, no try-on. Express delivery via Project Nexus.',
     };
   }
 }

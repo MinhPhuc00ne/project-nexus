@@ -15,10 +15,10 @@ export interface SellerAuction {
   isConsignmentLocked?: boolean;
 }
 export const auctionStatuses = {
-  live: 'Đang diễn ra',
-  pending: 'Chờ thẩm định',
-  scheduled: 'Sắp diễn ra',
-  ended: 'Đã kết thúc',
+  live: 'Live',
+  pending: 'Pending Review',
+  scheduled: 'Scheduled',
+  ended: 'Ended',
 } as const;
 export interface SellerDraft {
   id: string;
@@ -36,9 +36,9 @@ export interface SellerDraft {
 }
 export const money = (value: number) => formatCurrency(value);
 export const trustLabels: Record<string, string> = {
-  EXCELLENT: 'Xuất sắc',
-  GOOD: 'Tốt',
-  STANDARD: 'Tiêu chuẩn',
-  PROBATION: 'Cần cải thiện',
-  SUSPENDED: 'Tạm ngưng',
+  EXCELLENT: 'Excellent',
+  GOOD: 'Good',
+  STANDARD: 'Standard',
+  PROBATION: 'Probation',
+  SUSPENDED: 'Suspended',
 };

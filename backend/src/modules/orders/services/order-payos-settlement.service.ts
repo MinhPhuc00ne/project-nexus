@@ -43,7 +43,7 @@ export class OrderPayosSettlementService {
       await this.trendingService.syncTopTrendingNotifications();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
-      this.logger.warn(`Đồng bộ thông báo Xu hướng thất bại: ${message}`);
+      this.logger.warn(`Failed to sync trending notifications: ${message}`);
     }
   }
 
@@ -53,7 +53,7 @@ export class OrderPayosSettlementService {
   async settleOrderPayment(webhookData: WebhookData): Promise<PayosSettlement | null> {
     const { orderCode, code } = webhookData;
 
-    this.logger.log(`Nhận Webhook PayOS cho orderCode=${orderCode}, status code=${code}`);
+    this.logger.log(`Received PayOS webhook for orderCode=${orderCode}, status code=${code}`);
 
     if (code !== '00') return { success: true, orderCode };
 
@@ -66,16 +66,16 @@ export class OrderPayosSettlementService {
 
     if (payment) {
       if (payment.status === PaymentStatus.SUCCESS) {
-        this.logger.log(`Giao dịch PayOS orderCode=${orderCode} đã được xử lý trước đó`);
+        this.logger.log(`PayOS transaction orderCode=${orderCode} was already processed`);
         return { success: true, message: 'Already processed' };
       }
 
       if (Number(webhookData.amount) !== Number(payment.amount))
-        throw new BadRequestException('Số tiền PayOS không khớp đơn hàng.');
+        throw new BadRequestException('PayOS amount does not match the order.');
 
       await this.prisma.$transaction((tx) => this.settlePaidOrder(tx, payment.id, { webhookData }));
 
-      this.logger.log(`Đơn ${payment.orderId} đã thanh toán PayOS; tiền được giữ ký quỹ.`);
+      this.logger.log(`Order ${payment.orderId} paid via PayOS; funds held in escrow.`);
       void this.syncTrendingSafely();
       return { success: true, orderCode };
     }
@@ -90,17 +90,17 @@ export class OrderPayosSettlementService {
     }
 
     if (group.status === PaymentStatus.SUCCESS) {
-      this.logger.log(`Nhóm thanh toán PayOS orderCode=${orderCode} đã được xử lý trước đó`);
+      this.logger.log(`PayOS payment group orderCode=${orderCode} was already processed`);
       return { success: true, message: 'Already processed' };
     }
 
     if (Number(webhookData.amount) !== Number(group.amount))
-      throw new BadRequestException('Số tiền PayOS không khớp nhóm đơn hàng.');
+      throw new BadRequestException('PayOS amount does not match the order group.');
 
     await this.settleGroupOrders(group.id, { webhookData });
 
     this.logger.log(
-      `Nhóm ${group.id} (${group.orders.length} đơn) đã thanh toán PayOS; tiền được giữ ký quỹ.`,
+      `Group ${group.id} (${group.orders.length} orders) paid via PayOS; funds held in escrow.`,
     );
     void this.syncTrendingSafely();
     return { success: true, orderCode };
@@ -189,7 +189,7 @@ export class OrderPayosSettlementService {
           type: 'ESCROW_LOCK',
           status: 'SUCCESS',
           referenceId: payment.id,
-          description: 'Ghi nhận thanh toán đến sau khi hủy đơn',
+          description: 'Recorded payment received after order cancellation',
         },
       });
       await this.refunds.reserve(tx, {
@@ -205,7 +205,7 @@ export class OrderPayosSettlementService {
 
     if (payable.status !== OrderStatus.PENDING_PAYMENT)
       throw new BadRequestException(
-        'Đơn đã thanh toán hoặc bị hủy; cần đối soát khoản thanh toán này.',
+        'Order has already been paid or cancelled; reconciliation required for this payment.',
       );
 
     await tx.payment.update({
@@ -242,8 +242,8 @@ export class OrderPayosSettlementService {
         tx,
         {
           userId: updatedOrder.buyerId,
-          title: 'Thanh toán PayOS thành công ✅',
-          content: `Đơn hàng #${updatedOrder.id.slice(0, 8).toUpperCase()} trị giá ${Number(payment.amount).toLocaleString('vi-VN')} VND đã được thanh toán thành công qua PayOS (VietQR). Tiền được giữ ký quỹ an toàn tại NEXUS Escrow.`,
+          title: 'PayOS payment successful ✅',
+          content: `Order #${updatedOrder.id.slice(0, 8).toUpperCase()} totaling ${Number(payment.amount).toLocaleString('vi-VN')} VND was paid via PayOS (VietQR). Funds are safely held in NEXUS Escrow.`,
           type: NotificationType.PAYMENT,
           channel: NotificationChannel.IN_APP,
         },
@@ -254,8 +254,8 @@ export class OrderPayosSettlementService {
         tx,
         {
           userId: updatedOrder.sellerId,
-          title: 'Đơn hàng mới đã được thanh toán qua PayOS 🛒',
-          content: `Đơn hàng #${updatedOrder.id.slice(0, 8).toUpperCase()} trị giá ${Number(payment.amount).toLocaleString('vi-VN')} VND đã được thanh toán qua VietQR. Vui lòng chuẩn bị và bàn giao cho đơn vị vận chuyển GHN.`,
+          title: 'New order paid via PayOS 🛒',
+          content: `Order #${updatedOrder.id.slice(0, 8).toUpperCase()} totaling ${Number(payment.amount).toLocaleString('vi-VN')} VND was paid via VietQR. Please prepare the package and hand it over to GHN.`,
           type: NotificationType.ORDER,
           channel: NotificationChannel.IN_APP,
         },

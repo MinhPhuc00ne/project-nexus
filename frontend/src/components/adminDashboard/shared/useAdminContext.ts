@@ -1,8 +1,8 @@
 import { useOutletContext } from 'react-router-dom';
 import type { AdminTabProps } from './adminTypes';
 
-// Page con gọi hook này để lấy data/actions mà AdminLayout truyền qua Outlet.
-// Không tạo state mới ở đây: mọi page đều đọc cùng dữ liệu nên số đếm sidebar luôn đồng bộ.
+// Child pages call this hook to access data/actions passed by AdminLayout via Outlet.
+// No local state created here: all pages share the same data so sidebar counts stay in sync.
 export function useAdminContext() {
   return useOutletContext<AdminTabProps>();
 }

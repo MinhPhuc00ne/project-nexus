@@ -25,7 +25,7 @@ export type { CartItem, BackendCartItem, BackendCartResponse };
 export { resetCartSync };
 
 /**
- * Lấy danh sách sản phẩm trong giỏ hàng đồng bộ (từ Cache hoặc LocalStorage).
+ * Fetch synchronized cart items (from Cache or LocalStorage).
  */
 export function getCartItems(): CartItem[] {
   const token = getStoredToken();
@@ -36,8 +36,8 @@ export function getCartItems(): CartItem[] {
 }
 
 /**
- * Gộp các GET đang chạy và tái sử dụng kết quả API trong 1 giây khi trang vừa tải.
- * force bỏ qua khoảng tái sử dụng; thay đổi giỏ hàng/tài khoản luôn làm kết quả cũ hết hiệu lực.
+ * Deduplicate in-flight GET requests and reuse API responses for 1 second on initial load.
+ * force bypasses reuse; cart or account changes always invalidate previous results.
  */
 export async function fetchCart({ force = false }: { force?: boolean } = {}): Promise<CartItem[]> {
   const token = getStoredToken();
@@ -58,8 +58,8 @@ export async function fetchCart({ force = false }: { force?: boolean } = {}): Pr
 }
 
 /**
- * Thêm sản phẩm vào giỏ hàng.
- * Tự động gọi API `/commerce/cart/items` nếu đã đăng nhập, hoặc lưu localStorage nếu là khách.
+ * Add a product to the cart.
+ * Calls `/commerce/cart/items` when signed in, or persists to localStorage for guests.
  */
 export async function addToCart(
   item: Omit<CartItem, 'qty'> & { qty?: number },
@@ -84,7 +84,7 @@ export async function addToCart(
     return;
   }
 
-  // Khách vãng lai (Guest) -> Lưu vào LocalStorage
+  // Guest visitor -> save to LocalStorage
   const current = getGuestCartItems();
   const existingIndex = current.findIndex(
     (i) =>
@@ -107,7 +107,7 @@ export async function addToCart(
 }
 
 /**
- * Cập nhật số lượng của một món hàng trong giỏ.
+ * Update item quantity in the cart.
  */
 export async function updateCartQty(id: string | number, qty: number): Promise<void> {
   const token = getStoredToken();
@@ -139,7 +139,7 @@ export async function updateCartQty(id: string | number, qty: number): Promise<v
 }
 
 /**
- * Xóa một món hàng khỏi giỏ.
+ * Remove an item from the cart.
  */
 export async function removeFromCart(id: string | number): Promise<void> {
   const token = getStoredToken();
@@ -161,7 +161,7 @@ export async function removeFromCart(id: string | number): Promise<void> {
 }
 
 /**
- * Chọn / bỏ chọn 1 sản phẩm để thanh toán.
+ * Toggle checkout selection for a single cart item.
  */
 export function toggleSelectItem(id: string | number): void {
   const current = getCartItems();
@@ -184,7 +184,7 @@ export function toggleSelectItem(id: string | number): void {
 }
 
 /**
- * Chọn tất cả hoặc bỏ chọn tất cả.
+ * Select or deselect all cart items.
  */
 export function toggleSelectAll(selectAll: boolean): void {
   const current = getCartItems();
@@ -202,7 +202,7 @@ export function toggleSelectAll(selectAll: boolean): void {
 }
 
 /**
- * Xóa sạch toàn bộ giỏ hàng.
+ * Clear all items from the cart.
  */
 export async function clearCart(): Promise<void> {
   const token = getStoredToken();
@@ -229,7 +229,7 @@ export async function clearCart(): Promise<void> {
 }
 
 /**
- * Tự động gộp giỏ hàng Guest (LocalStorage) vào Database của Buyer sau khi đăng nhập.
+ * Automatically merge guest cart (LocalStorage) into buyer database cart after login.
  */
 export function mergeGuestCartAfterLogin(): Promise<void> {
   const token = getStoredToken();
@@ -246,7 +246,7 @@ export function mergeGuestCartAfterLogin(): Promise<void> {
 }
 
 /**
- * Tính tổng số lượng và tổng tiền các món được chọn.
+ * Calculate total quantity and subtotal of selected cart items.
  */
 export function getCartTotal(): { totalCount: number; selectedCount: number; totalPrice: number } {
   const items = getCartItems();

@@ -753,7 +753,7 @@ export const AuctionPage: React.FC = () => {
           </div>
         )}
 
-        {/* THÔNG BÁO NẾU PHIÊN CHƯA CÓ SẢN PHẨM / LÔ HÀNG KÝ GỬI */}
+        {/* NOTICE WHEN SESSION HAS NO CONSIGNED LOTS YET */}
         {(!activeAuction.items || activeAuction.items.length === 0) && !activeAuction.product && (
           <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50/90 p-4 text-amber-900 flex items-center gap-3.5 shadow-xs">
             <AlertCircle className="w-5 h-5 shrink-0 text-amber-600" />
@@ -774,7 +774,7 @@ export const AuctionPage: React.FC = () => {
 
         {/* TOP SECTION: 2 COLUMNS (GALLERY & TERMINAL) */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.15fr] gap-8 mb-10">
-          {/* LEFT: GALLERY & INTEGRATED VIDEO STAGE (PHƯƠNG ÁN B KẾT HỢP) */}
+          {/* LEFT: GALLERY & INTEGRATED VIDEO STAGE (COMBINED STAGE) */}
           <AuctionGallery
             auction={activeAuction}
             currentLot={currentLot}

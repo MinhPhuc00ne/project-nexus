@@ -221,7 +221,7 @@ test(
           });
           assert.equal(messages.length, 2);
           const automatic = messages.find((m) => m.senderId === seller.id);
-          assert.match(automatic.body, /^\[Trả lời tự động\] Bảo hành/);
+          assert.match(automatic.body, /^\[Auto-reply\] Bảo hành/);
           const updated = await tx.chatConversation.findUniqueOrThrow({
             where: { id: conversation.id },
           });
@@ -247,7 +247,7 @@ test(
           const offlineUpdate = await tx.chatConversation.findUniqueOrThrow({
             where: { id: conversation.id },
           });
-          assert.equal(offlineUpdate.lastMessage, '[Trả lời tự động] Shop đang vắng mặt');
+          assert.equal(offlineUpdate.lastMessage, '[Auto-reply] Shop đang vắng mặt');
           assert.equal(offlineUpdate.unreadCountUser1, 2);
           online = true;
           await chat.sendMessage(buyer.id, 'BUYER', {

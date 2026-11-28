@@ -34,7 +34,7 @@ export async function validateQuotedCheckout(
     },
   });
   if (current.length !== expected.length)
-    throw new BadRequestException('Giỏ hàng đã thay đổi. Vui lòng lấy lại báo giá.');
+    throw new BadRequestException('Cart has changed. Please request a fresh shipping quote.');
   const quantities = new Map<string, number>();
   for (const original of expected) {
     const item = current.find((row) => row.id === original.id);
@@ -50,14 +50,14 @@ export async function validateQuotedCheckout(
       item.product.seller.trustLevel === 'SUSPENDED'
     ) {
       throw new BadRequestException(
-        'Sản phẩm, giá hoặc trạng thái shop đã thay đổi. Vui lòng lấy lại báo giá.',
+        'Product, price, or shop status has changed. Please request a fresh shipping quote.',
       );
     }
     validateSelections(item.product.options, item.selections);
     const count = (quantities.get(item.productId) ?? 0) + item.quantity;
     quantities.set(item.productId, count);
     if (count > item.product.inventories.reduce((sum, inv) => sum + inv.availableQty, 0)) {
-      throw new BadRequestException('Tổng màu/size đã chọn vượt tồn kho sản phẩm.');
+      throw new BadRequestException('Total selected color/size quantity exceeds product stock.');
     }
   }
 }

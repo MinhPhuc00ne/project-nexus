@@ -57,22 +57,22 @@ export class FulfillmentService {
       : await this.prisma.userAddress.findFirst({
           where: { userId, isDefault: true },
         });
-    if (dto.addressId && !address) throw new NotFoundException('Không tìm thấy địa chỉ nhận hàng.');
+    if (dto.addressId && !address) throw new NotFoundException('Shipping address not found.');
     if (address && address.userId !== userId) {
-      throw new ForbiddenException('Bạn không có quyền sử dụng địa chỉ nhận hàng này.');
+      throw new ForbiddenException('You do not have permission to use this shipping address.');
     }
-    if (!dto.items.length) throw new BadRequestException('Chọn sản phẩm để báo giá vận chuyển.');
+    if (!dto.items.length) throw new BadRequestException('Select items to quote shipping.');
     const products = await this.prisma.product.findMany({
       where: { id: { in: dto.items.map((item) => item.productId) } },
     });
     const sellers = new Set(products.map((product) => product.sellerId));
     if (sellers.size !== 1 || (dto.sellerId && !sellers.has(dto.sellerId))) {
-      throw new BadRequestException('Mỗi báo giá GHN chỉ áp dụng cho một người bán.');
+      throw new BadRequestException('Each GHN quote applies to a single seller only.');
     }
     const sellerId = dto.sellerId ?? products[0]?.sellerId;
     const items = dto.items.map((item) => {
       const product = products.find((entry) => entry.id === item.productId);
-      if (!product) throw new NotFoundException('Không tìm thấy sản phẩm cần giao.');
+      if (!product) throw new NotFoundException('Product to ship not found.');
       return {
         name: product.title,
         quantity: item.quantity ?? 1,
@@ -106,7 +106,7 @@ export class FulfillmentService {
       carrier: 'GHN',
       feeSource: 'GHN_API',
       origin: {
-        name: 'Địa chỉ lấy hàng của người bán',
+        name: 'Seller pickup address',
         latitude: originLat ?? null,
         longitude: originLon ?? null,
         addressText: origin?.formattedAddress ?? origin?.street ?? '',

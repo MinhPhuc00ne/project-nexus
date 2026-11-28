@@ -67,7 +67,7 @@ export class StaffProvisioningService {
     const email = dto.email.trim().toLowerCase();
     const fullName = dto.fullName.trim();
     if (!email || !fullName)
-      throw new BadRequestException('Email cá nhân và họ tên không được để trống.');
+      throw new BadRequestException('Personal email and full name are required.');
     const base = generateStaffBaseEmail(fullName);
     const password = `N!${crypto.randomBytes(24).toString('base64url')}9a`;
     const passwordHash = await bcrypt.hash(password, 10);
@@ -94,7 +94,7 @@ export class StaffProvisioningService {
           });
           if (existing)
             throw new BadRequestException(
-              'Email cá nhân đã liên kết với tài khoản Staff hoặc Admin.',
+              'Personal email is already linked to a Staff or Admin account.',
             );
 
           // Invalidate older activation tokens before allocating the replacement account.
@@ -139,25 +139,25 @@ export class StaffProvisioningService {
 
           const delivered = await this.mail.sendEmail({
             to: email,
-            subject: '[Project Nexus] Tài khoản Staff đã sẵn sàng đăng nhập',
+            subject: '[Project Nexus] Your Staff account is ready for sign-in',
             sensitive: true,
             requireDelivery: true,
-            text: `Xin chào ${fullName},\n\nAdmin đã cấp tài khoản Staff cho bạn.\nTài khoản đăng nhập: ${assignedEmail}\nMật khẩu ban đầu: ${password}\n\nĐăng nhập tại: ${loginUrl}\n\nBạn có thể đăng nhập ngay bằng thông tin trên, không cần kích hoạt qua đường dẫn. Để đặt mật khẩu của riêng mình, chọn "Quên mật khẩu" trên trang đăng nhập và nhập tài khoản ${assignedEmail}. Mã OTP sẽ được gửi về email cá nhân ${email}; dùng mã đó để đặt mật khẩu mới. Không dùng email cá nhân thay cho tài khoản công tác khi đặt lại mật khẩu Staff.`,
-            html: `<div style="font-family:Arial,sans-serif;line-height:1.6"><h2>Tài khoản Staff của bạn</h2>
-            <p>Xin chào ${html(fullName)}, Admin đã cấp tài khoản để bạn đăng nhập ngay.</p>
-            <p><strong>Tài khoản:</strong> ${html(assignedEmail)}<br><strong>Mật khẩu ban đầu:</strong> ${html(password)}</p>
-            <p><a href="${html(loginUrl)}">Đăng nhập Project Nexus</a></p>
-            <p>Để đặt mật khẩu riêng, chọn <strong>Quên mật khẩu</strong> trên trang đăng nhập và nhập
-            <strong>${html(assignedEmail)}</strong>. Nhận OTP tại email cá nhân <strong>${html(email)}</strong>,
-            rồi dùng OTP để đặt mật khẩu mới. Không cần mở đường dẫn kích hoạt.</p></div>`,
+            text: `Hello ${fullName},\n\nAdmin has provisioned a Staff account for you.\nLogin email: ${assignedEmail}\nInitial password: ${password}\n\nSign in at: ${loginUrl}\n\nYou can sign in immediately with these credentials without link activation. To set your own password, choose "Forgot Password" on the sign-in page and enter ${assignedEmail}. The OTP code will be sent to your personal email ${email}; use that code to set a new password. Do not enter your personal email in place of your corporate login email when resetting a Staff password.`,
+            html: `<div style="font-family:Arial,sans-serif;line-height:1.6"><h2>Your Staff Account</h2>
+            <p>Hello ${html(fullName)}, Admin has provisioned your account for immediate sign-in.</p>
+            <p><strong>Account:</strong> ${html(assignedEmail)}<br><strong>Initial password:</strong> ${html(password)}</p>
+            <p><a href="${html(loginUrl)}">Sign in to Project Nexus</a></p>
+            <p>To set your own password, select <strong>Forgot Password</strong> on the sign-in page and enter
+            <strong>${html(assignedEmail)}</strong>. Receive the OTP at your personal email <strong>${html(email)}</strong>,
+            then use the OTP to set a new password. No activation link is needed.</p></div>`,
           });
           if (!delivered)
             throw new ServiceUnavailableException(
-              'Chưa gửi được email cấp tài khoản Staff. Hãy kiểm tra cấu hình Gmail/SMTP và thử lại.',
+              'Unable to send Staff provisioning email. Please check Gmail/SMTP settings and try again.',
             );
           return {
             success: true,
-            message: 'Đã cấp tài khoản Staff và gửi thông tin đăng nhập về email cá nhân.',
+            message: 'Staff account provisioned and credentials sent to personal email.',
             invitationId: invitation.id,
             assignedEmail,
             staff: {
@@ -179,7 +179,7 @@ export class StaffProvisioningService {
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new ConflictException(
-          'Tài khoản Staff vừa được cấp bởi yêu cầu khác. Hãy kiểm tra lại danh sách Staff.',
+          'Staff account was just provisioned by another request. Please check the Staff list.',
         );
       }
       throw error;
@@ -207,6 +207,6 @@ export class StaffProvisioningService {
       });
       if (!reservation) return address;
     }
-    throw new ConflictException('Đã hết tên tài khoản Staff khả dụng cho họ tên này.');
+    throw new ConflictException('No available Staff email usernames remain for this full name.');
   }
 }

@@ -42,7 +42,7 @@ export class ShopShippingProfileService {
       },
     });
     if (!user || user.role !== 'SELLER')
-      throw new BadRequestException('Chỉ tài khoản seller được khai báo điểm lấy hàng.');
+      throw new BadRequestException('Only seller accounts can register a pickup point.');
     const profile = user.sellerUpgradeRequests[0];
     const address = profile ?? user.addresses[0];
     if (
@@ -52,7 +52,7 @@ export class ShopShippingProfileService {
         !address.district?.trim() ||
         !address.ward?.trim())
     ) {
-      throw new BadRequestException('Vui lòng cập nhật đầy đủ địa chỉ trong hồ sơ gian hàng.');
+      throw new BadRequestException('Please complete your full address in the shop profile.');
     }
     return {
       name: (profile?.storeName || user.fullName).trim(),

@@ -65,7 +65,7 @@ export class OrderWalletPaymentService {
       await this.trendingService.syncTopTrendingNotifications();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
-      this.logger.warn(`Đồng bộ thông báo Xu hướng thất bại: ${message}`);
+      this.logger.warn(`Failed to sync trending notifications: ${message}`);
     }
   }
 
@@ -83,33 +83,33 @@ export class OrderWalletPaymentService {
 
     if (!order) {
       throw new NotFoundException({
-        message: 'Không tìm thấy đơn hàng tương ứng',
+        message: 'Order not found',
         errorCode: AppErrorCode.ORDER_NOT_FOUND,
       });
     }
 
     if (order.isAuction)
       throw new BadRequestException(
-        'Đơn đấu giá phải thanh toán qua quyền mua, để sử dụng đúng tiền cọc.',
+        'Auction orders must be paid through claim checkout to apply the deposit correctly.',
       );
 
     if (order.buyerId !== buyerId) {
       throw new ForbiddenException({
-        message: 'Bạn không có quyền thanh toán cho đơn hàng này',
+        message: 'You do not have permission to pay for this order',
         errorCode: AppErrorCode.FORBIDDEN,
       });
     }
 
     if (order.status !== OrderStatus.PENDING_PAYMENT) {
       throw new BadRequestException({
-        message: `Đơn hàng hiện không ở trạng thái chờ thanh toán (Trạng thái hiện tại: ${order.status})`,
+        message: `Order is not awaiting payment (Current status: ${order.status})`,
         errorCode: AppErrorCode.ORDER_INVALID_STATE,
       });
     }
 
     const orderAmount = Number(order.totalAmount);
     if (orderAmount <= 0) {
-      throw new BadRequestException('Số tiền thanh toán phải lớn hơn 0 đồng');
+      throw new BadRequestException('Payment amount must be greater than 0 VND');
     }
 
     const settlementResult = await this.prisma.$transaction((tx) =>
@@ -120,7 +120,7 @@ export class OrderWalletPaymentService {
 
     return {
       success: true,
-      message: 'Thanh toán đơn hàng bằng ví NEXUS Pay thành công!',
+      message: 'Order paid successfully with NEXUS Pay wallet!',
       orderId: order.id,
       orderStatus: OrderStatus.PAID,
       provider: PaymentProvider.WALLET,
@@ -147,17 +147,17 @@ export class OrderWalletPaymentService {
     });
 
     if (orders.length !== orderIds.length)
-      throw new NotFoundException('Không tìm thấy đủ các đơn hàng cần thanh toán.');
+      throw new NotFoundException('Could not find all orders to pay for.');
 
     for (const order of orders) {
       if (order.buyerId !== buyerId)
         throw new ForbiddenException({
-          message: 'Bạn không có quyền thanh toán cho đơn hàng này',
+          message: 'You do not have permission to pay for this order',
           errorCode: AppErrorCode.FORBIDDEN,
         });
       if (order.isAuction)
         throw new BadRequestException(
-          'Đơn đấu giá phải thanh toán qua quyền mua, để sử dụng đúng tiền cọc.',
+          'Auction orders must be paid through claim checkout to apply the deposit correctly.',
         );
     }
 
@@ -176,7 +176,7 @@ export class OrderWalletPaymentService {
 
     return settlements.map(({ orderId, settlement }) => ({
       success: true,
-      message: 'Thanh toán đơn hàng bằng ví NEXUS Pay thành công!',
+      message: 'Order paid successfully with NEXUS Pay wallet!',
       orderId,
       orderStatus: OrderStatus.PAID,
       provider: PaymentProvider.WALLET,
@@ -202,11 +202,13 @@ export class OrderWalletPaymentService {
     const payable = await tx.order.findUniqueOrThrow({ where: { id: orderId } });
     if (payable.buyerId !== buyerId)
       throw new ForbiddenException({
-        message: 'Bạn không có quyền thanh toán cho đơn hàng này',
+        message: 'You do not have permission to pay for this order',
         errorCode: AppErrorCode.FORBIDDEN,
       });
     if (payable.status !== OrderStatus.PENDING_PAYMENT)
-      throw new BadRequestException('Đơn hàng đã được thanh toán hoặc không còn chờ thanh toán.');
+      throw new BadRequestException(
+        'Order has already been paid or is no longer awaiting payment.',
+      );
 
     let buyerWallet = await tx.wallet.findUnique({
       where: { userId: buyerId },
@@ -227,7 +229,7 @@ export class OrderWalletPaymentService {
     const currentBalance = Number(buyerWallet.balance);
     if (currentBalance < orderAmount) {
       throw new BadRequestException({
-        message: `Số dư ví NEXUS Pay không đủ để thanh toán. Số dư hiện tại: ${currentBalance.toLocaleString('vi-VN')} VND, Cần thanh toán: ${orderAmount.toLocaleString('vi-VN')} VND. Vui lòng nạp thêm tiền vào ví hoặc chọn phương thức chuyển khoản VietQR.`,
+        message: `Insufficient NEXUS Pay wallet balance. Available balance: ${currentBalance.toLocaleString('vi-VN')} VND, Required payment: ${orderAmount.toLocaleString('vi-VN')} VND. Please top up your wallet or select VietQR bank transfer.`,
         errorCode: AppErrorCode.INSUFFICIENT_BALANCE,
       });
     }
@@ -238,7 +240,7 @@ export class OrderWalletPaymentService {
     });
     if (debited.count !== 1)
       throw new BadRequestException({
-        message: 'Số dư ví không đủ để thanh toán.',
+        message: 'Insufficient wallet balance for payment.',
         errorCode: AppErrorCode.INSUFFICIENT_BALANCE,
       });
     const updatedBuyerWallet = await tx.wallet.findUniqueOrThrow({
@@ -252,7 +254,7 @@ export class OrderWalletPaymentService {
         type: WalletTransactionType.ORDER_PAYMENT,
         status: WalletTransactionStatus.SUCCESS,
         referenceId: orderId,
-        description: `Thanh toán đơn hàng #${orderId.slice(0, 8).toUpperCase()}`,
+        description: `Payment for order #${orderId.slice(0, 8).toUpperCase()}`,
       },
     });
 
@@ -291,8 +293,8 @@ export class OrderWalletPaymentService {
       tx,
       {
         userId: buyerId,
-        title: 'Thanh toán đơn hàng thành công ✅',
-        content: `Đơn hàng #${orderId.slice(0, 8).toUpperCase()} trị giá ${orderAmount.toLocaleString('vi-VN')} VND đã được thanh toán thành công bằng ví NEXUS Pay. Số dư còn lại: ${Number(updatedBuyerWallet.balance).toLocaleString('vi-VN')} VND.`,
+        title: 'Order payment successful ✅',
+        content: `Order #${orderId.slice(0, 8).toUpperCase()} totaling ${orderAmount.toLocaleString('vi-VN')} VND was paid via NEXUS Pay wallet. Remaining balance: ${Number(updatedBuyerWallet.balance).toLocaleString('vi-VN')} VND.`,
         type: NotificationType.ORDER,
         channel: NotificationChannel.IN_APP,
       },
@@ -303,8 +305,8 @@ export class OrderWalletPaymentService {
       tx,
       {
         userId: payable.sellerId,
-        title: 'Đơn hàng mới đã được thanh toán 🛒',
-        content: `Đơn hàng #${orderId.slice(0, 8).toUpperCase()} đã được thanh toán thành công và chuyển sang trạng thái chuẩn bị. Vui lòng đóng gói và bàn giao cho đơn vị vận chuyển GHN.`,
+        title: 'New order paid 🛒',
+        content: `Order #${orderId.slice(0, 8).toUpperCase()} has been paid and moved to preparing status. Please pack and hand it over to GHN.`,
         type: NotificationType.ORDER,
         channel: NotificationChannel.IN_APP,
       },

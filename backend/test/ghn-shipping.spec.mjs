@@ -322,7 +322,7 @@ test('checkout rechecks cart and product price after all GHN responses, before c
     f.cart.items[0].product.basePrice = 999000;
     return { fee };
   });
-  await assert.rejects(f.service.checkout('buyer', { shippingAddress: recipient }), /thay đổi/);
+  await assert.rejects(f.service.checkout('buyer', { shippingAddress: recipient }), /changed/);
   assert.equal(f.tx.order.create.mock.callCount(), 0);
   assert.equal(f.tx.cartItem.deleteMany.mock.callCount(), 0);
 });

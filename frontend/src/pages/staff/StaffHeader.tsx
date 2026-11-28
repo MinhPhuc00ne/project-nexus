@@ -223,7 +223,7 @@ export default function StaffHeader({ account, onOpenSidebar }: StaffHeaderProps
     try {
       let finalAvatarUrl = profileAvatar.trim();
 
-      // Nếu có chọn file ảnh từ máy tính, upload lên máy chủ trước
+      // Upload selected local image file to server first
       if (avatarFile) {
         setIsUploadingAvatar(true);
         try {
@@ -534,7 +534,7 @@ export default function StaffHeader({ account, onOpenSidebar }: StaffHeaderProps
           )}
         </div>
       </div>
-      {/* Modal Chỉnh Sửa Hồ Sơ Staff */}
+      {/* Edit Staff Profile Modal */}
       <StaffHeaderDialogs
         t={t}
         initials={initials}

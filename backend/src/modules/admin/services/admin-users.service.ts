@@ -111,7 +111,7 @@ export class AdminUsersService {
     });
 
     if (!user) {
-      throw new NotFoundException('Không tìm thấy tài khoản người dùng.');
+      throw new NotFoundException('User account not found.');
     }
 
     const base = this.toUserItem(user);
@@ -158,15 +158,15 @@ export class AdminUsersService {
     });
 
     if (!user || user.role === Role.GUEST) {
-      throw new NotFoundException('Không tìm thấy tài khoản người dùng.');
+      throw new NotFoundException('User account not found.');
     }
 
     if (user.id === adminId || user.role === Role.ADMIN) {
-      throw new BadRequestException('Không thể khóa tài khoản Quản trị viên (Admin).');
+      throw new BadRequestException('Cannot lock an Administrator account.');
     }
 
     if (user.trustLevel === ReputationTrustLevel.SUSPENDED) {
-      throw new BadRequestException('Tài khoản này đã bị khóa từ trước.');
+      throw new BadRequestException('This account is already suspended.');
     }
 
     const isSeller = user.role === Role.SELLER;
@@ -179,8 +179,7 @@ export class AdminUsersService {
           ? {
               isShopSuspended: true,
               isSellerActive: false,
-              suspensionReason:
-                dto?.reason?.trim() || 'Tài khoản người bán bị khóa bởi Quản trị viên',
+              suspensionReason: dto?.reason?.trim() || 'Seller account locked by Administrator',
             }
           : {}),
       },
@@ -203,7 +202,7 @@ export class AdminUsersService {
     await this.tokenAuth.revokeAllSessions(targetUserId);
 
     this.logger.log(
-      `Admin (${adminId}) đã khóa tài khoản ${user.email} (${user.id}). Lý do: ${dto?.reason || 'Không có'}`,
+      `Admin (${adminId}) locked account ${user.email} (${user.id}). Reason: ${dto?.reason || 'None'}`,
     );
     await this.auditLog?.record({
       eventName: 'admin.user.locked',
@@ -213,7 +212,7 @@ export class AdminUsersService {
 
     return {
       success: true,
-      message: `Khóa tài khoản ${user.email} thành công.`,
+      message: `Successfully locked account ${user.email}.`,
       user: this.toUserItem(updated),
     };
   }
@@ -239,16 +238,18 @@ export class AdminUsersService {
     });
 
     if (!user || user.role === Role.GUEST) {
-      throw new NotFoundException('Không tìm thấy tài khoản người dùng.');
+      throw new NotFoundException('User account not found.');
     }
 
     if (user.trustLevel !== ReputationTrustLevel.SUSPENDED) {
-      throw new BadRequestException('Tài khoản này hiện không ở trạng thái bị khóa.');
+      throw new BadRequestException('This account is not currently suspended.');
     }
 
     const targetTrustLevel = trustLevelFor(user.reputationScore);
     if (targetTrustLevel === 'SUSPENDED')
-      throw new BadRequestException('Cần điều chỉnh điểm uy tín lên ít nhất 40 trước khi mở khóa.');
+      throw new BadRequestException(
+        'Reputation score must be adjusted to at least 40 before unlocking.',
+      );
     const isSeller = user.role === Role.SELLER;
 
     const updated = await this.prisma.user.update({
@@ -274,7 +275,7 @@ export class AdminUsersService {
     }
 
     this.logger.log(
-      `Admin (${adminId}) đã mở khóa tài khoản ${user.email} (${user.id}). Lý do: ${dto?.reason || 'Không có'}`,
+      `Admin (${adminId}) unlocked account ${user.email} (${user.id}). Reason: ${dto?.reason || 'None'}`,
     );
     await this.auditLog?.record({
       eventName: 'admin.user.unlocked',
@@ -284,7 +285,7 @@ export class AdminUsersService {
 
     return {
       success: true,
-      message: `Mở khóa tài khoản ${user.email} thành công.`,
+      message: `Successfully unlocked account ${user.email}.`,
       user: this.toUserItem(updated),
     };
   }
@@ -322,10 +323,9 @@ export class AdminUsersService {
       where: { id: targetUserId },
       include: { wallet: { select: { balance: true } } },
     });
-    if (!user || user.role === Role.GUEST)
-      throw new NotFoundException('Không tìm thấy tài khoản người dùng.');
+    if (!user || user.role === Role.GUEST) throw new NotFoundException('User account not found.');
     if (user.id === adminId && dto.role !== Role.ADMIN) {
-      throw new BadRequestException('Quản trị viên không thể tự hạ quyền của chính mình.');
+      throw new BadRequestException('Administrators cannot demote themselves.');
     }
 
     let platformEmail = user.platformEmail;
@@ -363,7 +363,7 @@ export class AdminUsersService {
     // The new role is in the token claims, so the old token must not survive.
     await this.tokenAuth.revokeAllSessions(targetUserId);
 
-    this.logger.log(`Admin (${adminId}) đã chuyển vai trò của user ${user.email} sang ${dto.role}`);
+    this.logger.log(`Admin (${adminId}) changed user ${user.email} role to ${dto.role}`);
     await this.auditLog?.record({
       eventName: 'admin.user.role_updated',
       operatorId: adminId,
@@ -377,7 +377,7 @@ export class AdminUsersService {
 
     return {
       success: true,
-      message: `Đã cập nhật vai trò của tài khoản thành ${dto.role} thành công!`,
+      message: `Account role updated to ${dto.role} successfully!`,
       user: this.toUserItem(updated),
     };
   }

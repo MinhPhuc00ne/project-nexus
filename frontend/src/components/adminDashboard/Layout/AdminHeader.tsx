@@ -10,8 +10,8 @@ import { useToast } from '../../ToastNotification';
 import LogoutConfirmDialog from '../../auth/LogoutConfirmDialog';
 import { dashboardChrome } from '../../dashboard/dashboardChrome';
 
-// Header nhận tài khoản đã được AdminLayout xác minh qua /users/me; không tự gọi API lần nữa.
-// onMenu mở sidebar mobile; thông báo lấy từ API theo tài khoản hiện tại.
+// Header receives account already verified by AdminLayout via /users/me; does not re-fetch API.
+// onMenu opens the mobile sidebar; notifications are fetched from the API for the current account.
 export default function AdminHeader({
   onMenu,
   user,
@@ -20,7 +20,7 @@ export default function AdminHeader({
   user: UserProfile;
   pendingCount?: number;
 }) {
-  // State cục bộ chỉ để mở/đóng danh sách thông báo, không sửa dữ liệu nghiệp vụ.
+  // Local state only toggles the notification popover without mutating domain data.
   const { t } = useTranslation(['admin', 'common']);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -33,7 +33,7 @@ export default function AdminHeader({
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
-  // Bấm ra ngoài đóng dropdown; Escape đóng và trả focus về nút tài khoản để dùng bàn phím.
+  // Clicking outside closes the dropdown; Escape closes it and restores focus to the account button.
   useEffect(() => {
     const closeOutside = (event: PointerEvent) => {
       if (!(event.target instanceof Node)) return;
@@ -54,7 +54,7 @@ export default function AdminHeader({
     };
   }, [showUserMenu]);
 
-  // Chuyển trang thì đóng các bảng nổi, header vẫn được giữ trong AdminLayout.
+  // Close open popovers on route change while AdminLayout keeps the header mounted.
   useEffect(() => {
     setShowUserMenu(false);
     setShowNotifications(false);
@@ -110,7 +110,7 @@ export default function AdminHeader({
             }}
           />
         </div>
-        {/* Tài khoản: bấm tên/avatar mở bảng thông tin, điều hướng và đăng xuất. */}
+        {/* Account: click name/avatar to open account menu, navigate, or log out. */}
         <div
           ref={userMenuRef}
           className="relative"
@@ -153,7 +153,7 @@ export default function AdminHeader({
 
           {showUserMenu && (
             <div id={userMenuId} className={dashboardChrome.accountMenu}>
-              {/* Thông tin tài khoản đang đăng nhập; vẫn hiển thị khi tên ở header bị ẩn trên mobile. */}
+              {/* Signed-in account details; remains visible when header name is hidden on mobile. */}
               <div className="mb-2 border-b border-slate-100 px-3 py-3">
                 <p className="truncate text-sm font-semibold text-slate-900">{displayName}</p>
                 {user?.email && (

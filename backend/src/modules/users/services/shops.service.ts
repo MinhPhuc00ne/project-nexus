@@ -57,7 +57,7 @@ export class ShopsService {
 
     if (!user) {
       throw new NotFoundException({
-        message: 'Không tìm thấy tài khoản người dùng.',
+        message: 'User account not found.',
         errorCode: AppErrorCode.NOT_FOUND,
       });
     }
@@ -133,32 +133,32 @@ export class ShopsService {
 
     if (!user) {
       throw new NotFoundException({
-        message: 'Không tìm thấy tài khoản người dùng.',
+        message: 'User account not found.',
         errorCode: AppErrorCode.NOT_FOUND,
       });
     }
 
     if (user.role !== Role.SELLER && user.role !== Role.ADMIN) {
       throw new ForbiddenException({
-        message: 'Chỉ tài khoản Người bán (Seller) mới có quyền chỉnh sửa thông tin gian hàng.',
+        message: 'Only Seller accounts have permission to edit shop information.',
         errorCode: AppErrorCode.FORBIDDEN,
       });
     }
 
     if (user.isShopSuspended) {
       throw new ForbiddenException({
-        message: `Gian hàng của bạn hiện đang bị Admin đình chỉ hoạt động.${
-          user.suspensionReason ? ` Lý do: ${user.suspensionReason}` : ''
-        } Không thể chỉnh sửa hồ sơ.`,
+        message: `Your shop is currently suspended by Admin.${
+          user.suspensionReason ? ` Reason: ${user.suspensionReason}` : ''
+        } Cannot edit shop profile.`,
         errorCode: AppErrorCode.SHOP_SUSPENDED,
       });
     }
 
     if (dto.storeName) {
-      assertCleanContent(dto.storeName, 'Tên gian hàng');
+      assertCleanContent(dto.storeName, 'Shop name');
     }
     if (dto.storeDescription) {
-      assertCleanContent(dto.storeDescription, 'Mô tả gian hàng');
+      assertCleanContent(dto.storeDescription, 'Shop description');
     }
 
     const result = await this.prisma.$transaction(async (tx) => {
@@ -166,7 +166,7 @@ export class ShopsService {
       const current = await tx.user.findUniqueOrThrow({ where: { id: sellerId } });
       if (current.isShopSuspended) {
         throw new ForbiddenException({
-          message: 'Shop đang bị đình chỉ.',
+          message: 'Shop is suspended.',
           errorCode: AppErrorCode.SHOP_SUSPENDED,
         });
       }
@@ -267,8 +267,8 @@ export class ShopsService {
       await notifyAllAdmins(
         this.prisma,
         {
-          title: 'Điểm lấy hàng Seller chờ xác minh GHN',
-          content: `Gian hàng "${result.storeName}" vừa thay đổi thông tin lấy hàng và đang chờ xác minh GHN.`,
+          title: 'Seller pickup point awaiting GHN verification',
+          content: `Shop "${result.storeName}" updated its pickup details and is awaiting GHN verification.`,
           type: NotificationType.SYSTEM,
           targetUrl: '/admin/stores',
         },
@@ -280,7 +280,7 @@ export class ShopsService {
 
     return {
       success: true,
-      message: 'Cập nhật thông tin gian hàng thành công!',
+      message: 'Shop profile updated successfully!',
       shippingSync,
       shop: {
         id: sellerId,

@@ -20,26 +20,24 @@ export class ChatAutoReplyService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Tạo tin nhắn tự động cho Seller (tối đa 10 mẫu/shop)
+   * Creates an auto-reply rule for a Seller (maximum 10 rules per shop).
    */
   async createSellerAutoReply(sellerId: string, dto: CreateAutoReplyInput) {
     this.validateReply(dto.triggerType ?? 'WELCOME', dto.keyword, dto.content);
-    assertCleanContent(dto.content, 'Nội dung tin nhắn tự động');
+    assertCleanContent(dto.content, 'Auto-reply content');
 
     const totalCount = await this.prisma.chatAutoReply.count({
       where: { shopId: sellerId, scope: 'SHOP' },
     });
     if (totalCount >= 10) {
-      throw new BadRequestException(
-        'Mỗi gian hàng chỉ được tạo tối đa 10 cấu hình tin nhắn tự động.',
-      );
+      throw new BadRequestException('Each store can create a maximum of 10 auto-reply rules.');
     }
 
     return this.prisma.chatAutoReply.create({
       data: {
         scope: 'SHOP',
         shopId: sellerId,
-        name: dto.name || 'Tin nhắn tự động',
+        name: dto.name || 'Auto-reply',
         triggerType: dto.triggerType || 'WELCOME',
         keyword: dto.keyword?.trim() || null,
         content: dto.content.trim(),
@@ -50,7 +48,7 @@ export class ChatAutoReplyService {
   }
 
   /**
-   * Lấy danh sách tin nhắn tự động của Shop
+   * Lists auto-reply rules for a Shop.
    */
   async getSellerAutoReplies(sellerId: string) {
     return this.prisma.chatAutoReply.findMany({
@@ -60,7 +58,7 @@ export class ChatAutoReplyService {
   }
 
   /**
-   * Chỉnh sửa tin nhắn tự động của Shop
+   * Updates an auto-reply rule for a Shop.
    */
   async updateSellerAutoReply(sellerId: string, replyId: string, dto: UpdateAutoReplyInput) {
     const existing = await this.prisma.chatAutoReply.findFirst({
@@ -68,12 +66,12 @@ export class ChatAutoReplyService {
     });
 
     if (!existing) {
-      throw new NotFoundException('Không tìm thấy cấu hình tin nhắn tự động của shop.');
+      throw new NotFoundException('Store auto-reply configuration not found.');
     }
 
     if (existing.status === 'CANCELLED_BY_ADMIN') {
       throw new ForbiddenException(
-        `Tin nhắn tự động này đã bị Quản trị viên khóa do vi phạm (${existing.cancelReason || 'Không rõ lý do'}). Không thể chỉnh sửa.`,
+        `This auto-reply was locked by an Administrator for policy violation (${existing.cancelReason || 'No reason provided'}). Cannot edit.`,
       );
     }
 
@@ -83,7 +81,7 @@ export class ChatAutoReplyService {
       dto.content ?? existing.content,
     );
     if (dto.content) {
-      assertCleanContent(dto.content, 'Nội dung tin nhắn tự động');
+      assertCleanContent(dto.content, 'Auto-reply content');
     }
 
     return this.prisma.chatAutoReply.update({
@@ -99,7 +97,7 @@ export class ChatAutoReplyService {
   }
 
   /**
-   * Xóa tin nhắn tự động của Shop
+   * Deletes an auto-reply rule for a Shop.
    */
   async deleteSellerAutoReply(sellerId: string, replyId: string) {
     const existing = await this.prisma.chatAutoReply.findFirst({
@@ -107,15 +105,15 @@ export class ChatAutoReplyService {
     });
 
     if (!existing) {
-      throw new NotFoundException('Không tìm thấy cấu hình tin nhắn tự động.');
+      throw new NotFoundException('Auto-reply configuration not found.');
     }
 
     await this.prisma.chatAutoReply.delete({ where: { id: replyId } });
-    return { success: true, message: 'Đã xóa tin nhắn tự động thành công.' };
+    return { success: true, message: 'Auto-reply deleted successfully.' };
   }
 
   /**
-   * Bật / Tắt kích hoạt tin nhắn tự động
+   * Toggles an auto-reply rule active state.
    */
   async toggleSellerAutoReply(sellerId: string, replyId: string) {
     const existing = await this.prisma.chatAutoReply.findFirst({
@@ -123,12 +121,12 @@ export class ChatAutoReplyService {
     });
 
     if (!existing) {
-      throw new NotFoundException('Không tìm thấy cấu hình tin nhắn tự động.');
+      throw new NotFoundException('Auto-reply configuration not found.');
     }
 
     if (existing.status === 'CANCELLED_BY_ADMIN') {
       throw new ForbiddenException(
-        'Tin nhắn tự động đã bị Quản trị viên vô hiệu hóa, không thể bật.',
+        'This auto-reply was disabled by an Administrator and cannot be enabled.',
       );
     }
 
@@ -139,17 +137,17 @@ export class ChatAutoReplyService {
   }
 
   /**
-   * Admin tạo tin nhắn tự động chung của hệ thống (dành cho Staff CSKH Desk)
+   * Creates a system-wide auto-reply rule (for the Support Staff desk).
    */
   async createSystemAutoReply(_adminId: string, dto: CreateAutoReplyInput) {
     this.validateReply(dto.triggerType ?? 'WELCOME', dto.keyword, dto.content);
-    assertCleanContent(dto.content, 'Nội dung tin nhắn tự động hệ thống');
+    assertCleanContent(dto.content, 'System auto-reply content');
 
     return this.prisma.chatAutoReply.create({
       data: {
         scope: 'SYSTEM',
         shopId: null,
-        name: dto.name || 'Tin nhắn chào mừng CSKH Hệ thống',
+        name: dto.name || 'System Support Welcome Message',
         triggerType: dto.triggerType || 'WELCOME',
         keyword: dto.keyword?.trim() || null,
         content: dto.content.trim(),
@@ -160,7 +158,7 @@ export class ChatAutoReplyService {
   }
 
   /**
-   * Admin hủy / khóa tin nhắn tự động của Seller kèm lý do
+   * Admin cancels/locks a Seller auto-reply rule with a reason.
    */
   async cancelSellerAutoReply(adminId: string, replyId: string, dto: CancelAutoReplyInput) {
     const existing = await this.prisma.chatAutoReply.findUnique({
@@ -169,7 +167,7 @@ export class ChatAutoReplyService {
     });
 
     if (!existing) {
-      throw new NotFoundException('Không tìm thấy tin nhắn tự động.');
+      throw new NotFoundException('Auto-reply not found.');
     }
 
     return this.prisma.chatAutoReply.update({
@@ -185,7 +183,7 @@ export class ChatAutoReplyService {
   }
 
   /**
-   * Admin xem danh sách tin nhắn tự động toàn sàn
+   * Admin lists all auto-reply rules across the platform.
    */
   async listAutoRepliesForAdmin(query: QueryAutoRepliesInput) {
     const page = Number(query.page) || 1;
@@ -223,7 +221,7 @@ export class ChatAutoReplyService {
   }
 
   /**
-   * Xem lịch sử lý do hủy của một tin nhắn tự động
+   * Views cancellation reason history for an auto-reply rule.
    */
   async getAutoReplyHistory(replyId: string) {
     const reply = await this.prisma.chatAutoReply.findUnique({
@@ -235,7 +233,7 @@ export class ChatAutoReplyService {
     });
 
     if (!reply) {
-      throw new NotFoundException('Không tìm thấy tin nhắn tự động.');
+      throw new NotFoundException('Auto-reply not found.');
     }
 
     return {
@@ -257,9 +255,9 @@ export class ChatAutoReplyService {
     keyword: string | null | undefined,
     content: string,
   ): void {
-    if (!content.trim()) throw new BadRequestException('Nội dung trả lời không được để trống.');
+    if (!content.trim()) throw new BadRequestException('Reply content cannot be empty.');
     if (trigger === 'KEYWORD' && !normalizeChatText(keyword ?? ''))
-      throw new BadRequestException('Cấu hình KEYWORD cần từ khóa hợp lệ.');
+      throw new BadRequestException('KEYWORD trigger requires a valid keyword.');
   }
 
   /**

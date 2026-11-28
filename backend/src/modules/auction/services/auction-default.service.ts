@@ -73,7 +73,7 @@ export class AuctionDefaultService {
         },
       });
       if (!current) {
-        throw new NotFoundException('Không tìm thấy thông tin quyền mua đấu giá.');
+        throw new NotFoundException('Auction award record not found.');
       }
 
       if (current.status === AuctionAwardStatus.PAYMENT_DEFAULT) {
@@ -102,16 +102,16 @@ export class AuctionDefaultService {
             current.status === AuctionAwardStatus.AWAITING_DEPOSIT)
         ) {
           throw new BadRequestException(
-            'Người mua thứ hai chưa khóa tiền cọc 30%. Vui lòng sử dụng thao tác "Khách không mua nữa".',
+            'Second-chance buyer has not locked the 30% deposit yet. Please use the "Buyer Declined to Purchase" action.',
           );
         }
-        throw new ConflictException('Quyền mua đấu giá này không ở trạng thái chờ thanh toán.');
+        throw new ConflictException('This auction award is not awaiting payment.');
       }
 
       const buyerId = current.buyerId ?? current.order?.buyerId ?? current.bid.bidderId;
       const sellerId = current.auctionItem?.sellerId ?? current.auction.sellerId;
       if (!sellerId) {
-        throw new ConflictException('Không xác định được người bán của lô đấu giá.');
+        throw new ConflictException('Unable to identify the seller for this auction lot.');
       }
 
       const platformRevenueWallet = await this.treasury.getOrCreatePlatformRevenueWallet(tx);
@@ -130,11 +130,13 @@ export class AuctionDefaultService {
 
       if (!buyerWallet || Number(buyerWallet.lockedBalance) < depositAmount) {
         throw new ConflictException(
-          'Khoản cọc 30% trong ví tạm giữ của người mua không đủ để tịch thu.',
+          'Locked 30% deposit in buyer wallet is insufficient to forfeit.',
         );
       }
       if (!sellerWallet || !latestAdminWallet) {
-        throw new NotFoundException('Không tìm thấy ví người bán hoặc ví sàn để phân bổ tiền cọc.');
+        throw new NotFoundException(
+          'Seller wallet or platform wallet not found to allocate deposit.',
+        );
       }
 
       const settings = await this.adminSettings.getAll();
@@ -153,7 +155,7 @@ export class AuctionDefaultService {
           amount: -depositAmount,
           status: WalletTransactionStatus.SUCCESS,
           referenceId: current.id,
-          description: `Tịch thu 30% tiền cọc (${formatVnd(depositAmount)}) do quá hạn thanh toán 24 giờ.`,
+          description: `Forfeited 30% deposit (${formatVnd(depositAmount)}) due to 24-hour payment default.`,
         },
       });
 
@@ -168,7 +170,7 @@ export class AuctionDefaultService {
           amount: sellerCompensation,
           status: WalletTransactionStatus.SUCCESS,
           referenceId: current.id,
-          description: `Bồi thường 30% cọc từ người thắng bỏ cọc (${formatVnd(depositAmount)} trừ ${platformFeePct}% phí sàn = ${formatVnd(sellerCompensation)}).`,
+          description: `30% deposit compensation from defaulting winner (${formatVnd(depositAmount)} minus ${platformFeePct}% platform fee = ${formatVnd(sellerCompensation)}).`,
         },
       });
 
@@ -184,7 +186,7 @@ export class AuctionDefaultService {
             amount: platformFee,
             status: WalletTransactionStatus.SUCCESS,
             referenceId: current.id,
-            description: `Phí sàn ${platformFeePct}% trên khoản cọc 30% bị tịch thu (${formatVnd(depositAmount)}).`,
+            description: `${platformFeePct}% platform fee on forfeited 30% deposit (${formatVnd(depositAmount)}).`,
           },
         });
       }
@@ -197,7 +199,7 @@ export class AuctionDefaultService {
           referenceId: current.auctionId,
           reason:
             note ??
-            'Không hoàn thành thanh toán phần còn lại trong thời hạn 24 giờ sau khi thắng đấu giá.',
+            'Failed to complete remaining payment within 24 hours after winning the auction.',
           skipNotification: false,
         },
         tx,
@@ -210,7 +212,7 @@ export class AuctionDefaultService {
           completedAt: new Date(),
           resolutionNote:
             note ??
-            `Admin (${adminId ?? 'SYSTEM'}) xác nhận quá hạn thanh toán 24 giờ; tịch thu 30% cọc.`,
+            `Admin (${adminId ?? 'SYSTEM'}) confirmed 24-hour payment default; 30% deposit forfeited.`,
         },
       });
 
@@ -230,8 +232,8 @@ export class AuctionDefaultService {
           userId: buyerId,
           auctionId: current.auctionId,
           targetUrl: `/auction/${current.auctionId}`,
-          title: `Bạn đã bị trễ hạn thanh toán ${itemLabel}`,
-          content: `Đơn hàng đấu giá cho ${itemLabel} đã bị hủy do quá hạn thanh toán 24 giờ. Hệ thống đã trừ 10 điểm uy tín và tịch thu 30% tiền cọc (${formatVnd(depositAmount)}). Nếu có sai sót, bạn có thể gửi khiếu nại lên Admin.`,
+          title: `Payment overdue for ${itemLabel}`,
+          content: `Your auction order for ${itemLabel} was cancelled due to a 24-hour payment default. 10 reputation points were deducted and the 30% deposit (${formatVnd(depositAmount)}) was forfeited. If you believe this was an error, you may file an appeal with Admin.`,
           type: NotificationType.AUCTION,
           channel: NotificationChannel.IN_APP,
           metadata: {
@@ -254,8 +256,8 @@ export class AuctionDefaultService {
           userId: sellerId,
           auctionId: current.auctionId,
           targetUrl: `/auction/${current.auctionId}`,
-          title: `Nhận bồi thường tiền cọc từ ${itemLabel}`,
-          content: `Người mua đã trễ hạn thanh toán ${itemLabel}. Tiền bồi thường sau trừ ${platformFeePct}% phí sàn là ${formatVnd(sellerCompensation)} đã được cộng vào ví của bạn.`,
+          title: `Deposit compensation received for ${itemLabel}`,
+          content: `The buyer defaulted on payment for ${itemLabel}. Compensation of ${formatVnd(sellerCompensation)} (after ${platformFeePct}% platform fee) has been credited to your wallet.`,
           type: NotificationType.PAYMENT,
           channel: NotificationChannel.IN_APP,
           metadata: {
@@ -324,8 +326,8 @@ export class AuctionDefaultService {
           userId: sellerId,
           auctionId: current.auctionId,
           targetUrl: `/seller/auctions`,
-          title: `Kết thúc luồng đấu giá cho ${itemLabel}`,
-          content: `${itemLabel} không còn người mua đủ điều kiện tiếp nhận. Phiên đấu giá cho món hàng này đã đóng; bạn có thể đăng bán lại sản phẩm ở luồng cửa hàng nếu muốn.`,
+          title: `Auction flow ended for ${itemLabel}`,
+          content: `No eligible backup buyer remains for ${itemLabel}. The auction for this item has closed; you may relist it in your shop catalog if desired.`,
           type: NotificationType.AUCTION,
           channel: NotificationChannel.IN_APP,
         },
@@ -355,7 +357,7 @@ export class AuctionDefaultService {
   }
 
   /**
-   * Executes Admin's "Khách không mua nữa" action on a SECOND_CHANCE buyer.
+   * Executes Admin's "Buyer Declined to Purchase" action on a SECOND_CHANCE buyer.
    */
   async withdrawSecondChanceByAdmin(awardId: string, adminId: string, note?: string) {
     const outcome = await this.prisma.$transaction(async (tx) => {
@@ -365,19 +367,17 @@ export class AuctionDefaultService {
         include: { auction: true, auctionItem: true, bid: true },
       });
       if (!award) {
-        throw new NotFoundException('Không tìm thấy quyền mua dự bị.');
+        throw new NotFoundException('Second-chance purchase award not found.');
       }
       if (award.tier !== AuctionAwardTier.SECOND_CHANCE) {
-        throw new BadRequestException(
-          'Nút "Khách không mua nữa" chỉ áp dụng cho người mua ở lượt kế tiếp.',
-        );
+        throw new BadRequestException('This action only applies to second-chance buyers.');
       }
       if (
         award.status !== AuctionAwardStatus.AWAITING_ACCEPTANCE &&
         award.status !== AuctionAwardStatus.AWAITING_DEPOSIT &&
         award.status !== AuctionAwardStatus.AWAITING_CHECKOUT
       ) {
-        throw new ConflictException('Quyền mua này đã được đóng trước đó.');
+        throw new ConflictException('This purchase award has already been closed.');
       }
 
       const buyerId = award.buyerId ?? award.bid.bidderId;
@@ -405,7 +405,7 @@ export class AuctionDefaultService {
               amount: depositAmount,
               status: WalletTransactionStatus.SUCCESS,
               referenceId: award.id,
-              description: `Hoàn trả 30% tiền cọc (${formatVnd(depositAmount)}) khi Admin chấp thuận rút quyền mua ${itemLabel}.`,
+              description: `Refunded 30% deposit (${formatVnd(depositAmount)}) after Admin approved withdrawal of purchase right for ${itemLabel}.`,
             },
           });
           refundedDeposit = depositAmount;
@@ -424,7 +424,7 @@ export class AuctionDefaultService {
           status: AuctionAwardStatus.BUYER_WITHDRAWN,
           completedAt: new Date(),
           resolutionNote:
-            note ?? `Admin (${adminId}) đã xác nhận khách hàng thứ hai không mua nữa.`,
+            note ?? `Admin (${adminId}) confirmed second-chance buyer declined to purchase.`,
         },
       });
 
@@ -458,11 +458,11 @@ export class AuctionDefaultService {
           userId: buyerId,
           auctionId: award.auctionId,
           targetUrl: `/auction/${award.auctionId}`,
-          title: `Đã đóng giao dịch ${itemLabel}`,
+          title: `Transaction closed for ${itemLabel}`,
           content:
             refundedDeposit > 0
-              ? `Admin đã xác nhận yêu cầu không tiếp tục mua ${itemLabel}. Khoản cọc 30% (${formatVnd(refundedDeposit)}) đã được hoàn lại vào ví của bạn (không trừ điểm uy tín).`
-              : `Quyền mua ${itemLabel} đã được đóng theo xác nhận của Admin (không trừ điểm uy tín).`,
+              ? `Admin confirmed your request not to proceed with purchasing ${itemLabel}. The 30% deposit (${formatVnd(refundedDeposit)}) has been refunded to your wallet (no reputation points deducted).`
+              : `Your purchase right for ${itemLabel} was closed as confirmed by Admin (no reputation points deducted).`,
           type: NotificationType.AUCTION,
           channel: NotificationChannel.IN_APP,
           metadata: {
@@ -483,8 +483,8 @@ export class AuctionDefaultService {
             userId: sellerId,
             auctionId: award.auctionId,
             targetUrl: `/seller/auctions`,
-            title: `Khách hàng không tiếp tục mua ${itemLabel}`,
-            content: `Admin đã xác nhận kết thúc quyền mua của người mua tiếp theo cho ${itemLabel}. Bạn có thể quản lý hoặc đăng bán món hàng trong luồng sản phẩm riêng.`,
+            title: `Buyer declined to proceed with ${itemLabel}`,
+            content: `Admin confirmed closing the second-chance purchase right for ${itemLabel}. You may manage or relist the item in your regular store catalog.`,
             type: NotificationType.AUCTION,
             channel: NotificationChannel.IN_APP,
             metadata: {
@@ -517,7 +517,7 @@ export class AuctionDefaultService {
     if (!offer || offer.expiresAt.getTime() > Date.now()) return;
 
     if (offer.status === AuctionAwardStatus.AWAITING_CHECKOUT) {
-      await this.markPaymentDefault(awardId, undefined, 'Tự động quá hạn thanh toán 24 giờ.');
+      await this.markPaymentDefault(awardId, undefined, 'Automatic 24-hour payment timeout.');
       return;
     }
 
@@ -543,7 +543,7 @@ export class AuctionDefaultService {
           data: {
             status: AuctionAwardStatus.EXPIRED,
             completedAt: new Date(),
-            resolutionNote: 'Quá hạn phản hồi hoặc nạp cọc 30% trong 24 giờ.',
+            resolutionNote: 'Failed to respond or fund 30% deposit within 24 hours.',
           },
         });
         if (current.auctionItemId) {
@@ -619,8 +619,8 @@ export class AuctionDefaultService {
         userId: candidateBid.bidderId,
         auctionId: params.auctionId,
         targetUrl: `/auction/${params.auctionId}`,
-        title: `Cơ hội mua ${params.itemLabel} theo mức giá bạn đã đặt`,
-        content: `Người thắng đầu tiên đã không hoàn tất thanh toán. Hệ thống trân trọng mời bạn tiếp tục mua ${params.itemLabel} theo đúng mức giá bạn đã đặt (${formatVnd(offerAmount)}, cọc 30% tương đương ${formatVnd(requiredDeposit)}). Bạn có muốn tiếp tục mua món hàng này không?`,
+        title: `Opportunity to purchase ${params.itemLabel} at your bid price`,
+        content: `The primary winner did not complete payment. We invite you to purchase ${params.itemLabel} at your placed bid price (${formatVnd(offerAmount)}, requiring a 30% deposit of ${formatVnd(requiredDeposit)}). Would you like to proceed with this purchase?`,
         type: NotificationType.AUCTION,
         channel: NotificationChannel.IN_APP,
         metadata: {
@@ -646,8 +646,8 @@ export class AuctionDefaultService {
       {
         auctionId: params.auctionId,
         targetUrl: `/auction/${params.auctionId}`,
-        title: `Đã chuyển quyền mua dự bị cho ${params.itemLabel}`,
-        content: `Sau khi người thắng đầu tiên quá hạn thanh toán, hệ thống đã gửi lời mời mua hàng tới người trả giá cao kế tiếp cho ${params.itemLabel} (${formatVnd(offerAmount)}).`,
+        title: `Second-chance offer sent for ${params.itemLabel}`,
+        content: `After the primary winner defaulted on payment, a purchase offer was sent to the next highest bidder for ${params.itemLabel} (${formatVnd(offerAmount)}).`,
         metadata: {
           actionType: 'SECOND_CHANCE_SENT',
           awardId: secondAward.id,

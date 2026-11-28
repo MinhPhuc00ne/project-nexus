@@ -63,7 +63,7 @@ export class ReviewsService {
       {
         userId: sellerId,
         title,
-        content: `Khách hàng ${buyer?.fullName || 'Người mua'} ${contentPrefix} Nhận xét: "${comment || EMPTY_COMMENT_FALLBACK}".`,
+        content: `Customer ${buyer?.fullName || 'Buyer'} ${contentPrefix} Comment: "${comment || EMPTY_COMMENT_FALLBACK}".`,
         type: NotificationType.SYSTEM,
         channel: NotificationChannel.IN_APP,
       },
@@ -90,7 +90,7 @@ export class ReviewsService {
       });
       if ((orderItemsAgg._sum.quantity ?? 0) < 2) {
         throw new BadRequestException(
-          'Bạn cần mua và hoàn tất ít nhất 2 sản phẩm từ gian hàng này để có thể đánh giá shop.',
+          'You need to purchase and complete at least 2 items from this shop before leaving a shop review.',
         );
       }
     }
@@ -135,8 +135,8 @@ export class ReviewsService {
       tx,
       sellerId,
       userId,
-      'Đánh giá gian hàng mới ⭐',
-      `vừa đánh giá ${dto.rating} sao cho gian hàng của bạn.`,
+      'New shop review ⭐',
+      `rated your shop ${dto.rating} stars.`,
       dto.comment,
     );
     return created;
@@ -173,7 +173,7 @@ export class ReviewsService {
     }
 
     if (!productId || !orderItems.some((item) => item.productId === productId)) {
-      throw new BadRequestException('Sản phẩm không thuộc đơn hàng này.');
+      throw new BadRequestException('Product does not belong to this order.');
     }
     await tx.$queryRaw`SELECT id FROM products WHERE id = ${productId} FOR UPDATE`;
     const created = await tx.productReview.create({
@@ -208,8 +208,8 @@ export class ReviewsService {
       tx,
       sellerId,
       userId,
-      'Đánh giá mới cho sản phẩm 🌟',
-      `vừa đánh giá ${dto.rating} sao cho sản phẩm "${prod?.title || 'Sản phẩm'}" trong đơn #${orderId.slice(0, 8)}.`,
+      'New product review 🌟',
+      `rated product "${prod?.title || 'Product'}" ${dto.rating} stars in order #${orderId.slice(0, 8)}.`,
       dto.comment,
     );
     return created;
@@ -232,7 +232,7 @@ export class ReviewsService {
         {
           userId: sellerId,
           deltaPoints: 1,
-          reason: `Đơn hàng #${orderId.slice(0, 8)} nhận được đánh giá 5 sao từ người mua`,
+          reason: `Order #${orderId.slice(0, 8)} received a 5-star review from buyer`,
           referenceId: bonusReference,
         },
         tx,
@@ -247,8 +247,8 @@ export class ReviewsService {
           tx,
           {
             userId: admin.id,
-            title: `[CẢNH BÁO SHOP] Đơn hàng #${orderId.slice(0, 8)} nhận đánh giá 1 sao`,
-            content: `Người mua đã đánh giá 1 sao cho Shop ${sellerId} tại đơn hàng #${orderId.slice(0, 8)}. Nhận xét: "${dto.comment || EMPTY_COMMENT_FALLBACK}". Vui lòng kiểm tra bằng chứng và xử lý qua luồng báo cáo vi phạm.`,
+            title: `[SHOP ALERT] Order #${orderId.slice(0, 8)} received a 1-star review`,
+            content: `Buyer rated Shop ${sellerId} 1 star on order #${orderId.slice(0, 8)}. Comment: "${dto.comment || EMPTY_COMMENT_FALLBACK}". Please inspect the evidence and handle via the violation report workflow.`,
             type: 'DISPUTE',
             channel: 'IN_APP',
           },
@@ -269,12 +269,12 @@ export class ReviewsService {
       where: { id: orderId, buyerId: userId },
       include: { items: true },
     });
-    if (!order) throw new NotFoundException('Không tìm thấy đơn hàng của bạn.');
+    if (!order) throw new NotFoundException('Order not found.');
     if (order.status !== 'CONFIRMED') {
-      throw new BadRequestException('Chỉ đánh giá sau khi đơn hàng đã hoàn tất.');
+      throw new BadRequestException('Reviews can only be submitted after the order is completed.');
     }
     if (kind === 'product' && (!productId || !order.items.some((i) => i.productId === productId))) {
-      throw new BadRequestException('Sản phẩm không thuộc đơn hàng này.');
+      throw new BadRequestException('Product does not belong to this order.');
     }
   }
 
@@ -305,9 +305,11 @@ export class ReviewsService {
           },
           include: { items: true },
         });
-        if (!order) throw new NotFoundException('Không tìm thấy đơn hàng của bạn.');
+        if (!order) throw new NotFoundException('Order not found.');
         if (order.status !== 'CONFIRMED')
-          throw new BadRequestException('Chỉ đánh giá sau khi đơn hàng đã hoàn tất.');
+          throw new BadRequestException(
+            'Reviews can only be submitted after the order is completed.',
+          );
 
         if (kind === 'customer') {
           return tx.customerReview.create({
@@ -337,7 +339,7 @@ export class ReviewsService {
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new ConflictException('Đơn hàng/sản phẩm này đã được đánh giá.');
+        throw new ConflictException('This order or product has already been reviewed.');
       }
       throw error;
     }
@@ -354,7 +356,7 @@ export class ReviewsService {
       where: { id: targetId, role: 'SELLER', isShopSuspended: false },
       select: { id: true },
     });
-    if (!shop) throw new NotFoundException('Không tìm thấy shop.');
+    if (!shop) throw new NotFoundException('Shop not found.');
     const visibleStatsWhere: Prisma.ReviewWhereInput = {
       targetUserId: targetId,
       isShopReview: true,
@@ -443,7 +445,7 @@ export class ReviewsService {
         where: { id: targetId, status: 'ACTIVE', seller: { isShopSuspended: false } },
         select: { id: true },
       });
-      if (!product) throw new NotFoundException('Không tìm thấy sản phẩm.');
+      if (!product) throw new NotFoundException('Product not found.');
     }
     const visibilityFilter = buildReviewVisibilityFilter(
       viewerId,
@@ -496,7 +498,7 @@ export class ReviewsService {
       });
       if (!existing) throw new NotFoundException(PRODUCT_REVIEW_NOT_FOUND);
       if (existing.reviewerId !== userId)
-        throw new ForbiddenException('Bạn chỉ có thể chỉnh sửa đánh giá của chính mình.');
+        throw new ForbiddenException('You can only edit your own review.');
 
       const order = await tx.order.findUniqueOrThrow({ where: { id: orderId } });
       const deltaRating = dto.rating - existing.rating;
@@ -541,7 +543,7 @@ export class ReviewsService {
             {
               userId: order.sellerId,
               deltaPoints: -1,
-              reason: `Thu hồi điểm thưởng đánh giá 5 sao do khách hàng sửa xuống ${dto.rating} sao tại đơn #${orderId.slice(0, 8)}`,
+              reason: `Revoked 5-star review bonus after customer lowered rating to ${dto.rating} stars on order #${orderId.slice(0, 8)}`,
               referenceId: `REVIEW_BONUS_REVOKE:${orderId}`,
             },
             tx,
@@ -556,7 +558,7 @@ export class ReviewsService {
             {
               userId: order.sellerId,
               deltaPoints: 1,
-              reason: `Đơn hàng #${orderId.slice(0, 8)} được người mua sửa lên đánh giá 5 sao`,
+              reason: `Order #${orderId.slice(0, 8)} updated to a 5-star review by buyer`,
               referenceId: bonusReference,
             },
             tx,
@@ -569,8 +571,8 @@ export class ReviewsService {
           tx,
           {
             userId: order.sellerId,
-            title: 'Cập nhật đánh giá sản phẩm 📝',
-            content: `Khách hàng vừa cập nhật đánh giá sản phẩm "${existing.product.title}" sang ${dto.rating} sao. Nhận xét mới: "${dto.comment || EMPTY_COMMENT_FALLBACK}".`,
+            title: 'Product review updated 📝',
+            content: `Customer updated their review for "${existing.product.title}" to ${dto.rating} stars. New comment: "${dto.comment || EMPTY_COMMENT_FALLBACK}".`,
             type: NotificationType.SYSTEM,
             channel: NotificationChannel.IN_APP,
           },
@@ -590,7 +592,7 @@ export class ReviewsService {
       });
       if (!existing) throw new NotFoundException(PRODUCT_REVIEW_NOT_FOUND);
       if (existing.reviewerId !== userId)
-        throw new ForbiddenException('Bạn chỉ có thể xóa đánh giá của chính mình.');
+        throw new ForbiddenException('You can only delete your own review.');
 
       const order = await tx.order.findUniqueOrThrow({ where: { id: orderId } });
       const newReviewCount = Math.max(0, existing.product.reviewCount - 1);
@@ -616,7 +618,7 @@ export class ReviewsService {
             {
               userId: order.sellerId,
               deltaPoints: -1,
-              reason: `Thu hồi điểm thưởng đánh giá 5 sao do khách hàng xóa đánh giá tại đơn #${orderId.slice(0, 8)}`,
+              reason: `Revoked 5-star review bonus after customer deleted review on order #${orderId.slice(0, 8)}`,
               referenceId: `REVIEW_BONUS_DELETE:${orderId}`,
             },
             tx,
@@ -628,7 +630,7 @@ export class ReviewsService {
         where: { orderId_productId: { orderId, productId } },
       });
 
-      return { success: true, message: 'Đã xóa đánh giá sản phẩm thành công.' };
+      return { success: true, message: 'Product review deleted successfully.' };
     });
   }
 
@@ -639,7 +641,7 @@ export class ReviewsService {
       });
       if (!existing || !existing.isShopReview) throw new NotFoundException(SHOP_REVIEW_NOT_FOUND);
       if (existing.reviewerId !== userId)
-        throw new ForbiddenException('Bạn chỉ có thể chỉnh sửa đánh giá của chính mình.');
+        throw new ForbiddenException('You can only edit your own review.');
 
       const updated = await tx.review.update({
         where: { orderId },
@@ -651,8 +653,8 @@ export class ReviewsService {
           tx,
           {
             userId: existing.targetUserId,
-            title: 'Cập nhật đánh giá gian hàng 📝',
-            content: `Khách hàng vừa cập nhật đánh giá gian hàng của bạn sang ${dto.rating} sao. Nhận xét: "${dto.comment || EMPTY_COMMENT_FALLBACK}".`,
+            title: 'Shop review updated 📝',
+            content: `Customer updated their review for your shop to ${dto.rating} stars. Comment: "${dto.comment || EMPTY_COMMENT_FALLBACK}".`,
             type: NotificationType.SYSTEM,
             channel: NotificationChannel.IN_APP,
           },
@@ -671,10 +673,10 @@ export class ReviewsService {
       });
       if (!existing || !existing.isShopReview) throw new NotFoundException(SHOP_REVIEW_NOT_FOUND);
       if (existing.reviewerId !== userId)
-        throw new ForbiddenException('Bạn chỉ có thể xóa đánh giá của chính mình.');
+        throw new ForbiddenException('You can only delete your own review.');
 
       await tx.review.delete({ where: { orderId } });
-      return { success: true, message: 'Đã xóa đánh giá gian hàng thành công.' };
+      return { success: true, message: 'Shop review deleted successfully.' };
     });
   }
 

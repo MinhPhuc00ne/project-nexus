@@ -32,7 +32,7 @@ export class RefundService {
     const escrow = order.escrowRecord;
     if (!escrow || !['HELD', 'DISPUTED', 'DISBURSED'].includes(escrow.status))
       throw new BadRequestException({
-        message: 'Không có khoản thanh toán có thể hoàn.',
+        message: 'No refundable payment found.',
         errorCode: AppErrorCode.BAD_REQUEST,
       });
     const payments = await tx.payment.findMany({ where: { orderId: order.id, status: 'SUCCESS' } });
@@ -43,7 +43,7 @@ export class RefundService {
         .comparedTo(escrow.totalAmount) !== 0
     )
       throw new BadRequestException({
-        message: 'Cần đối soát số tiền đã thanh toán trước khi hoàn.',
+        message: 'Paid amount must be reconciled before issuing a refund.',
         errorCode: AppErrorCode.BAD_REQUEST,
       });
     const escrowWallet = await this.treasury.getOrCreateEscrowWallet(tx);
@@ -54,7 +54,7 @@ export class RefundService {
       });
       if (recovered.count !== 1)
         throw new BadRequestException(
-          'Ví shop không đủ để thu hồi tiền đã giải ngân. Cần bổ sung tiền trước khi hoàn.',
+          'Shop wallet has insufficient balance to claw back disbursed funds. Top-up is required before refunding.',
         );
       const seller = await tx.wallet.findUniqueOrThrow({ where: { userId: order.sellerId } });
       await tx.walletTransaction.create({
@@ -64,7 +64,7 @@ export class RefundService {
           type: 'ESCROW_REFUND',
           status: 'SUCCESS',
           referenceId: order.id,
-          description: 'Thu hồi tiền đã giải ngân để hoàn đơn',
+          description: 'Clawback of disbursed payout for order refund',
         },
       });
       await tx.wallet.update({
@@ -78,7 +78,7 @@ export class RefundService {
           type: 'ESCROW_REFUND',
           status: 'SUCCESS',
           referenceId: order.id,
-          description: 'Thu hồi tiền shop để hoàn đơn',
+          description: 'Recovered shop funds for order refund',
         },
       });
     }
@@ -132,7 +132,9 @@ export class RefundService {
       },
     });
     if (debited.count !== 1)
-      throw new BadRequestException('Ví nền tảng chưa đủ tiền hoàn. Cần đối soát và bổ sung tiền.');
+      throw new BadRequestException(
+        'Platform wallet has insufficient balance for refund. Reconciliation and top-up required.',
+      );
     const transaction = await tx.walletTransaction.create({
       data: {
         walletId: input.adminWalletId,
@@ -141,8 +143,8 @@ export class RefundService {
         status: input.toWallet ? 'SUCCESS' : 'PENDING',
         referenceId: input.paymentId,
         description: input.toWallet
-          ? 'Hoàn tiền vào ví người mua'
-          : 'Giữ tiền chờ hoàn về phương thức thanh toán ban đầu',
+          ? 'Refund credited to buyer wallet'
+          : 'Funds held pending refund to original payment method',
       },
     });
     if (input.toWallet) {
@@ -162,7 +164,7 @@ export class RefundService {
           type: 'ESCROW_REFUND',
           status: 'SUCCESS',
           referenceId: input.paymentId,
-          description: 'Hoàn tiền đơn hàng',
+          description: 'Order refund',
         },
       });
     }
@@ -184,8 +186,8 @@ export class RefundService {
         userId: input.buyerId,
         type: 'PAYMENT',
         channel: 'IN_APP',
-        title: input.toWallet ? 'Đã hoàn tiền vào ví' : 'Đang xử lý hoàn tiền về nguồn',
-        content: `Đơn #${input.orderId.slice(0, 8)}: ${input.amount.toString()} VND. ${input.toWallet ? 'Đã ghi có ví NEXUS.' : 'Khoản hoàn đang chờ xác nhận chuyển tiền, chưa hoàn tất.'}`,
+        title: input.toWallet ? 'Refunded to wallet' : 'Processing refund to original source',
+        content: `Order #${input.orderId.slice(0, 8)}: ${input.amount.toString()} VND. ${input.toWallet ? 'Credited to your NEXUS wallet.' : 'Refund is pending transfer confirmation and not yet completed.'}`,
       },
       this.notifications,
     );
@@ -193,8 +195,8 @@ export class RefundService {
       await notifyAllAdmins(
         tx,
         {
-          title: 'Khoản hoàn tiền ngoại sàn chờ Admin xác nhận',
-          content: `Đơn #${input.orderId.slice(0, 8)} cần Admin đối soát & xác nhận hoàn ${input.amount.toString()} VND về nguồn thanh toán gốc.`,
+          title: 'External refund awaiting Admin confirmation',
+          content: `Order #${input.orderId.slice(0, 8)} requires Admin reconciliation & confirmation to refund ${input.amount.toString()} VND to the original payment source.`,
           type: NotificationType.PAYMENT,
           targetUrl: '/admin/refunds',
         },
@@ -227,7 +229,7 @@ export class RefundService {
     externalReference: string,
   ): Promise<OrderRefund> {
     if (actor.role !== 'ADMIN')
-      throw new ForbiddenException('Chỉ Admin được xác nhận hoàn tiền ngoài hệ thống.');
+      throw new ForbiddenException('Only Admins may confirm off-platform refunds.');
     const refund = await this.prisma.orderRefund.findUniqueOrThrow({ where: { id: refundId } });
     return this.prisma.$transaction(async (tx) => {
       const order = await this.store.lock(tx, refund.orderId);
@@ -236,7 +238,7 @@ export class RefundService {
       const reference = externalReference.trim();
       if (!reference || current.destination !== 'ORIGINAL')
         throw new BadRequestException({
-          message: 'Thiếu mã đối soát hoàn tiền hợp lệ.',
+          message: 'Missing valid refund reconciliation reference.',
           errorCode: AppErrorCode.BAD_REQUEST,
         });
       const released = await tx.wallet.updateMany({
@@ -244,7 +246,7 @@ export class RefundService {
         data: { lockedBalance: { decrement: current.amount } },
       });
       if (released.count !== 1)
-        throw new BadRequestException('Số dư đang giữ để hoàn tiền không hợp lệ.');
+        throw new BadRequestException('Invalid locked balance for completing refund.');
       await tx.walletTransaction.update({
         where: { id: current.transactionId },
         data: { status: 'SUCCESS' },

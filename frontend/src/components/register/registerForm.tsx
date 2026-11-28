@@ -57,7 +57,7 @@ function validateRegistration(
   return errors;
 }
 
-// Backend hiện trả thông báo văn bản, chưa kèm tên trường cho từng lỗi.
+// Backend currently returns plain text messages without field names per error.
 function getRegistrationField(message: string, verifying: boolean): RegistrationField | undefined {
   const text = message
     .normalize('NFD')
@@ -155,7 +155,7 @@ export default function RegisterForm() {
   }
 
   async function handleSendOtp(): Promise<void> {
-    // Chặn gửi trùng, gửi sau khi xác thực hoặc gửi lại trước 60 giây.
+    // Block duplicate submissions, post-verification sends, or resends before 60 seconds.
     if (requestInFlight.current || verified || Date.now() < resendAt) return;
     const email = contact.trim();
     const validationErrors = validateRegistration(
@@ -175,15 +175,15 @@ export default function RegisterForm() {
     setPending(true);
     setFailed(false);
     setFeedback('');
-    // Gửi lại sẽ thay OTP cũ: xóa mã đã nhập và chờ mã mới, kể cả khi request timeout.
+    // Resending invalidates the previous OTP: clear entered code and await the new code even on timeout.
     setSentEmail('');
     setCode('');
     setResendAt(Date.now() + 60000);
     setResendSeconds(60);
     try {
-      // Gọi service Axios: backend tạo tài khoản chưa xác thực và gửi OTP.
+      // Call Axios service: backend creates an unverified account and sends OTP.
       const result = await register(email, password, fullName.trim());
-      // Chỉ mở bước nhập OTP sau khi API trả về thành công.
+      // Only proceed to the OTP entry step after the API succeeds.
       setSentEmail(email);
       setCode('');
       setFeedback(result.message);

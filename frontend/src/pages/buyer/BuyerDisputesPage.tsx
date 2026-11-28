@@ -83,7 +83,7 @@ export default function BuyerDisputesPage() {
   const [reason, setReason] = useState<BuyerDisputeReason>('NOT_RECEIVED');
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  // Tự động mở form khiếu nại và gán sẵn đơn hàng khi có orderId từ query param
+  // Automatically open dispute modal and preselect order when orderId query param is present
   useEffect(() => {
     if (queryOrderId) {
       setSelectedOrderId(queryOrderId);

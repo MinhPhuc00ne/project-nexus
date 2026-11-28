@@ -86,7 +86,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
     _hasItems ?? Boolean((auction?.items && auction.items.length > 0) || auction?.product);
   const hasBanner = _hasBanner ?? Boolean(auction?.imageUrl && auction.imageUrl.trim().length > 0);
 
-  // Phiên chưa có hàng và Admin cũng không tải banner
+  // Session has no items and Admin has not uploaded a banner
   const isSessionEmpty = !hasItems && !hasBanner && (!thumbnails || thumbnails.length === 0);
 
   const isTimeOver =
@@ -108,7 +108,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
     (auction?.status === 'SCHEDULED' ||
       (auction?.startTime ? new Date(auction.startTime).getTime() > Date.now() : false));
 
-  // Chỉ lấy video thật từ DB, format URL nếu là đường dẫn uploads nội bộ
+  // Only use real video from DB and normalize internal upload paths
   const rawVideoUrl = auction?.videoUrl
     ? formatAuctionImage(auction.videoUrl)
     : currentLot?.videoUrl
@@ -123,7 +123,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
     ? `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&mute=1&enablejsapi=1`
     : '';
 
-  // Đồng bộ thời gian từ prop videoTime khi chuyển sang video mode
+  // Sync playback position from videoTime prop when switching to video mode
   useEffect(() => {
     if (viewerMode === 'video' && videoRef.current && rawVideoUrl) {
       if (Math.abs(videoRef.current.currentTime - videoTime) > 1) {
@@ -253,7 +253,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
           )}
         </div>
 
-        {/* Floating Top Right Quick Actions (Chỉ hiện khi có nội dung) */}
+        {/* Floating Top Right Quick Actions (Only shown when media exists) */}
         {!isSessionEmpty && (
           <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 bg-slate-900/80 backdrop-blur-md border border-slate-700/60 rounded-xl p-1 text-slate-300">
             <button
@@ -290,7 +290,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
           </div>
         )}
 
-        {/* TRƯỜNG HỢP 1: PHIÊN CHƯA CÓ HÀNG VÀ CHƯA CÓ BANNER (WAITING VAULT STAGE) */}
+        {/* CASE 1: SESSION HAS NO ITEMS AND NO BANNER (WAITING VAULT STAGE) */}
         {isSessionEmpty && viewerMode !== 'video' ? (
           <div className="relative w-full h-full flex flex-col items-center justify-center p-6 text-center select-none z-10">
             <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-tr from-amber-500/20 via-orange-500/10 to-transparent border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-[0_0_60px_rgba(245,158,11,0.25)] mb-4 animate-pulse">
@@ -321,7 +321,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
             </div>
           </div>
         ) : viewerMode === 'video' ? (
-          /* TRƯỜNG HỢP 2: VIDEO PLAYER STAGE */
+          /* CASE 2: VIDEO PLAYER STAGE */
           <div className="relative w-full h-full flex flex-col justify-between bg-black">
             {!rawVideoUrl || videoError ? (
               <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center select-none">
@@ -372,7 +372,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
                   onClick={togglePlay}
                 />
 
-                {/* Unmute Prompt Overlay (nếu đang muted) */}
+                {/* Unmute Prompt Overlay (if currently muted) */}
                 {isVideoMuted && (
                   <button
                     type="button"
@@ -465,7 +465,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
             )}
           </div>
         ) : (
-          /* TRƯỜNG HỢP 3: MAIN PRODUCT IMAGE WITH ZOOM (KHI CÓ ẢNH THẬT) */
+          /* CASE 3: MAIN PRODUCT IMAGE WITH ZOOM (WHEN REAL IMAGES EXIST) */
           <div
             className="relative w-full h-full flex items-center justify-center p-8 transition-transform duration-300 ease-out"
             style={{
@@ -513,7 +513,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
           })()}
       </div>
 
-      {/* Viewer Mode Switcher: 2 Chế Độ Giám Định Hiện Vật (Ảnh HD & Hồ Sơ Thẩm Định) */}
+      {/* Viewer Mode Switcher: 2 Artifact Inspection Modes (HD Image & Appraisal File) */}
       <div className="grid grid-cols-2 gap-2 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200">
         <button
           type="button"
@@ -545,7 +545,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
         </button>
       </div>
 
-      {/* Gallery Thumbnails: Nếu rỗng thì hiện thanh thông báo sạch sẽ */}
+      {/* Gallery Thumbnails: Show clean info bar when empty */}
       {thumbnails.length > 0 ? (
         <div className="grid grid-cols-5 gap-2.5">
           {thumbnails.map((item, idx) => (

@@ -20,16 +20,16 @@ export {
   extractAuctionEligibilityFilter,
 };
 
-/** Vietnamese presentation labels for persisted order states. */
+/** Presentation labels for persisted order states. */
 export const orderLabels: Record<OrderStatus, string> = {
-  PENDING_PAYMENT: 'Chờ thanh toán',
-  PAID: 'Đã thanh toán',
-  PREPARING: 'Đang chuẩn bị hàng',
-  SHIPPING: 'Đang giao hàng',
-  DELIVERED: 'Đã giao hàng',
-  CONFIRMED: 'Đã xác nhận nhận hàng',
-  CANCELLED: 'Đã hủy',
-  REFUNDED: 'Đã hoàn tiền',
+  PENDING_PAYMENT: 'Pending Payment',
+  PAID: 'Paid',
+  PREPARING: 'Preparing',
+  SHIPPING: 'Shipping',
+  DELIVERED: 'Delivered',
+  CONFIRMED: 'Completed',
+  CANCELLED: 'Cancelled',
+  REFUNDED: 'Refunded',
 };
 
 const GUIDANCE_OR_MUTATION_PHRASES = [

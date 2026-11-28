@@ -101,7 +101,7 @@ export function HomeRecommendationsSection({
                       }}
                     />
 
-                    {/* Badges: Chỉ hiển thị khi có dữ liệu thật (Gợi ý theo gu hoặc Giảm giá thật) */}
+                    {/* Badges: Shown only when real recommendation or discount data exists */}
                     <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
                       {isInterest && (
                         <span className="rounded-md bg-emerald-600/90 backdrop-blur-xs px-2 py-0.5 text-[9px] font-bold text-white shadow-xs">

@@ -333,20 +333,20 @@ test('ProductTrendingService ranks by purchaseCount then earliest reached timest
 
   await trendingService.syncTopTrendingNotifications();
   assert.equal(notifications.length, 3);
-  const top1Notif = notifications.find((n) => n.title.includes('Top 1 Xu hướng'));
+  const top1Notif = notifications.find((n) => n.title.includes('Top 1 Trending'));
   assert.ok(top1Notif);
   assert.equal(top1Notif.userId, 'seller-1');
-  assert.match(top1Notif.content, /Top 1 Xu hướng.*5 lượt mua/);
-  const otherNotifs = notifications.filter((n) => n.title.includes('đã lên Xu hướng'));
+  assert.match(top1Notif.content, /Top 1 Trending.*5 purchases/);
+  const otherNotifs = notifications.filter((n) => n.title.includes('is now Trending'));
   assert.equal(otherNotifs.length, 2);
   assert.ok(
     otherNotifs.some(
-      (n) => n.userId === 'seller-2' && /Top 2 Xu hướng.*3 lượt mua/.test(n.content),
+      (n) => n.userId === 'seller-2' && /Top 2 Trending.*3 purchases/.test(n.content),
     ),
   );
   assert.ok(
     otherNotifs.some(
-      (n) => n.userId === 'seller-2' && /Top 3 Xu hướng.*3 lượt mua/.test(n.content),
+      (n) => n.userId === 'seller-2' && /Top 3 Trending.*3 purchases/.test(n.content),
     ),
   );
 
@@ -366,11 +366,11 @@ test('ProductTrendingService ranks by purchaseCount then earliest reached timest
   assert.equal(removed.product.trendingExcluded, true);
   assert.equal(notifications.length, 5);
   assert.equal(notifications[3].userId, 'seller-1');
-  assert.match(notifications[3].title, /gỡ khỏi Xu hướng/);
+  assert.match(notifications[3].title, /removed from Trending/);
   assert.match(notifications[3].content, /Không phù hợp hiển thị/);
   assert.equal(notifications[4].userId, 'seller-2');
-  assert.match(notifications[4].title, /Top 1 Xu hướng/);
-  assert.match(notifications[4].content, /Bàn phím chạm mốc trước.*Top 1 Xu hướng/);
+  assert.match(notifications[4].title, /Top 1 Trending/);
+  assert.match(notifications[4].content, /Bàn phím chạm mốc trước.*Top 1 Trending/);
 
   const afterRemoval = await trendingService.getTrendingProducts(10);
   assert.equal(afterRemoval.total, 2);
@@ -384,5 +384,5 @@ test('ProductTrendingService ranks by purchaseCount then earliest reached timest
   assert.equal(reEntered, undefined);
   assert.equal(notifications.length, 6);
   assert.equal(notifications[5].userId, 'seller-2');
-  assert.match(notifications[5].content, /Tai nghe chạm mốc sau.*Top 2 Xu hướng/);
+  assert.match(notifications[5].content, /Tai nghe chạm mốc sau.*Top 2 Trending/);
 });

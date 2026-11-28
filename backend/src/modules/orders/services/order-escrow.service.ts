@@ -75,7 +75,7 @@ export class OrderEscrowService {
     const config = await this.settings.getAll();
     const percentage = Number(config?.platformFeePercentage ?? 7);
     if (!Number.isFinite(percentage) || percentage < 0 || percentage > 100)
-      throw new BadRequestException('Tỷ lệ phí sàn không hợp lệ.');
+      throw new BadRequestException('Invalid platform fee percentage.');
     const subtotal = Number(order.subtotal);
     const platformFee = Math.round((subtotal * percentage) / 100);
     const sellerPayout = subtotal - platformFee;
@@ -103,7 +103,7 @@ export class OrderEscrowService {
         type: WalletTransactionType.ESCROW_LOCK,
         status: 'SUCCESS',
         referenceId: order.id,
-        description: `Tạm giữ thanh toán đơn hàng #${order.id.slice(0, 8)} (${Number(order.totalAmount).toLocaleString('vi-VN')} đ)`,
+        description: `Escrow hold for order #${order.id.slice(0, 8)} (${Number(order.totalAmount).toLocaleString('vi-VN')} VND)`,
       },
     });
 
@@ -127,7 +127,7 @@ export class OrderEscrowService {
         refunds: true,
       },
     });
-    if (!order) throw new NotFoundException('Không tìm thấy đơn hàng.');
+    if (!order) throw new NotFoundException('Order not found.');
     return order;
   }
 
@@ -137,7 +137,7 @@ export class OrderEscrowService {
     arbitration = false,
   ): Promise<EscrowResult> {
     if (order.afterSales && !['REJECTED', 'COMPLETED'].includes(order.afterSales.status))
-      throw new BadRequestException('Đơn đang có yêu cầu hủy/trả hàng.');
+      throw new BadRequestException('Order has an active cancellation/return request.');
     const escrow = order.escrowRecord;
     if (
       order.status === OrderStatus.CONFIRMED &&
@@ -163,10 +163,10 @@ export class OrderEscrowService {
         order.shipment?.status !== 'DELIVERED' ||
         !isTrackingDelivered)
     ) {
-      throw new BadRequestException('GHN chưa xác nhận giao hàng thành công.');
+      throw new BadRequestException('GHN has not confirmed delivery yet.');
     }
     if (!escrow) {
-      // Đơn hàng COD (không ký quỹ qua ví hệ thống NEXUS)
+      // COD order (not escrowed through the NEXUS system wallet)
       await tx.order.update({ where: { id: order.id }, data: { status: OrderStatus.CONFIRMED } });
       if (tx.payment) {
         await tx.payment.updateMany({
@@ -184,7 +184,7 @@ export class OrderEscrowService {
             {
               userId: order.buyerId,
               deltaPoints: 1,
-              reason: 'Hoàn tất đơn hàng COD',
+              reason: 'COD order completed',
               referenceId: order.id,
             },
             tx,
@@ -193,7 +193,7 @@ export class OrderEscrowService {
             {
               userId: order.sellerId,
               deltaPoints: 2,
-              reason: 'Hoàn tất đơn hàng COD',
+              reason: 'COD order completed',
               referenceId: order.id,
             },
             tx,
@@ -209,7 +209,7 @@ export class OrderEscrowService {
                 userId,
                 deltaPoints: 2,
                 balanceAfter: 102,
-                reason: 'Hoàn tất đơn hàng COD',
+                reason: 'COD order completed',
                 referenceId: order.id,
               },
             });
@@ -222,8 +222,8 @@ export class OrderEscrowService {
           userId: order.sellerId,
           type: 'ORDER',
           channel: 'IN_APP',
-          title: 'Đơn hàng COD đã hoàn tất',
-          content: `Đơn hàng #${order.id.slice(0, 8)} đã được người mua xác nhận nhận hàng thành công.`,
+          title: 'COD order completed',
+          content: `Order #${order.id.slice(0, 8)} has been confirmed as delivered by the buyer.`,
         },
         this.notifications,
       );
@@ -241,13 +241,13 @@ export class OrderEscrowService {
             order.dispute.status as 'OPEN' | 'UNDER_REVIEW',
           )))
     ) {
-      throw new BadRequestException('Tiền đang bị giữ để xử lý khiếu nại.');
+      throw new BadRequestException('Funds are currently held for dispute resolution.');
     }
     if (
       escrow.status !== EscrowStatus.HELD &&
       !(arbitration && escrow.status === EscrowStatus.DISPUTED)
     ) {
-      throw new BadRequestException('Tiền ký quỹ không ở trạng thái có thể giải ngân.');
+      throw new BadRequestException('Escrow funds are not in a releasable state.');
     }
     const seller = await tx.wallet.upsert({
       where: { userId: order.sellerId },
@@ -261,7 +261,7 @@ export class OrderEscrowService {
     const shippingFee = Number(order.shippingFee ?? 0);
     const totalEscrowOutflow = sellerPayout + platformFee + shippingFee;
 
-    // 1. Cộng tiền hàng sau khi trừ phí sàn cho người bán
+    // 1. Credit seller payout after deducting platform fee
     await tx.wallet.update({
       where: { id: seller.id },
       data: { balance: { increment: sellerPayout } },
@@ -273,11 +273,11 @@ export class OrderEscrowService {
         type: WalletTransactionType.ESCROW_PAYOUT,
         status: 'SUCCESS',
         referenceId: order.id,
-        description: 'Giải ngân sau giao hàng hoặc phân xử khiếu nại',
+        description: 'Escrow payout after delivery or dispute arbitration',
       },
     });
 
-    // 2. Giải phóng tiền ký quỹ khỏi ví ESCROW_LIABILITY và ghi nhận phí sàn vào PLATFORM_REVENUE
+    // 2. Release escrowed funds from ESCROW_LIABILITY and record platform fee into PLATFORM_REVENUE
     await tx.wallet.update({
       where: { id: escrowWallet.id },
       data: { balance: { decrement: totalEscrowOutflow } },
@@ -289,7 +289,7 @@ export class OrderEscrowService {
         type: WalletTransactionType.ESCROW_PAYOUT,
         status: 'SUCCESS',
         referenceId: order.id,
-        description: `Chi trả tiền hàng cho người bán đơn #${order.id.slice(0, 8)}`,
+        description: `Seller payout for order #${order.id.slice(0, 8)}`,
       },
     });
 
@@ -305,7 +305,7 @@ export class OrderEscrowService {
           type: WalletTransactionType.PLATFORM_FEE,
           status: 'SUCCESS',
           referenceId: order.id,
-          description: `Thu phí sàn đơn hàng #${order.id.slice(0, 8)}`,
+          description: `Platform fee collected for order #${order.id.slice(0, 8)}`,
         },
       });
     }
@@ -318,7 +318,7 @@ export class OrderEscrowService {
           type: WalletTransactionType.PLATFORM_FEE,
           status: 'SUCCESS',
           referenceId: order.id,
-          description: `Khấu trừ chi phí cước vận chuyển GHN đơn #${order.id.slice(0, 8)}`,
+          description: `GHN shipping fee deducted for order #${order.id.slice(0, 8)}`,
         },
       });
     }
@@ -333,7 +333,7 @@ export class OrderEscrowService {
           {
             userId: order.buyerId,
             deltaPoints: 1,
-            reason: 'Hoàn tất đơn hàng',
+            reason: 'Order completed',
             referenceId: order.id,
           },
           tx,
@@ -342,7 +342,7 @@ export class OrderEscrowService {
           {
             userId: order.sellerId,
             deltaPoints: 2,
-            reason: 'Hoàn tất đơn hàng',
+            reason: 'Order completed',
             referenceId: order.id,
           },
           tx,
@@ -358,7 +358,7 @@ export class OrderEscrowService {
               userId,
               deltaPoints: 2,
               balanceAfter: 102,
-              reason: 'Hoàn tất đơn hàng',
+              reason: 'Order completed',
               referenceId: order.id,
             },
           });
@@ -371,8 +371,8 @@ export class OrderEscrowService {
         userId: order.sellerId,
         type: 'PAYMENT',
         channel: 'IN_APP',
-        title: 'Đã giải ngân đơn hàng',
-        content: `Đơn #${order.id.slice(0, 8)} đã được giải ngân ${Number(escrow.sellerPayout).toLocaleString('vi-VN')} VND.`,
+        title: 'Order funds disbursed',
+        content: `Order #${order.id.slice(0, 8)} has disbursed ${Number(escrow.sellerPayout).toLocaleString('vi-VN')} VND.`,
       },
       this.notifications,
     );
@@ -387,7 +387,7 @@ export class OrderEscrowService {
     return this.prisma.$transaction(async (tx) => {
       const order = await this.loadLocked(tx, orderId);
       if (order.buyerId !== buyerId)
-        throw new ForbiddenException('Chỉ người mua của đơn được xác nhận nhận hàng.');
+        throw new ForbiddenException('Only the order buyer can confirm delivery.');
       return this.release(tx, order);
     });
   }
@@ -400,12 +400,14 @@ export class OrderEscrowService {
     return this.prisma.$transaction(async (tx) => {
       const order = await this.loadLocked(tx, orderId);
       if (order.buyerId !== buyerId)
-        throw new ForbiddenException('Bạn không có quyền khiếu nại đơn hàng này.');
+        throw new ForbiddenException(
+          'You do not have permission to open a dispute for this order.',
+        );
       if (order.afterSales && !['REJECTED', 'COMPLETED'].includes(order.afterSales.status))
-        throw new BadRequestException('Đơn đang có yêu cầu hủy/trả hàng.');
+        throw new BadRequestException('Order has an active cancellation/return request.');
       if (order.dispute) return { success: true, dispute: order.dispute };
       if (order.escrowRecord?.status !== EscrowStatus.HELD || !reason.trim())
-        throw new BadRequestException('Đơn không còn tiền ký quỹ hoặc thiếu lý do khiếu nại.');
+        throw new BadRequestException('Order has no held escrow or is missing a dispute reason.');
       const dispute = await tx.dispute.create({
         data: { orderId, openedByUserId: buyerId, reason: reason.trim() },
       });
@@ -413,8 +415,8 @@ export class OrderEscrowService {
       await notifyAdminsAndStaff(
         tx,
         {
-          title: 'Khiếu nại đơn hàng mới ⚠️',
-          content: `Đơn #${orderId.slice(0, 8)} vừa có khiếu nại từ người mua: ${reason.trim()}`,
+          title: 'New order dispute ⚠️',
+          content: `Order #${orderId.slice(0, 8)} received a buyer dispute: ${reason.trim()}`,
           type: NotificationType.DISPUTE,
           adminTargetUrl: '/admin/reports',
           staffTargetUrl: '/staff/disputes',
@@ -437,16 +439,16 @@ export class OrderEscrowService {
     reason: string,
   ): Promise<EscrowResult> {
     if (!['ADMIN', 'SUPPORT_STAFF'].includes(actor.role))
-      throw new ForbiddenException('Chỉ Admin/Staff được phân xử.');
+      throw new ForbiddenException('Only Admin/Staff can arbitrate disputes.');
     return this.prisma.$transaction(async (tx) => {
       const order = await this.loadLocked(tx, orderId);
       if (!order.dispute || !reason.trim())
-        throw new BadRequestException('Không có khiếu nại hoặc thiếu lý do phân xử.');
+        throw new BadRequestException('No dispute found or missing arbitration reason.');
       if (!['OPEN', 'UNDER_REVIEW'].includes(order.dispute.status))
         return { success: true, alreadyProcessed: true };
       const escrow = order.escrowRecord;
       if (!escrow || escrow.status !== EscrowStatus.DISPUTED)
-        throw new BadRequestException('Không có tiền ký quỹ đang bị tranh chấp.');
+        throw new BadRequestException('No disputed escrow funds found.');
 
       await tx.dispute.update({
         where: { orderId },
@@ -476,26 +478,26 @@ export class OrderEscrowService {
         tx,
       );
 
-      // BẮN NOTI CHO NGƯỜI MUA (BUYER)
+      // Notify buyer
       await publishNotification(
         tx,
         {
           userId: order.buyerId,
-          title: 'Kết quả phân xử khiếu nại ⚖️',
-          content: `Khiếu nại cho đơn hàng #${orderId.slice(0, 8)} đã được Admin xử lý. Quyết định: ${verdict === 'BUYER' ? 'Hoàn tiền cho bạn' : 'Phần thắng thuộc về Người bán'}. Chi tiết: ${reason.trim()}`,
+          title: 'Dispute arbitration result ⚖️',
+          content: `Your dispute for order #${orderId.slice(0, 8)} has been resolved by Admin. Decision: ${verdict === 'BUYER' ? 'Refund issued to you' : 'Ruled in favor of the Seller'}. Details: ${reason.trim()}`,
           type: NotificationType.DISPUTE,
           channel: 'IN_APP',
         },
         this.notifications,
       );
 
-      // BẮN NOTI CHO NGƯỜI BÁN (SELLER)
+      // Notify seller
       await publishNotification(
         tx,
         {
           userId: order.sellerId,
-          title: 'Kết quả phân xử khiếu nại ⚖️',
-          content: `Khiếu nại của đơn hàng #${orderId.slice(0, 8)} đã được Admin xử lý. Quyết định: ${verdict === 'SELLER' ? 'Giải ngân tiền hàng cho bạn' : 'Phần thắng thuộc về Người mua (Hoàn tiền)'}. Chi tiết: ${reason.trim()}`,
+          title: 'Dispute arbitration result ⚖️',
+          content: `The dispute for order #${orderId.slice(0, 8)} has been resolved by Admin. Decision: ${verdict === 'SELLER' ? 'Funds disbursed to you' : 'Ruled in favor of the Buyer (Refunded)'}. Details: ${reason.trim()}`,
           type: NotificationType.DISPUTE,
           channel: 'IN_APP',
         },
@@ -504,7 +506,7 @@ export class OrderEscrowService {
 
       if (verdict === 'SELLER') return this.release(tx, order, true);
       if (!this.refunds) {
-        throw new BadRequestException('Dịch vụ hoàn tiền chưa sẵn sàng.');
+        throw new BadRequestException('Refund service is not ready.');
       }
       const refunds = await this.refunds.issue(tx, order, false);
       const complete = refunds.every((refund) => refund.status === 'SUCCESS');

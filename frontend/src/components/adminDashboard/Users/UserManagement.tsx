@@ -117,7 +117,7 @@ export function StaffInvite({ actions }: AdminTabProps) {
 
 const ADMIN_USER_ROLES: readonly AdminUserRole[] = ['BUYER', 'SELLER', 'SUPPORT_STAFF', 'ADMIN'];
 
-// Cả trang người dùng và preview tổng quan đều lấy dữ liệu thật từ backend.
+// Both the Users page and Overview preview use live data from the backend.
 export function UserSecurity({ actions, preview = false }: AdminTabProps & { preview?: boolean }) {
   const { t } = useTranslation('admin');
   const { search, setSearch, query, setQuery, result, loading, error, refresh } =

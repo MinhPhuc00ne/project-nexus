@@ -30,7 +30,7 @@ export const sellerProofFileFilter = (
   if (!allowedExtensions.includes(ext)) {
     return cb(
       new BadRequestException({
-        message: `Định dạng file không được hỗ trợ (${ext}). Vui lòng đính kèm hình ảnh (JPG, PNG, WEBP) hoặc tài liệu (PDF, DOC).`,
+        message: `Unsupported file format (${ext}). Please attach an image (JPG, PNG, WEBP) or document (PDF, DOC).`,
         errorCode: AppErrorCode.UNSUPPORTED_MEDIA_TYPE,
       }),
       false,

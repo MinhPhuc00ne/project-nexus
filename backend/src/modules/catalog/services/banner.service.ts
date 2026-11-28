@@ -74,12 +74,13 @@ export class BannerService {
    */
   async reorder(actorId: string, bannerIds: string[]): Promise<{ success: true }> {
     if (!bannerIds.length || bannerIds.length > 100 || new Set(bannerIds).size !== bannerIds.length)
-      throw new BadRequestException('Cần từ 1 đến 100 banner không trùng nhau.');
+      throw new BadRequestException('Between 1 and 100 unique banners are required.');
     return this.prisma.$transaction(async (tx) => {
       await this.getActor(tx, actorId);
       await tx.$executeRaw`LOCK TABLE event_banners IN SHARE ROW EXCLUSIVE MODE`;
       const count = await tx.eventBanner.count({ where: { id: { in: bannerIds } } });
-      if (count !== bannerIds.length) throw new NotFoundException('Có banner không còn tồn tại.');
+      if (count !== bannerIds.length)
+        throw new NotFoundException('One or more banners no longer exist.');
       await tx.eventBanner.updateMany({ data: { priority: 0 } });
       for (const [index, id] of bannerIds.entries())
         await tx.eventBanner.update({
@@ -104,7 +105,7 @@ export class BannerService {
     const startsAt = dto.startsAt ? new Date(dto.startsAt) : null;
     const endsAt = dto.endsAt ? new Date(dto.endsAt) : null;
     if (startsAt && endsAt && startsAt >= endsAt)
-      throw new BadRequestException('Thời gian kết thúc phải sau thời gian bắt đầu.');
+      throw new BadRequestException('End time must be after start time.');
     return this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`LOCK TABLE event_banners IN SHARE ROW EXCLUSIVE MODE`;
       if (id) await tx.$queryRaw`SELECT id FROM event_banners WHERE id = ${id} FOR UPDATE`;
@@ -114,7 +115,7 @@ export class BannerService {
             include: { creator: { select: { fullName: true } } },
           })
         : null;
-      if (id && !current) throw new NotFoundException('Không tìm thấy banner.');
+      if (id && !current) throw new NotFoundException('Banner not found.');
       const actor = await this.getActor(tx, actorId);
       const auctionId = dto.auctionId === undefined ? (current?.auctionId ?? null) : dto.auctionId;
       if (auctionId && (!current || current.auctionId !== auctionId || dto.isActive === true)) {
@@ -122,9 +123,9 @@ export class BannerService {
           where: { id: auctionId },
           select: { status: true },
         });
-        if (!auction) throw new NotFoundException('Không tìm thấy phiên đấu giá.');
+        if (!auction) throw new NotFoundException('Auction not found.');
         if (['DRAFT', 'CANCELLED'].includes(auction.status))
-          throw new BadRequestException('Banner chỉ được dẫn tới phiên đấu giá công khai.');
+          throw new BadRequestException('Banners can only link to public auctions.');
       }
       const data = {
         title: dto.title.trim(),
@@ -173,11 +174,11 @@ export class BannerService {
         endTime: true,
       },
     });
-    if (!auction) throw new NotFoundException('Không tìm thấy phiên đấu giá.');
+    if (!auction) throw new NotFoundException('Auction not found.');
     if (['DRAFT', 'CANCELLED'].includes(auction.status))
-      throw new BadRequestException('Banner chỉ được dẫn tới phiên đấu giá công khai.');
+      throw new BadRequestException('Banners can only link to public auctions.');
     if (!auction.imageUrl?.trim())
-      throw new BadRequestException('Vui lòng thêm ảnh cho phiên đấu giá trước khi tạo banner.');
+      throw new BadRequestException('Please add an image to the auction before creating a banner.');
     const startsAt = auction.consignmentDeadline
       ? new Date(auction.consignmentDeadline).toISOString()
       : auction.startTime
@@ -221,7 +222,7 @@ export class BannerService {
         where: { id },
         include: { creator: { select: { fullName: true } } },
       });
-      if (!banner) throw new NotFoundException('Không tìm thấy banner.');
+      if (!banner) throw new NotFoundException('Banner not found.');
       const actor = await this.getActor(tx, actorId);
       if (!banner.isActive) return { success: true };
       await tx.eventBanner.update({ where: { id }, data: { isActive: false } });
@@ -243,7 +244,7 @@ export class BannerService {
       select: { id: true, fullName: true, role: true },
     });
     if (!actor || (actor.role !== Role.ADMIN && actor.role !== Role.SUPPORT_STAFF))
-      throw new ForbiddenException('Chỉ Admin hoặc Staff được quản lý banner.');
+      throw new ForbiddenException('Only Admin or Staff may manage banners.');
     return actor;
   }
 }

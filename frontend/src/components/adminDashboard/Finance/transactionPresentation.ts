@@ -13,13 +13,13 @@ export const TRANSACTION_TYPES: AdminWalletTransactionType[] = [
 ];
 
 export const typeLabels: Record<AdminWalletTransactionType, string> = {
-  DEPOSIT: 'Nạp tiền',
-  WITHDRAW: 'Rút tiền',
-  ESCROW_LOCK: 'Giữ ký quỹ',
-  ESCROW_PAYOUT: 'Giải ngân ký quỹ',
-  ESCROW_REFUND: 'Hoàn ký quỹ',
-  ORDER_PAYMENT: 'Thanh toán đơn hàng',
-  PLATFORM_FEE: 'Phí sàn',
+  DEPOSIT: 'Deposit',
+  WITHDRAW: 'Withdrawal',
+  ESCROW_LOCK: 'Escrow Lock',
+  ESCROW_PAYOUT: 'Escrow Payout',
+  ESCROW_REFUND: 'Escrow Refund',
+  ORDER_PAYMENT: 'Order Payment',
+  PLATFORM_FEE: 'Platform Fee',
 };
-export const statusLabels = { PENDING: 'Đang xử lý', SUCCESS: 'Thành công', FAILED: 'Thất bại' };
+export const statusLabels = { PENDING: 'Pending', SUCCESS: 'Success', FAILED: 'Failed' };
 export const date = (value: string) => new Date(value).toLocaleString(getIntlLocale(i18n.language));

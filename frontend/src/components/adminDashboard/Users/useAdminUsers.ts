@@ -15,7 +15,7 @@ export function useAdminUsers(preview: boolean) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  //tìm kiếm/lọc luôn bắt đầu lại từ trang 1.
+  // Search/filter changes always reset to page 1.
   useEffect(() => {
     const timer = setTimeout(() => {
       setQuery((current) => {
@@ -49,7 +49,7 @@ export function useAdminUsers(preview: boolean) {
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
-    // Hủy request cũ để phản hồi đến muộn không ghi đè bộ lọc/trang mới.
+    // Cancel prior request so late responses cannot overwrite newer filters or page.
     return () => controller.abort();
   }, [token, query, preview, revision]);
 

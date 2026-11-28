@@ -211,7 +211,7 @@ export class NotificationsService {
     });
 
     if (!notification) {
-      throw new NotFoundException('Không tìm thấy thông báo này.');
+      throw new NotFoundException('Notification not found.');
     }
 
     const updated = await this.prisma.notification.update({
@@ -224,7 +224,7 @@ export class NotificationsService {
 
     return {
       success: true,
-      message: 'Đã đánh dấu thông báo là đã đọc.',
+      message: 'Notification marked as read.',
       notification: updated,
     };
   }
@@ -248,7 +248,7 @@ export class NotificationsService {
 
     return {
       success: true,
-      message: `Đã đánh dấu tất cả ${result.count} thông báo là đã đọc.`,
+      message: `Marked all ${result.count} notifications as read.`,
       count: result.count,
     };
   }
@@ -347,7 +347,7 @@ export class NotificationsService {
 
     return {
       success: true,
-      message: 'Lưu tùy chọn nhận thông báo thành công!',
+      message: 'Notification preferences saved successfully!',
       ...(await this.getPreferences(userId)),
     };
   }

@@ -432,12 +432,12 @@ export const AuctionDetailTabs: React.FC<AuctionDetailTabsProps> = ({
                       const isMe =
                         (currentUser?.id && bid.bidder?.id === currentUser.id) ||
                         (currentUser?.fullName && bid.bidder?.fullName === currentUser.fullName) ||
-                        bid.bidder?.fullName?.toLowerCase().includes('tài khoản hiện tại') ||
+                        bid.bidder?.fullName?.toLowerCase().includes('current account') ||
                         bid.bidder?.id === 'current-user';
 
                       const rawName = bid.bidder?.fullName || t('tabs.anonymousUser');
                       const displayName = isMe
-                        ? currentUser?.fullName || rawName.replace(' (Tài khoản hiện tại)', '')
+                        ? currentUser?.fullName || rawName.replace(' (Current account)', '')
                         : rawName;
 
                       return (

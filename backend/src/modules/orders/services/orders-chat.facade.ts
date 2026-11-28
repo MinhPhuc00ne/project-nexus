@@ -35,7 +35,7 @@ function formatOrderItems(items?: RawOrderPayload['items']): CommerceChatOrderIt
           )
         : [];
     return {
-      name: item.product?.title ?? 'Sản phẩm',
+      name: item.product?.title ?? 'Product',
       quantity: item.quantity,
       selections: Object.fromEntries(rawSelections),
     };
@@ -51,7 +51,7 @@ export class OrdersChatFacade {
       where: { id: orderId, OR: [{ buyerId: userId }, { sellerId: userId }] },
       select: orderSelect,
     });
-    if (!order) throw new NotFoundException('Không tìm thấy đơn hàng của bạn.');
+    if (!order) throw new NotFoundException('Order not found.');
     const rawTotal = (order as { totalAmount?: Prisma.Decimal | number | null }).totalAmount;
     const rawCreatedAt = (order as { createdAt?: Date | null }).createdAt;
     return {
@@ -76,7 +76,7 @@ export class OrdersChatFacade {
         select: { role: true },
       });
       if (!account || !['SELLER', 'ADMIN'].includes(account.role))
-        throw new ForbiddenException('Chỉ người bán mới có thể tra cứu đơn bán của mình.');
+        throw new ForbiddenException('Only sellers can look up their sales orders.');
     }
     const page = Math.max(1, Math.min(100000, query.page ?? 1));
     const limit = Math.max(1, Math.min(20, query.limit ?? 5));

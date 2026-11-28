@@ -51,7 +51,7 @@ export default function StaffTeamManagementPanel({ notify }: StaffTeamManagement
     setStaffPending(true);
     setStaffFormError('');
     try {
-      // Endpoint mời gửi email kích hoạt; không truyền password để tạo tài khoản trực tiếp.
+      // Invite endpoint sends activation email; never passes a raw password directly.
       const res = await inviteStaff({
         email: staffEmail.trim(),
         fullName: staffFullName.trim(),
@@ -67,7 +67,7 @@ export default function StaffTeamManagementPanel({ notify }: StaffTeamManagement
       setStaffEmail('');
       setStaffFullName('');
       setStaffPhone('');
-      // Danh sách hiện tại chỉ chứa tài khoản đã kích hoạt, chưa chứa lời mời đang chờ.
+      // Current list includes activated accounts only, excluding pending invitations.
     } catch (err: unknown) {
       setStaffFormError(err instanceof Error ? err.message : t('team.inviteErr'));
     } finally {
@@ -163,7 +163,7 @@ export default function StaffTeamManagementPanel({ notify }: StaffTeamManagement
         </div>
       )}
 
-      {/* Admin mời nhân viên bằng email cá nhân; nhân viên tự đặt mật khẩu qua link kích hoạt. */}
+      {/* Admin invites staff via personal email; staff set their own password via activation link. */}
       <Popup
         isOpen={showAddStaffModal}
         onClose={() => {

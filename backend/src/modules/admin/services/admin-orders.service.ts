@@ -92,16 +92,16 @@ export type AdminOrderDetail = AdminOrderDetailRaw & {
 };
 
 const EVENT_LABELS: Record<string, string> = {
-  'order.cancel-requested': 'Yêu cầu hủy đơn hàng',
-  'order.cancel-approved': 'Duyệt hủy đơn hàng',
-  'order.cancel-rejected': 'Từ chối yêu cầu hủy đơn',
-  'order.return-requested': 'Yêu cầu trả hàng / hoàn tiền',
-  'order.return-approved': 'Duyệt yêu cầu trả hàng',
-  'order.return-rejected': 'Từ chối yêu cầu trả hàng',
-  'order.return-waybill-attached': 'Cập nhật mã vận đơn hoàn hàng',
-  'order.return-received': 'Xác nhận đã nhận lại hàng hoàn',
-  'order.shipment-updated': 'Cập nhật trạng thái vận chuyển',
-  'order.return-shipment-updated': 'Cập nhật trạng thái vận đơn hoàn hàng',
+  'order.cancel-requested': 'Order cancellation requested',
+  'order.cancel-approved': 'Order cancellation approved',
+  'order.cancel-rejected': 'Order cancellation rejected',
+  'order.return-requested': 'Return / refund requested',
+  'order.return-approved': 'Return request approved',
+  'order.return-rejected': 'Return request rejected',
+  'order.return-waybill-attached': 'Return waybill updated',
+  'order.return-received': 'Return parcel receipt confirmed',
+  'order.shipment-updated': 'Shipment status updated',
+  'order.return-shipment-updated': 'Return shipment status updated',
 };
 
 function asObject(value: unknown): Record<string, unknown> {
@@ -116,7 +116,7 @@ function buildLifecycleHistory(order: AdminOrderDetailRaw): OrderHistoryEntry[] 
     {
       source: 'ORDER',
       action: 'order.created',
-      label: 'Tạo đơn hàng',
+      label: 'Order created',
       timestamp: order.createdAt,
       actor: order.buyer,
       details: { totalAmount: order.totalAmount, status: order.status },
@@ -127,7 +127,7 @@ function buildLifecycleHistory(order: AdminOrderDetailRaw): OrderHistoryEntry[] 
     entries.push({
       source: 'PAYMENT',
       action: `payment.${payment.status.toLowerCase()}`,
-      label: `Thanh toán ${payment.provider} (${payment.status})`,
+      label: `${payment.provider} payment (${payment.status})`,
       timestamp: payment.status === 'PENDING' ? payment.createdAt : payment.updatedAt,
       details: {
         paymentId: payment.id,
@@ -143,7 +143,7 @@ function buildLifecycleHistory(order: AdminOrderDetailRaw): OrderHistoryEntry[] 
     entries.push({
       source: 'ESCROW',
       action: 'escrow.held',
-      label: 'Tạm giữ tiền ký quỹ',
+      label: 'Escrow funds held',
       timestamp: order.escrowRecord.heldAt,
       details: { totalAmount: order.escrowRecord.totalAmount, status: order.escrowRecord.status },
     });
@@ -151,7 +151,7 @@ function buildLifecycleHistory(order: AdminOrderDetailRaw): OrderHistoryEntry[] 
       entries.push({
         source: 'ESCROW',
         action: 'escrow.disbursed',
-        label: 'Giải ngân tiền ký quỹ cho Người bán',
+        label: 'Escrow funds released to Seller',
         timestamp: order.escrowRecord.disbursedAt,
         details: { sellerPayout: order.escrowRecord.sellerPayout },
       });
@@ -160,7 +160,7 @@ function buildLifecycleHistory(order: AdminOrderDetailRaw): OrderHistoryEntry[] 
       entries.push({
         source: 'ESCROW',
         action: 'escrow.refunded',
-        label: 'Hoàn tiền ký quỹ cho Người mua',
+        label: 'Escrow funds refunded to Buyer',
         timestamp: order.escrowRecord.refundedAt,
       });
     }
@@ -170,7 +170,7 @@ function buildLifecycleHistory(order: AdminOrderDetailRaw): OrderHistoryEntry[] 
     entries.push({
       source: 'SHIPMENT',
       action: 'shipment.created',
-      label: `Tạo vận đơn ${order.shipment.carrier}`,
+      label: `${order.shipment.carrier} shipment created`,
       timestamp: order.shipment.createdAt,
       details: {
         waybillCode: order.shipment.waybillCode,
@@ -183,7 +183,7 @@ function buildLifecycleHistory(order: AdminOrderDetailRaw): OrderHistoryEntry[] 
     entries.push({
       source: 'DISPUTE',
       action: 'dispute.opened',
-      label: 'Mở khiếu nại đơn hàng',
+      label: 'Order dispute opened',
       timestamp: order.dispute.createdAt,
       actor: order.dispute.openedBy,
       note: order.dispute.reason,
@@ -193,7 +193,7 @@ function buildLifecycleHistory(order: AdminOrderDetailRaw): OrderHistoryEntry[] 
       entries.push({
         source: 'DISPUTE',
         action: 'dispute.resolved',
-        label: `Phân xử khiếu nại (${order.dispute.status})`,
+        label: `Dispute resolved (${order.dispute.status})`,
         timestamp: order.dispute.resolvedAt,
         actor: order.dispute.resolvedBy,
         note: order.dispute.resolutionNotes,
@@ -206,7 +206,7 @@ function buildLifecycleHistory(order: AdminOrderDetailRaw): OrderHistoryEntry[] 
     entries.push({
       source: 'REFUND',
       action: 'refund.created',
-      label: `Tạo yêu cầu hoàn tiền (${refund.destination})`,
+      label: `Refund requested (${refund.destination})`,
       timestamp: refund.createdAt,
       details: { refundId: refund.id, amount: refund.amount, status: refund.status },
     });
@@ -214,7 +214,7 @@ function buildLifecycleHistory(order: AdminOrderDetailRaw): OrderHistoryEntry[] 
       entries.push({
         source: 'REFUND',
         action: 'refund.completed',
-        label: 'Hoàn tất hoàn tiền',
+        label: 'Refund completed',
         timestamp: refund.completedAt,
         details: { refundId: refund.id, externalReference: refund.externalReference },
       });
@@ -267,7 +267,7 @@ export class AdminOrdersService {
 
   async detail(id: string): Promise<AdminOrderDetail> {
     const order = await this.prisma.order.findUnique({ where: { id }, select: detailSelect });
-    if (!order) throw new NotFoundException('Không tìm thấy đơn hàng.');
+    if (!order) throw new NotFoundException('Order not found.');
 
     const eventLogs = this.prisma.eventLog?.findMany
       ? await this.prisma.eventLog.findMany({

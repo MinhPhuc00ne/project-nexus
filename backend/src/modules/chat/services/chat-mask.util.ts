@@ -1,6 +1,6 @@
 export const SUPPORT_STAFF_MASK = {
   id: 'SUPPORT_STAFF_DESK',
-  fullName: 'Nhân viên Hỗ trợ',
+  fullName: 'Support Staff',
   avatarUrl: null,
   role: 'SUPPORT_STAFF',
 };

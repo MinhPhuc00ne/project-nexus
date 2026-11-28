@@ -472,7 +472,7 @@ export default function StaffBannersPanel(): JSX.Element {
           )}
         </div>
       )}
-      {/* ================= MODAL DIALOG: TẠO / SỬA BANNER ================= */}
+      {/* ================= MODAL DIALOG: CREATE / EDIT BANNER ================= */}
       <StaffBannerEditorDialog
         isOpen={isModalOpen}
         t={t}

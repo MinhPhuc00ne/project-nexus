@@ -25,7 +25,7 @@ export const ShopHeader: React.FC<ShopHeaderProps> = ({ shop, onShare, onContact
   const { t } = useTranslation('guest');
   const [showReportModal, setShowReportModal] = useState(false);
 
-  // Avatar của Shop là riêng biệt hoàn toàn với Avatar cá nhân của Seller
+  // Shop Avatar is completely separate from Seller personal Avatar
   const shopLogoUrl = shop.avatarUrl;
 
   const getTrustBadge = (trustLevel: string) => {

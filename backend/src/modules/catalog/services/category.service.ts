@@ -86,7 +86,7 @@ export class CategoryService {
       where: { name },
     });
     if (existingName) {
-      throw new ConflictException(`Danh mục có tên "${name}" đã tồn tại.`);
+      throw new ConflictException(`Category named "${name}" already exists.`);
     }
 
     let level = 1;
@@ -97,11 +97,11 @@ export class CategoryService {
         where: { id: dto.parentId },
       });
       if (!parent) {
-        throw new NotFoundException('Danh mục cha không tồn tại.');
+        throw new NotFoundException('Parent category does not exist.');
       }
       if (parent.level >= 3) {
         throw new BadRequestException(
-          'Hệ thống Project Nexus chỉ hỗ trợ danh mục phân cấp tối đa 3 tầng.',
+          'Project Nexus supports a maximum category hierarchy depth of 3 levels.',
         );
       }
       level = parent.level + 1;
@@ -150,7 +150,7 @@ export class CategoryService {
       include: { children: true },
     });
     if (!category) {
-      throw new NotFoundException('Không tìm thấy danh mục.');
+      throw new NotFoundException('Category not found.');
     }
 
     const data: {
@@ -166,7 +166,7 @@ export class CategoryService {
         where: { name, id: { not: id } },
       });
       if (existing) {
-        throw new ConflictException(`Danh mục có tên "${name}" đã tồn tại.`);
+        throw new ConflictException(`Category named "${name}" already exists.`);
       }
       data.name = name;
       if (!dto.slug) {
@@ -181,7 +181,7 @@ export class CategoryService {
 
     if (dto.parentId !== undefined) {
       if (dto.parentId === id) {
-        throw new BadRequestException('Danh mục không thể làm cha của chính nó.');
+        throw new BadRequestException('A category cannot be its own parent.');
       }
 
       if (dto.parentId === null) {
@@ -192,7 +192,7 @@ export class CategoryService {
           where: { id: dto.parentId },
         });
         if (!newParent) {
-          throw new NotFoundException('Danh mục cha mới không tồn tại.');
+          throw new NotFoundException('New parent category does not exist.');
         }
 
         await this.assertNotDescendant(id, dto.parentId);
@@ -201,7 +201,7 @@ export class CategoryService {
         const maxChildDepth = await this.getMaxSubtreeDepth(id);
         if (newLevel + maxChildDepth - 1 > 3) {
           throw new BadRequestException(
-            'Không thể chuyển danh mục vì các danh mục con bên dưới sẽ vượt quá giới hạn 3 cấp.',
+            'Cannot move category because child categories would exceed the 3-level hierarchy limit.',
           );
         }
 
@@ -252,18 +252,18 @@ export class CategoryService {
     });
 
     if (!category) {
-      throw new NotFoundException('Không tìm thấy danh mục cần xóa.');
+      throw new NotFoundException('Category to delete was not found.');
     }
 
     if (category.children.length > 0) {
       throw new BadRequestException(
-        'Không thể xóa danh mục đang có danh mục con. Vui lòng chuyển hoặc xóa các danh mục con trước.',
+        'Cannot delete a category that still has subcategories. Please move or delete the subcategories first.',
       );
     }
 
     if (category.products.length > 0) {
       throw new BadRequestException(
-        'Không thể xóa danh mục đang có sản phẩm liên kết. Vui lòng chuyển sản phẩm sang danh mục khác trước.',
+        'Cannot delete a category that has linked products. Please reassign those products first.',
       );
     }
 
@@ -283,7 +283,7 @@ export class CategoryService {
 
     return {
       success: true,
-      message: `Đã xóa danh mục "${category.name}" thành công.`,
+      message: `Deleted category "${category.name}" successfully.`,
     };
   }
 
@@ -292,7 +292,7 @@ export class CategoryService {
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
-      .replace(/đ/g, 'd')
+      .replace(/\u0111/g, 'd')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
   }
@@ -317,9 +317,7 @@ export class CategoryService {
     let checkId: string | null = targetParentId;
     while (checkId) {
       if (checkId === currentId) {
-        throw new BadRequestException(
-          'Không thể đặt danh mục cha là một danh mục con/cháu của chính nó.',
-        );
+        throw new BadRequestException('Cannot set a descendant category as the parent category.');
       }
       const parent: { parentId: string | null } | null = await this.prisma.category.findUnique({
         where: { id: checkId },
