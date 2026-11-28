@@ -687,8 +687,9 @@ export class ReviewsService {
     type: 'product' | 'shop',
     dto: AdminDeleteReviewInput,
     actorRole?: string,
+    actorId?: string,
   ) {
-    return this.moderationHelper.adminDeleteReview(id, type, dto, actorRole);
+    return this.moderationHelper.adminDeleteReview(id, type, dto, actorRole, actorId);
   }
 
   replyToProductReview(sellerId: string, reviewId: string, dto: SellerReplyReviewInput) {
@@ -699,8 +700,13 @@ export class ReviewsService {
     return this.repliesHelper.toggleHelpfulProductReview(userId, reviewId);
   }
 
-  adminRemoveSellerReply(reviewId: string, dto: AdminDeleteReviewInput, actorRole?: string) {
-    return this.moderationHelper.adminRemoveSellerReply(reviewId, dto, actorRole);
+  adminRemoveSellerReply(
+    reviewId: string,
+    dto: AdminDeleteReviewInput,
+    actorRole?: string,
+    actorId?: string,
+  ) {
+    return this.moderationHelper.adminRemoveSellerReply(reviewId, dto, actorRole, actorId);
   }
 
   createReviewReply(

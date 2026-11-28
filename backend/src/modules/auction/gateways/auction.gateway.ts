@@ -13,13 +13,14 @@ import { Role } from '@prisma/client';
 import { Server, Socket } from 'socket.io';
 import {
   WS_AUCTION_EVENTS,
-  Ws3dSyncPayload,
+  Ws3dSyncPayloadSchema,
   WsAuctionStartedPayload,
   WsBidPlacedPayload,
   WsBidRejectedPayload,
-  WsJoinRoomDto,
+  WsJoinRoomSchema,
+  WsLeaveRoomSchema,
   WsLotEndedPayload,
-  WsPlaceBidDto,
+  WsPlaceBidSchema,
   WsTimeExtendedPayload,
   WsTimerSyncPayload,
 } from '@nexus/contracts';
@@ -131,15 +132,16 @@ export class AuctionGateway
    * @param data Room specification payload
    */
   @SubscribeMessage(WS_AUCTION_EVENTS.CLIENT.JOIN_ROOM)
-  handleJoinRoom(@ConnectedSocket() client: Socket, @MessageBody() data: WsJoinRoomDto): void {
-    if (!data?.auctionId) {
-      client.emit(WS_AUCTION_EVENTS.SERVER.ERROR, { message: 'Missing auctionId in payload' });
+  handleJoinRoom(@ConnectedSocket() client: Socket, @MessageBody() data: unknown): void {
+    const parsed = WsJoinRoomSchema.safeParse(data);
+    if (!parsed.success) {
+      client.emit(WS_AUCTION_EVENTS.SERVER.ERROR, { message: 'Invalid auction room payload.' });
       return;
     }
-    const room = `auction:${data.auctionId}`;
+    const room = `auction:${parsed.data.auctionId}`;
     void client.join(room);
     client.emit(WS_AUCTION_EVENTS.SERVER.ROOM_JOINED, {
-      auctionId: data.auctionId,
+      auctionId: parsed.data.auctionId,
       socketId: client.id,
       timestamp: new Date().toISOString(),
     });
@@ -152,10 +154,13 @@ export class AuctionGateway
    * @param data Room specification payload
    */
   @SubscribeMessage(WS_AUCTION_EVENTS.CLIENT.LEAVE_ROOM)
-  handleLeaveRoom(@ConnectedSocket() client: Socket, @MessageBody() data: WsJoinRoomDto): void {
-    if (data?.auctionId) {
-      void client.leave(`auction:${data.auctionId}`);
+  handleLeaveRoom(@ConnectedSocket() client: Socket, @MessageBody() data: unknown): void {
+    const parsed = WsLeaveRoomSchema.safeParse(data);
+    if (!parsed.success) {
+      client.emit(WS_AUCTION_EVENTS.SERVER.ERROR, { message: 'Invalid auction room payload.' });
+      return;
     }
+    void client.leave(`auction:${parsed.data.auctionId}`);
   }
 
   /**
@@ -165,14 +170,19 @@ export class AuctionGateway
   @SubscribeMessage(WS_AUCTION_EVENTS.CLIENT.PLACE_BID)
   async handlePlaceBid(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: WsPlaceBidDto,
+    @MessageBody() data: unknown,
   ): Promise<{ ok: boolean; data?: unknown; error?: string }> {
+    const raw =
+      typeof data === 'object' && data !== null ? (data as Record<string, unknown>) : undefined;
+    const rawAuctionId = typeof raw?.auctionId === 'string' ? raw.auctionId : '';
+    const rawAuctionItemId = typeof raw?.auctionItemId === 'string' ? raw.auctionItemId : undefined;
+
     const user = (client.data as { user?: AuthenticatedUserPayload }).user;
     if (!user?.id) {
       const rejection: WsBidRejectedPayload = {
-        auctionId: data?.auctionId ?? '',
-        auctionItemId: data?.auctionItemId,
-        message: 'Vui lòng đăng nhập để tham gia đặt giá.',
+        auctionId: rawAuctionId,
+        auctionItemId: rawAuctionItemId,
+        message: 'Authentication is required to place a bid.',
       };
       client.emit(WS_AUCTION_EVENTS.SERVER.BID_REJECTED, rejection);
       return { ok: false, error: rejection.message };
@@ -180,20 +190,20 @@ export class AuctionGateway
 
     if (!this.placeBidHandler) {
       const rejection: WsBidRejectedPayload = {
-        auctionId: data?.auctionId ?? '',
-        auctionItemId: data?.auctionItemId,
-        message: 'Hệ thống đặt giá trực tuyến đang khởi tạo, vui lòng thử lại.',
+        auctionId: rawAuctionId,
+        auctionItemId: rawAuctionItemId,
+        message: 'Live bidding is initializing; please try again.',
       };
       client.emit(WS_AUCTION_EVENTS.SERVER.BID_REJECTED, rejection);
       return { ok: false, error: rejection.message };
     }
 
-    const amount = Number(data?.bidAmount);
-    if (!data?.auctionId || !Number.isFinite(amount) || amount <= 0) {
+    const parsed = WsPlaceBidSchema.safeParse(data);
+    if (!parsed.success) {
       const rejection: WsBidRejectedPayload = {
-        auctionId: data?.auctionId ?? '',
-        auctionItemId: data?.auctionItemId,
-        message: 'Thông tin phòng đấu giá hoặc mức giá không hợp lệ.',
+        auctionId: rawAuctionId,
+        auctionItemId: rawAuctionItemId,
+        message: 'Invalid auction room or bid amount.',
       };
       client.emit(WS_AUCTION_EVENTS.SERVER.BID_REJECTED, rejection);
       return { ok: false, error: rejection.message };
@@ -201,17 +211,17 @@ export class AuctionGateway
 
     try {
       const result = await this.placeBidHandler(
-        data.auctionId,
-        data.auctionItemId,
+        parsed.data.auctionId,
+        parsed.data.auctionItemId,
         user.id,
-        amount,
+        parsed.data.bidAmount,
       );
       return { ok: true, data: result };
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Đặt giá không thành công.';
+      const message = err instanceof Error ? err.message : 'Failed to place bid.';
       const rejection: WsBidRejectedPayload = {
-        auctionId: data.auctionId,
-        auctionItemId: data.auctionItemId,
+        auctionId: parsed.data.auctionId,
+        auctionItemId: parsed.data.auctionItemId,
         message,
       };
       client.emit(WS_AUCTION_EVENTS.SERVER.BID_REJECTED, rejection);
@@ -226,20 +236,24 @@ export class AuctionGateway
    * @param data 3D camera rotation and zoom coordinates
    */
   @SubscribeMessage(WS_AUCTION_EVENTS.CLIENT.SYNC_VIEWPORT)
-  handleSyncViewport(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() data: Ws3dSyncPayload,
-  ): void {
+  handleSyncViewport(@ConnectedSocket() client: Socket, @MessageBody() data: unknown): void {
     const user = (client.data as { user?: AuthenticatedUserPayload }).user;
     if (user?.role !== Role.ADMIN) {
       client.emit(WS_AUCTION_EVENTS.SERVER.ERROR, {
-        message: 'Chỉ Admin mới có quyền điều khiển đồng bộ góc nhìn 3D.',
+        message: 'Only administrators may synchronize the 3D viewport.',
       });
       return;
     }
-    if (data?.auctionId) {
-      client.to(`auction:${data.auctionId}`).emit(WS_AUCTION_EVENTS.SERVER.VIEWPORT_UPDATED, data);
+    const parsed = Ws3dSyncPayloadSchema.safeParse(data);
+    if (!parsed.success) {
+      client.emit(WS_AUCTION_EVENTS.SERVER.ERROR, {
+        message: 'Invalid 3D viewport synchronization payload.',
+      });
+      return;
     }
+    client
+      .to(`auction:${parsed.data.auctionId}`)
+      .emit(WS_AUCTION_EVENTS.SERVER.VIEWPORT_UPDATED, parsed.data);
   }
 
   /**

@@ -8,7 +8,11 @@ import { randomUUID } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { NextFunction, Request, Response } from 'express';
 import { AuditModule } from './core/audit/audit.module';
-import { runWithRequestTrace } from './core/audit/request-trace.context';
+import {
+  getCurrentTraceId,
+  resolveHeaderTraceId,
+  runWithRequestTrace,
+} from './core/audit/request-trace.context';
 import { PrismaModule } from './core/prisma/prisma.module';
 import { validateBackendEnv } from './core/config/env.schema';
 import { RedisModule } from './core/redis/redis.module';
@@ -54,11 +58,12 @@ import { AuctionModule } from './modules/auction/auction.module';
         return {
           pinoHttp: {
             level,
-            genReqId: (req: IncomingMessage, res: ServerResponse) => {
-              const headerId =
-                (req.headers['x-request-id'] as string | undefined) ||
-                (req.headers['x-trace-id'] as string | undefined);
-              const id = headerId?.trim() || randomUUID();
+            genReqId: (req: IncomingMessage & { id?: string }, res: ServerResponse) => {
+              const id =
+                (typeof req.id === 'string' && req.id) ||
+                getCurrentTraceId() ||
+                resolveHeaderTraceId(req.headers) ||
+                randomUUID();
               res.setHeader('X-Request-Id', id);
               return id;
             },
@@ -66,7 +71,12 @@ import { AuctionModule } from './modules/auction/auction.module';
               'req.headers.authorization',
               'req.headers.cookie',
               'req.body.password',
+              'req.body.currentPassword',
+              'req.body.newPassword',
               'req.body.refreshToken',
+              'req.body.code',
+              'req.body.otp',
+              'res.headers["set-cookie"]',
             ],
             autoLogging: nodeEnv !== 'test',
           },
@@ -131,11 +141,13 @@ import { AuctionModule } from './modules/auction/auction.module';
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
     consumer
-      .apply((req: Request & { id?: string }, _res: Response, next: NextFunction) => {
-        const headerId =
-          (req.headers['x-request-id'] as string | undefined) ||
-          (req.headers['x-trace-id'] as string | undefined);
-        const traceId = req.id || headerId?.trim() || randomUUID();
+      .apply((req: Request & { id?: string }, res: Response, next: NextFunction) => {
+        const traceId =
+          (typeof req.id === 'string' && req.id) ||
+          resolveHeaderTraceId(req.headers) ||
+          randomUUID();
+        req.id = traceId;
+        res.setHeader('X-Request-Id', traceId);
         runWithRequestTrace(traceId, () => next());
       })
       .forRoutes('*');

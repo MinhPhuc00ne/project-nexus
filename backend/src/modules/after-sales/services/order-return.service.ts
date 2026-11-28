@@ -4,12 +4,14 @@ import {
   ForbiddenException,
   Injectable,
   Logger,
+  Optional,
 } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { AfterSalesRequest, NotificationType } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { ProviderConfigService } from '../../../core/providers/provider-config.service';
 import { notifyAllAdmins } from '../../../core/notifications/admin-notification.util';
+import { NotificationPublisher } from '../../../core/notifications/notification-publisher.service';
 import { ShipmentActor } from '../../fulfillment/services/shipment-tracking.service';
 import { GhnOrderApiService } from '../../fulfillment/services/ghn-order-api.service';
 import {
@@ -39,6 +41,7 @@ export class OrderReturnService {
     private readonly inventory: InventoryService,
     private readonly refunds: RefundService,
     private readonly providers: ProviderConfigService,
+    @Optional() private readonly notifications?: NotificationPublisher,
   ) {}
 
   async request(
@@ -95,12 +98,16 @@ export class OrderReturnService {
       if (order.escrowRecord.status === 'HELD')
         await tx.escrowRecord.update({ where: { orderId }, data: { status: 'DISPUTED' } });
       await this.store.audit(tx, order, actor, 'return-requested');
-      await notifyAllAdmins(tx, {
-        title: 'Yêu cầu trả hàng / hoàn tiền mới',
-        content: `Đơn #${orderId.slice(0, 8)} có yêu cầu trả hàng từ người mua: ${dto.reason}.`,
-        type: NotificationType.ORDER,
-        targetUrl: '/admin/refunds',
-      });
+      await notifyAllAdmins(
+        tx,
+        {
+          title: 'Yêu cầu trả hàng / hoàn tiền mới',
+          content: `Đơn #${orderId.slice(0, 8)} có yêu cầu trả hàng từ người mua: ${dto.reason}.`,
+          type: NotificationType.ORDER,
+          targetUrl: '/admin/refunds',
+        },
+        this.notifications,
+      );
       return request;
     });
   }

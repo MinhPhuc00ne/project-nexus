@@ -1,7 +1,14 @@
-import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
 import { NotificationType, Role, SellerRequestStatus } from '@prisma/client';
 import { assertCleanContent } from '../../../core/moderation/content-moderation.util';
 import { notifyAllAdmins } from '../../../core/notifications/admin-notification.util';
+import { NotificationPublisher } from '../../../core/notifications/notification-publisher.service';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { SellerPickupService } from '../../fulfillment/services/seller-pickup.service';
 import { UpdateShopProfileInput } from '../dtos/update-shop-profile.dto';
@@ -22,6 +29,7 @@ export class ShopsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly pickup: SellerPickupService,
+    @Optional() private readonly notifications?: NotificationPublisher,
   ) {}
   /**
    * Retrieves merchant shop profile, operating addresses, and reputation scores.
@@ -242,12 +250,16 @@ export class ShopsService {
       this.logger.warn(
         `GHN pickup sync pending for seller ${sellerId}; retry on next shipping request.`,
       );
-      await notifyAllAdmins(this.prisma, {
-        title: 'Điểm lấy hàng Seller chờ xác minh GHN',
-        content: `Gian hàng "${result.storeName}" vừa thay đổi thông tin lấy hàng và đang chờ xác minh GHN.`,
-        type: NotificationType.SYSTEM,
-        targetUrl: '/admin/stores',
-      });
+      await notifyAllAdmins(
+        this.prisma,
+        {
+          title: 'Điểm lấy hàng Seller chờ xác minh GHN',
+          content: `Gian hàng "${result.storeName}" vừa thay đổi thông tin lấy hàng và đang chờ xác minh GHN.`,
+          type: NotificationType.SYSTEM,
+          targetUrl: '/admin/stores',
+        },
+        this.notifications,
+      );
     }
 
     this.logger.log(`Seller ${sellerId} updated shop profile: ${result.storeName}`);

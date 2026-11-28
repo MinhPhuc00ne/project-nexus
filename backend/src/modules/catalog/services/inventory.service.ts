@@ -1,10 +1,17 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Optional } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import {
+  DEFAULT_PLATFORM_SETTINGS,
+  PlatformSettingsService,
+} from '../../../core/settings/platform-settings.service';
 import { Prisma, ReservationStatus } from '@prisma/client';
 
 @Injectable()
 export class InventoryService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly settings?: PlatformSettingsService,
+  ) {}
 
   /** Caller holds the order row lock; RELEASED reservations cannot be restocked twice. */
   async restoreCommitted(
@@ -248,13 +255,21 @@ export class InventoryService {
 
     const updated = await tx.inventory.findUniqueOrThrow({ where: { id: inventory.id } });
 
+    const configuredTimeout = await this.settings?.get('inventoryReservationTimeout');
+    const timeoutMinutes =
+      typeof configuredTimeout === 'number' &&
+      Number.isFinite(configuredTimeout) &&
+      configuredTimeout > 0
+        ? configuredTimeout
+        : DEFAULT_PLATFORM_SETTINGS.inventoryReservationTimeout;
+
     await tx.inventoryReservation.create({
       data: {
         inventoryId: inventory.id,
         quantity,
         referenceId: orderId,
         status: ReservationStatus.PENDING,
-        expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+        expiresAt: new Date(Date.now() + timeoutMinutes * 60 * 1000),
       },
     });
 

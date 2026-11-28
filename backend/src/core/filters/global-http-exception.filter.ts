@@ -9,6 +9,7 @@ import {
 import * as crypto from 'crypto';
 import { inspect } from 'node:util';
 import { Request, Response } from 'express';
+import { resolveHeaderTraceId } from '../audit/request-trace.context';
 
 /** The shape of an HttpException, whichever copy of Nest built it. */
 interface HttpExceptionLike {
@@ -71,7 +72,8 @@ export class GlobalHttpExceptionFilter implements ExceptionFilter {
           `HTTP_${statusCode}`;
         errors = resObj.errors || null;
       } else {
-        message = exception.message;
+        message = typeof res === 'string' && res.length > 0 ? res : exception.message;
+        errorCode = `HTTP_${statusCode}`;
       }
     } else if (exception instanceof Error) {
       this.logger.error(`Unhandled Error: ${exception.message}`, exception.stack);
@@ -86,11 +88,7 @@ export class GlobalHttpExceptionFilter implements ExceptionFilter {
       );
     }
 
-    const traceId =
-      request?.id ||
-      (request?.headers?.['x-request-id'] as string) ||
-      (request?.headers?.['x-trace-id'] as string) ||
-      crypto.randomUUID();
+    const traceId = request?.id || resolveHeaderTraceId(request?.headers) || crypto.randomUUID();
 
     response.status(statusCode).json({
       statusCode,

@@ -21,6 +21,7 @@ import {
   Dispute,
 } from '@prisma/client';
 import { RefundService } from '../../after-sales/services/refund.service';
+import { AuditLogService } from '../../../core/audit/audit-log.service';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { notifyAdminsAndStaff } from '../../../core/notifications/admin-notification.util';
 import { PlatformSettingsService } from '../../../core/settings/platform-settings.service';
@@ -50,6 +51,7 @@ export class OrderEscrowService {
     private readonly refunds?: RefundService,
     private readonly reputation?: ReputationService,
     @Optional() private readonly notifications?: NotificationPublisher,
+    @Optional() private readonly auditLog?: AuditLogService,
   ) {}
 
   async hold(
@@ -408,18 +410,22 @@ export class OrderEscrowService {
         data: { orderId, openedByUserId: buyerId, reason: reason.trim() },
       });
       await tx.escrowRecord.update({ where: { orderId }, data: { status: EscrowStatus.DISPUTED } });
-      await notifyAdminsAndStaff(tx, {
-        title: 'Khiếu nại đơn hàng mới ⚠️',
-        content: `Đơn #${orderId.slice(0, 8)} vừa có khiếu nại từ người mua: ${reason.trim()}`,
-        type: NotificationType.DISPUTE,
-        adminTargetUrl: '/admin/reports',
-        staffTargetUrl: '/staff/disputes',
-        metadata: {
-          entityType: 'ORDER_DISPUTE',
-          disputeId: dispute.id,
-          orderId,
+      await notifyAdminsAndStaff(
+        tx,
+        {
+          title: 'Khiếu nại đơn hàng mới ⚠️',
+          content: `Đơn #${orderId.slice(0, 8)} vừa có khiếu nại từ người mua: ${reason.trim()}`,
+          type: NotificationType.DISPUTE,
+          adminTargetUrl: '/admin/reports',
+          staffTargetUrl: '/staff/disputes',
+          metadata: {
+            entityType: 'ORDER_DISPUTE',
+            disputeId: dispute.id,
+            orderId,
+          },
         },
-      });
+        this.notifications,
+      );
       return { success: true, dispute };
     });
   }
@@ -454,6 +460,21 @@ export class OrderEscrowService {
           resolvedAt: new Date(),
         },
       });
+
+      await this.auditLog?.record(
+        {
+          eventName: 'order.dispute.resolved',
+          operatorId: actor.id,
+          payload: {
+            orderId,
+            disputeId: order.dispute.id,
+            verdict,
+            actorRole: actor.role,
+            reason: reason.trim(),
+          },
+        },
+        tx,
+      );
 
       // BẮN NOTI CHO NGƯỜI MUA (BUYER)
       await publishNotification(

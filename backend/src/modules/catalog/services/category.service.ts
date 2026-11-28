@@ -3,7 +3,9 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
+import { AuditLogService } from '../../../core/audit/audit-log.service';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { CreateCategoryInput } from '../dtos/create-category.dto';
 import { UpdateCategoryInput } from '../dtos/update-category.dto';
@@ -19,7 +21,10 @@ export interface CategoryTreeItem {
 
 @Injectable()
 export class CategoryService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly auditLog?: AuditLogService,
+  ) {}
 
   /**
    * Retrieves the complete hierarchical category tree up to 3 tiers deep.
@@ -74,7 +79,7 @@ export class CategoryService {
    * @throws NotFoundException when parentId does not exist
    * @throws BadRequestException when parent level exceeds 2
    */
-  async createCategory(dto: CreateCategoryInput) {
+  async createCategory(dto: CreateCategoryInput, adminId?: string) {
     const name = dto.name.trim();
 
     const existingName = await this.prisma.category.findFirst({
@@ -115,6 +120,18 @@ export class CategoryService {
       },
     });
 
+    await this.auditLog?.record({
+      eventName: 'admin.category.created',
+      operatorId: adminId ?? null,
+      payload: {
+        categoryId: category.id,
+        name: category.name,
+        slug: category.slug,
+        level: category.level,
+        parentId: category.parentId,
+      },
+    });
+
     return category;
   }
 
@@ -127,7 +144,7 @@ export class CategoryService {
    * @throws NotFoundException when category does not exist
    * @throws BadRequestException on self-parenting or depth limit exceeded
    */
-  async updateCategory(id: string, dto: UpdateCategoryInput) {
+  async updateCategory(id: string, dto: UpdateCategoryInput, adminId?: string) {
     const category = await this.prisma.category.findUnique({
       where: { id },
       include: { children: true },
@@ -202,6 +219,18 @@ export class CategoryService {
       await this.updateSubtreeLevels(id, data.level);
     }
 
+    await this.auditLog?.record({
+      eventName: 'admin.category.updated',
+      operatorId: adminId ?? null,
+      payload: {
+        categoryId: updated.id,
+        name: updated.name,
+        slug: updated.slug,
+        level: updated.level,
+        parentId: updated.parentId,
+      },
+    });
+
     return updated;
   }
 
@@ -213,7 +242,7 @@ export class CategoryService {
    * @throws NotFoundException when category does not exist
    * @throws BadRequestException when category has children or linked products
    */
-  async deleteCategory(id: string) {
+  async deleteCategory(id: string, adminId?: string) {
     const category = await this.prisma.category.findUnique({
       where: { id },
       include: {
@@ -240,6 +269,16 @@ export class CategoryService {
 
     await this.prisma.category.delete({
       where: { id },
+    });
+
+    await this.auditLog?.record({
+      eventName: 'admin.category.deleted',
+      operatorId: adminId ?? null,
+      payload: {
+        categoryId: category.id,
+        name: category.name,
+        slug: category.slug,
+      },
     });
 
     return {

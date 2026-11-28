@@ -77,7 +77,14 @@ function recordOrEmit(rows: NotificationCreateRow[], emitter?: EventEmitter2): v
     return;
   }
 
-  emitter?.emit(DOMAIN_EVENTS.NOTIFICATIONS_CREATED, events);
+  if (!emitter) {
+    logger.warn(
+      `Dropped ${events.length} realtime notification event(s) because EventEmitter2 is unavailable outside a transaction.`,
+    );
+    return;
+  }
+
+  emitter.emit(DOMAIN_EVENTS.NOTIFICATIONS_CREATED, events);
 }
 
 /**

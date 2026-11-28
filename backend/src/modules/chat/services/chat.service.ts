@@ -293,6 +293,35 @@ export class ChatService {
     };
   }
 
+  async assertConversationAccess(
+    conversationId: string,
+    userId: string,
+    role: string,
+  ): Promise<void> {
+    const conv = await this.prisma.chatConversation.findUnique({
+      where: { id: conversationId },
+      select: {
+        id: true,
+        participant1Id: true,
+        participant2Id: true,
+        assignedStaffId: true,
+        status: true,
+      },
+    });
+    if (!conv) {
+      throw new NotFoundException('Conversation not found.');
+    }
+
+    const isAuditAdmin = role === 'ADMIN';
+    const isAssignedStaff = conv.assignedStaffId === userId || conv.participant2Id === userId;
+    const isParticipant = conv.participant1Id === userId || conv.participant2Id === userId;
+    const isStaffAllowed = role === 'SUPPORT_STAFF' && (isAssignedStaff || conv.status === 'OPEN');
+
+    if (!isParticipant && !isStaffAllowed && !isAuditAdmin) {
+      throw new ForbiddenException('You do not have permission to access this conversation.');
+    }
+  }
+
   /**
    * Retrieves conversation details with role-based masking and access validation.
    *

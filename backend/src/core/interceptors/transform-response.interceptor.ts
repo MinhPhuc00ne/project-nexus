@@ -9,6 +9,7 @@ import * as crypto from 'crypto';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import type { Request, Response } from 'express';
+import { resolveHeaderTraceId } from '../audit/request-trace.context';
 import { toPaginationEnvelope } from './pagination-envelope';
 
 export interface ResponseEnvelope<T> {
@@ -30,11 +31,7 @@ export class TransformResponseInterceptor<T> implements NestInterceptor<
     const httpContext = context.switchToHttp();
     const request = httpContext.getRequest<Request & { id?: string }>();
     const response = httpContext.getResponse<Response>();
-    const traceId =
-      request?.id ||
-      (request?.headers?.['x-request-id'] as string) ||
-      (request?.headers?.['x-trace-id'] as string) ||
-      crypto.randomUUID();
+    const traceId = request?.id || resolveHeaderTraceId(request?.headers) || crypto.randomUUID();
 
     return next.handle().pipe(
       map((data) => {

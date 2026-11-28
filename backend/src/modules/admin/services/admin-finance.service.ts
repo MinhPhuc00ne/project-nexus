@@ -1,5 +1,6 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, Optional } from '@nestjs/common';
 import { Prisma, Wallet, WalletTransactionStatus, WalletTransactionType } from '@prisma/client';
+import { AuditLogService } from '../../../core/audit/audit-log.service';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import {
   DepositAdminWalletInput,
@@ -15,6 +16,7 @@ export class AdminFinanceService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly treasury: TreasuryService,
+    @Optional() private readonly auditLog?: AuditLogService,
   ) {}
 
   /**
@@ -375,6 +377,21 @@ export class AdminFinanceService {
             dto.description?.trim() || `Admin (${adminId.slice(0, 8)}) nạp tiền vào ví hệ thống`,
         },
       });
+
+      await this.auditLog?.record(
+        {
+          eventName: 'admin.wallet.deposited',
+          operatorId: adminId,
+          payload: {
+            walletId: wallet.id,
+            transactionId: transaction.id,
+            amount: Number(dto.amount),
+            balanceAfter: Number(updatedWallet.balance),
+            description: transaction.description,
+          },
+        },
+        tx,
+      );
 
       return { updatedWallet, transaction };
     });

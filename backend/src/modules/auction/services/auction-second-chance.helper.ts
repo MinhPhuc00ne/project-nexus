@@ -116,14 +116,18 @@ export class AuctionSecondChanceHelper {
         }
         await syncAuctionCompletionStatusTx(tx, award.auctionId);
 
-        await notifyDeclinedOfferTx(tx, {
-          auctionId: award.auctionId,
-          auctionItemId: award.auctionItemId,
-          buyerId,
-          sellerId,
-          adminId: award.auction.createdByAdminId,
-          itemLabel,
-        });
+        await notifyDeclinedOfferTx(
+          tx,
+          {
+            auctionId: award.auctionId,
+            auctionItemId: award.auctionItemId,
+            buyerId,
+            sellerId,
+            adminId: award.auction.createdByAdminId,
+            itemLabel,
+          },
+          this.notifications,
+        );
 
         return declined;
       }
@@ -173,18 +177,23 @@ export class AuctionSecondChanceHelper {
         this.notifications,
       );
 
-      await notifyUsersTx(tx, [sellerId, award.auction.createdByAdminId], {
-        auctionId: award.auctionId,
-        targetUrl: `/auction/${award.auctionId}`,
-        title: `Người mua kế tiếp đã đồng ý mua ${itemLabel} (chờ nạp cọc)`,
-        content: `Người mua dự bị đã xác nhận muốn mua ${itemLabel} với mức giá ${formatVnd(Number(award.offerAmount))} và đang tiến hành nạp đủ 30% tiền cọc (${formatVnd(requiredDeposit)}).`,
-        metadata: {
-          actionType: 'SECOND_CHANCE_AWAITING_DEPOSIT',
-          awardId: award.id,
+      await notifyUsersTx(
+        tx,
+        [sellerId, award.auction.createdByAdminId],
+        {
           auctionId: award.auctionId,
-          auctionItemId: award.auctionItemId,
+          targetUrl: `/auction/${award.auctionId}`,
+          title: `Người mua kế tiếp đã đồng ý mua ${itemLabel} (chờ nạp cọc)`,
+          content: `Người mua dự bị đã xác nhận muốn mua ${itemLabel} với mức giá ${formatVnd(Number(award.offerAmount))} và đang tiến hành nạp đủ 30% tiền cọc (${formatVnd(requiredDeposit)}).`,
+          metadata: {
+            actionType: 'SECOND_CHANCE_AWAITING_DEPOSIT',
+            awardId: award.id,
+            auctionId: award.auctionId,
+            auctionItemId: award.auctionItemId,
+          },
         },
-      });
+        this.notifications,
+      );
 
       return updated;
     });
@@ -352,19 +361,24 @@ export class AuctionSecondChanceHelper {
       this.notifications,
     );
 
-    await notifyUsersTx(tx, [sellerId, award.auction.createdByAdminId], {
-      auctionId: award.auctionId,
-      targetUrl: `/auction/${award.auctionId}`,
-      title: `Người mua tiếp theo đã đóng 30% cọc cho ${itemLabel}`,
-      content: `Người mua dự bị đã đóng đủ 30% tiền cọc (${formatVnd(depositAmount)}) cho ${itemLabel} và bước vào thời hạn 24 giờ thanh toán phần còn lại.`,
-      metadata: {
-        actionType: 'SECOND_CHANCE_DEPOSIT_LOCKED',
-        awardId: award.id,
-        orderId: order.id,
+    await notifyUsersTx(
+      tx,
+      [sellerId, award.auction.createdByAdminId],
+      {
         auctionId: award.auctionId,
-        auctionItemId: award.auctionItemId,
+        targetUrl: `/auction/${award.auctionId}`,
+        title: `Người mua tiếp theo đã đóng 30% cọc cho ${itemLabel}`,
+        content: `Người mua dự bị đã đóng đủ 30% tiền cọc (${formatVnd(depositAmount)}) cho ${itemLabel} và bước vào thời hạn 24 giờ thanh toán phần còn lại.`,
+        metadata: {
+          actionType: 'SECOND_CHANCE_DEPOSIT_LOCKED',
+          awardId: award.id,
+          orderId: order.id,
+          auctionId: award.auctionId,
+          auctionItemId: award.auctionItemId,
+        },
       },
-    });
+      this.notifications,
+    );
 
     return updated;
   }

@@ -39,8 +39,19 @@ export class AdminService {
    * @param dto - Staff creation payload
    * @returns Provisioned staff credentials and profile
    */
-  async createStaff(dto: CreateStaffInput): Promise<ProvisionedStaffResult> {
-    return this.staffProvisioning.invite(dto);
+  async createStaff(dto: CreateStaffInput, adminId?: string): Promise<ProvisionedStaffResult> {
+    const result = await this.staffProvisioning.invite(dto);
+    await this.auditLog?.record({
+      eventName: 'admin.staff.created',
+      operatorId: adminId ?? null,
+      payload: {
+        staffId: result.staff.id,
+        platformEmail: result.staff.platformEmail,
+        personalEmail: result.staff.personalEmail,
+        department: dto.department ?? null,
+      },
+    });
+    return result;
   }
 
   /**
@@ -49,8 +60,19 @@ export class AdminService {
    * @param dto - Invitation input payload
    * @returns Provisioned staff result
    */
-  async inviteStaff(dto: StaffInvitationInput): Promise<ProvisionedStaffResult> {
-    return this.staffProvisioning.invite(dto);
+  async inviteStaff(dto: StaffInvitationInput, adminId?: string): Promise<ProvisionedStaffResult> {
+    const result = await this.staffProvisioning.invite(dto);
+    await this.auditLog?.record({
+      eventName: 'admin.staff.invited',
+      operatorId: adminId ?? null,
+      payload: {
+        staffId: result.staff.id,
+        platformEmail: result.staff.platformEmail,
+        personalEmail: result.staff.personalEmail,
+        department: dto.department ?? null,
+      },
+    });
+    return result;
   }
 
   /**

@@ -16,6 +16,7 @@ import {
   NotificationType,
   Role,
 } from '@prisma/client';
+import { AuditLogService } from '../../../core/audit/audit-log.service';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { notifyAdminsAndStaff } from '../../../core/notifications/admin-notification.util';
 import { auctionTargetUrlForRole } from '../../../core/navigation/auction-navigation';
@@ -33,6 +34,7 @@ export class AuctionComplaintService {
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly notifications?: NotificationPublisher,
+    @Optional() private readonly auditLog?: AuditLogService,
   ) {}
 
   /**
@@ -114,23 +116,27 @@ export class AuctionComplaintService {
         },
       });
 
-      await notifyAdminsAndStaff(tx, {
-        title: `Khiếu nại đấu giá mới từ ${reporterRole === Role.SELLER ? 'Người bán' : 'Người mua'}`,
-        content: `Phiên "${auction.title}": ${dto.reason.trim()}`,
-        type: NotificationType.DISPUTE,
-        adminTargetUrl: '/admin/auctions',
-        staffTargetUrl: auctionTargetUrlForRole(auctionId, Role.SUPPORT_STAFF),
-        auctionId,
-        metadata: {
-          entityType: 'AUCTION_COMPLAINT',
-          actionType: 'AUCTION_COMPLAINT_CREATED',
-          complaintId: created.id,
+      await notifyAdminsAndStaff(
+        tx,
+        {
+          title: `Khiếu nại đấu giá mới từ ${reporterRole === Role.SELLER ? 'Người bán' : 'Người mua'}`,
+          content: `Phiên "${auction.title}": ${dto.reason.trim()}`,
+          type: NotificationType.DISPUTE,
+          adminTargetUrl: '/admin/auctions',
+          staffTargetUrl: auctionTargetUrlForRole(auctionId, Role.SUPPORT_STAFF),
           auctionId,
-          auctionItemId: dto.auctionItemId ?? null,
-          reporterId,
-          reporterRole,
+          metadata: {
+            entityType: 'AUCTION_COMPLAINT',
+            actionType: 'AUCTION_COMPLAINT_CREATED',
+            complaintId: created.id,
+            auctionId,
+            auctionItemId: dto.auctionItemId ?? null,
+            reporterId,
+            reporterRole,
+          },
         },
-      });
+        this.notifications,
+      );
 
       return created;
     });
@@ -209,6 +215,21 @@ export class AuctionComplaintService {
           handledBy: { select: { id: true, fullName: true, email: true } },
         },
       });
+
+      await this.auditLog?.record(
+        {
+          eventName: 'admin.auction_complaint.resolved',
+          operatorId: adminId,
+          payload: {
+            complaintId: updated.id,
+            auctionId: existing.auctionId,
+            auctionItemId: existing.auctionItemId,
+            status: updated.status,
+            adminNote: updated.adminNote,
+          },
+        },
+        tx,
+      );
 
       const isAccepted = dto.status === ResolveAuctionComplaintDecision.ACCEPTED;
       const decisionLabel = isAccepted ? 'Đã tiếp nhận / Chấp thuận' : 'Đã từ chối';

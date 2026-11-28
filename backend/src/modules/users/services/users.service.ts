@@ -4,12 +4,14 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { Role } from '@nexus/contracts';
 import { NotificationType, SellerRequestStatus, User, Wallet } from '@prisma/client';
 import * as fs from 'fs';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { notifyAllAdmins } from '../../../core/notifications/admin-notification.util';
+import { NotificationPublisher } from '../../../core/notifications/notification-publisher.service';
 import { CloudinaryStorageService } from '../../../core/storage/cloudinary.service';
 import { ProfileReauthService } from '../../../core/security/profile-reauth.service';
 import { toggleSellerState, userMode } from '../../../core/security/user-mode';
@@ -32,6 +34,7 @@ export class UsersService {
     private readonly storageService: CloudinaryStorageService,
     private readonly profileReauth: ProfileReauthService,
     private readonly reputationService: ReputationService,
+    @Optional() private readonly notifications?: NotificationPublisher,
   ) {}
 
   private formatProfile(user: User & { wallet: Wallet | null }): UserProfileResponse {
@@ -433,12 +436,16 @@ export class UsersService {
       },
     });
 
-    await notifyAllAdmins(this.prisma, {
-      title: 'Yêu cầu nâng cấp Seller mới',
-      content: `Gian hàng "${dto.storeName.trim()}" vừa gửi hồ sơ đăng ký nâng cấp lên Seller chờ phê duyệt.`,
-      type: NotificationType.SYSTEM,
-      targetUrl: '/admin/sellers',
-    });
+    await notifyAllAdmins(
+      this.prisma,
+      {
+        title: 'Yêu cầu nâng cấp Seller mới',
+        content: `Gian hàng "${dto.storeName.trim()}" vừa gửi hồ sơ đăng ký nâng cấp lên Seller chờ phê duyệt.`,
+        type: NotificationType.SYSTEM,
+        targetUrl: '/admin/sellers',
+      },
+      this.notifications,
+    );
 
     return {
       message:
