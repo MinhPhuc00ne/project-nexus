@@ -19,7 +19,14 @@ export function createAuctionSocket(auctionId?: string): AuctionSocketClient {
     },
   });
 
-  if (auctionId) socket.emit(WS_AUCTION_EVENTS.CLIENT.JOIN_ROOM, { auctionId });
+  if (auctionId) {
+    if (socket.connected) {
+      socket.emit(WS_AUCTION_EVENTS.CLIENT.JOIN_ROOM, { auctionId });
+    }
+    socket.on('connect', () => {
+      socket.emit(WS_AUCTION_EVENTS.CLIENT.JOIN_ROOM, { auctionId });
+    });
+  }
 
   return {
     socket,

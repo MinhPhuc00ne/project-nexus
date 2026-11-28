@@ -7,11 +7,13 @@ export {
   type BannerInput,
 } from '@/features/catalog/services/banners.service';
 
-export function bannerStatus(banner: BannerInput, now = Date.now()) {
-  if (!banner.isActive) return 'Đã tắt';
-  if (banner.endsAt && Date.parse(banner.endsAt) <= now) return 'Đã hết hạn';
-  if (banner.startsAt && Date.parse(banner.startsAt) > now) return 'Đã lên lịch';
-  return 'Đang hiển thị';
+export type BannerStatusKey = 'active' | 'scheduled' | 'disabled' | 'expired';
+
+export function bannerStatus(banner: BannerInput, now = Date.now()): BannerStatusKey {
+  if (!banner.isActive) return 'disabled';
+  if (banner.endsAt && Date.parse(banner.endsAt) <= now) return 'expired';
+  if (banner.startsAt && Date.parse(banner.startsAt) > now) return 'scheduled';
+  return 'active';
 }
 
 // Only HTTP(S) destinations may become clickable links, including server-provided data.

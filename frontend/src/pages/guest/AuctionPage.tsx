@@ -216,6 +216,7 @@ export const AuctionPage: React.FC = () => {
             setShow3DShowcase(false);
           }
 
+          if (!isMounted) return;
           socketClient = createAuctionSocket(auctionData.id);
 
           socketClient.onAuctionStarted((payload) => {

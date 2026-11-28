@@ -188,9 +188,7 @@ export default function AdminHeader({
         onConfirm={() => {
           setIsLogoutConfirmOpen(false);
           clearAuthSession();
-          toast.success(
-            t('common:logoutDialog.successToast', 'Đăng xuất thành công. Hẹn gặp lại bạn!'),
-          );
+          toast.success(t('common:logoutDialog.successToast'));
           navigate('/login', { replace: true });
         }}
       />

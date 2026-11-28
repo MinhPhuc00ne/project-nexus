@@ -695,6 +695,7 @@
     "bottomNoteApi": "Account info and wallet balance are fetched from the API.",
     "identity": {
       "loading": "Loading shop…",
+      "logoAlt": "Shop logo",
       "fallbackName": "{{name}}'s Shop",
       "badge": "NEXUS SELLER",
       "reputation": "Reputation",

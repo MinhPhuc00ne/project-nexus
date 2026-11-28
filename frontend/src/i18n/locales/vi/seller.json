@@ -695,6 +695,7 @@
     "bottomNoteApi": "Thông tin tài khoản và số dư ví được lấy từ API.",
     "identity": {
       "loading": "Đang tải gian hàng…",
+      "logoAlt": "Logo gian hàng",
       "fallbackName": "Gian hàng của {{name}}",
       "badge": "NEXUS SELLER",
       "reputation": "Uy tín",

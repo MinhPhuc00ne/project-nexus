@@ -52,6 +52,6 @@ describe('i18n infrastructure', () => {
       });
       expect(translated).not.toBe(returnStatusLabels[status]);
     }
-    expect(i18n.t('admin:banners.statuses.Đã hết hạn')).toBe('Expired');
+    expect(i18n.t('admin:banners.statuses.expired')).toBe('Expired');
   });
 });

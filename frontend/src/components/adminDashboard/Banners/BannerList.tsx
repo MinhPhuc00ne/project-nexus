@@ -183,11 +183,7 @@ export default function BannerList({
                     <td className="p-3">
                       <Badge
                         tone={
-                          status === 'Đang hiển thị'
-                            ? 'green'
-                            : status === 'Đã lên lịch'
-                              ? 'amber'
-                              : 'gray'
+                          status === 'active' ? 'green' : status === 'scheduled' ? 'amber' : 'gray'
                         }
                       >
                         {t(`banners.statuses.${status}`, { defaultValue: status })}
