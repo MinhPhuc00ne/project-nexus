@@ -245,15 +245,153 @@ describe('M8 WebSocket Zod Validation, PayOS Webhook, OAuth Throttle, RedisThrot
       ).resolves.toBeUndefined();
 
       findUnique.mockResolvedValueOnce({
-        id: 'conv-open',
+        id: 'conv-open-buyer',
+        type: 'STAFF_BUYER',
         participant1Id: 'buyer-1',
         participant2Id: null,
         assignedStaffId: null,
         status: 'OPEN',
       });
       await expect(
-        service.assertConversationAccess('conv-open', 'staff-any', 'SUPPORT_STAFF'),
+        service.assertConversationAccess('conv-open-buyer', 'staff-any', 'SUPPORT_STAFF'),
       ).resolves.toBeUndefined();
+
+      findUnique.mockResolvedValueOnce({
+        id: 'conv-open-seller',
+        type: 'STAFF_SELLER',
+        participant1Id: 'seller-1',
+        participant2Id: null,
+        assignedStaffId: null,
+        status: 'OPEN',
+      });
+      await expect(
+        service.assertConversationAccess('conv-open-seller', 'staff-any', 'SUPPORT_STAFF'),
+      ).resolves.toBeUndefined();
+
+      findUnique.mockResolvedValueOnce({
+        id: 'conv-open-direct',
+        type: 'BUYER_SELLER',
+        participant1Id: 'buyer-1',
+        participant2Id: 'seller-1',
+        assignedStaffId: null,
+        status: 'OPEN',
+      });
+      await expect(
+        service.assertConversationAccess('conv-open-direct', 'staff-any', 'SUPPORT_STAFF'),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('emits English-US errors from ChatGateway send_message and mark_read when wired with real ChatService', async () => {
+      const conversation = {
+        id: 'conv-b1-s1',
+        type: 'BUYER_SELLER',
+        participant1Id: 'buyer-1',
+        participant2Id: 'seller-1',
+        assignedStaffId: null,
+        status: 'IN_PROGRESS',
+        participant1: { id: 'buyer-1', fullName: 'Buyer One', avatarUrl: null, role: Role.BUYER },
+        participant2: {
+          id: 'seller-1',
+          fullName: 'Seller One',
+          avatarUrl: null,
+          role: Role.SELLER,
+        },
+        assignedStaff: null,
+      };
+
+      const prismaMock = {
+        chatConversation: {
+          findUnique: vi.fn(async ({ where }: { where: { id: string } }) =>
+            where.id === 'conv-b1-s1' ? conversation : null,
+          ),
+        },
+        chatMessage: {
+          updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+        },
+      } as unknown as PrismaService;
+
+      const realChatService = new ChatService(
+        prismaMock,
+        {} as unknown as never,
+        { findMatchingReply: vi.fn().mockResolvedValue(null) } as unknown as never,
+        { trackAssignedTicket: vi.fn() } as unknown as StaffQueueService,
+        {
+          message: vi.fn(),
+          read: vi.fn(),
+          toUser: vi.fn(),
+          toStaff: vi.fn(),
+          statusChange: vi.fn(),
+          isUserOnline: vi.fn().mockResolvedValue(false),
+          isSupportOnline: vi.fn().mockResolvedValue(false),
+        } as unknown as never,
+      );
+
+      const gateway = new ChatGateway(
+        realChatService,
+        {} as unknown as TokenAuthService,
+        {} as unknown as StaffQueueService,
+        {} as unknown as ChatPresenceService,
+        new SocketMetricsService(),
+        new EventEmitter2(),
+      );
+
+      const nonParticipant = createSocketMock({ id: 'buyer-2', role: Role.BUYER });
+      const sendDenied = await gateway.handleSendMessage(nonParticipant.socket, {
+        conversationId: 'conv-b1-s1',
+        content: 'Unauthorized message',
+      });
+      expect(sendDenied).toEqual({
+        status: 'error',
+        message: 'You do not have permission to access this conversation.',
+      });
+      expect(nonParticipant.emit).toHaveBeenCalledWith(WS_CHAT_EVENTS.SERVER.ERROR, {
+        message: 'You do not have permission to access this conversation.',
+      });
+
+      const markReadDenied = await gateway.handleMarkRead(nonParticipant.socket, {
+        conversationId: 'conv-b1-s1',
+      });
+      expect(markReadDenied).toEqual({
+        status: 'error',
+        message: 'You do not have permission to access this conversation.',
+      });
+
+      const sendMissing = await gateway.handleSendMessage(nonParticipant.socket, {
+        conversationId: 'conv-missing',
+        content: 'Hello',
+      });
+      expect(sendMissing).toEqual({
+        status: 'error',
+        message: 'Conversation not found.',
+      });
+
+      const markReadMissing = await gateway.handleMarkRead(nonParticipant.socket, {
+        conversationId: 'conv-missing',
+      });
+      expect(markReadMissing).toEqual({
+        status: 'error',
+        message: 'Conversation not found.',
+      });
+
+      const participant = createSocketMock({ id: 'buyer-1', role: Role.BUYER });
+      const profanitySend = await gateway.handleSendMessage(participant.socket, {
+        conversationId: 'conv-b1-s1',
+        content: 'sung dan',
+      });
+      expect(profanitySend).toEqual({
+        status: 'error',
+        message: 'Message contains prohibited or sensitive content.',
+      });
+
+      for (const payload of [
+        sendDenied,
+        markReadDenied,
+        sendMissing,
+        markReadMissing,
+        profanitySend,
+      ]) {
+        expect(/[^\p{ASCII}]/u.test(payload.message ?? '')).toBe(false);
+      }
     });
 
     it('validates all 5 ChatGateway handlers with Zod and enforces join_conversation & typing access', async () => {
@@ -454,6 +592,30 @@ describe('M8 WebSocket Zod Validation, PayOS Webhook, OAuth Throttle, RedisThrot
       }
       const internalMap = (storage as unknown as { memory: Map<string, unknown> }).memory;
       expect(internalMap.size).toBeLessThanOrEqual(10_000);
+    });
+
+    it('retains actively blocked keys ahead of unblocked keys during 10,050-key flood eviction', async () => {
+      const storage = new RedisThrottlerStorage({
+        getClient: () => {
+          throw new Error('redis offline');
+        },
+      } as unknown as RedisService);
+
+      await storage.increment('hot-attacker', 60_000, 1, 120_000, 'default');
+      const blocked = await storage.increment('hot-attacker', 60_000, 1, 120_000, 'default');
+      expect(blocked.isBlocked).toBe(true);
+
+      for (let i = 0; i < 10_050; i += 1) {
+        await storage.increment(`flood-${i}`, 60_000, 5, 0, 'default');
+      }
+
+      const internalMap = (storage as unknown as { memory: Map<string, unknown> }).memory;
+      expect(internalMap.size).toBeLessThanOrEqual(10_000);
+      expect(internalMap.has('throttle:default:hot-attacker')).toBe(true);
+
+      const postFlood = await storage.increment('hot-attacker', 60_000, 1, 120_000, 'default');
+      expect(postFlood.isBlocked).toBe(true);
+      expect(postFlood.timeToBlockExpire).toBeGreaterThan(1);
     });
   });
 

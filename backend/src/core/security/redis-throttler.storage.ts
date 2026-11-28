@@ -156,12 +156,26 @@ export class RedisThrottlerStorage implements ThrottlerStorage {
     }
   }
 
+  private evictUnblockedBuckets(now: number): void {
+    for (const [bucketKey, bucket] of this.memory.entries()) {
+      if (this.memory.size < MAX_MEMORY_BUCKETS) {
+        return;
+      }
+      if (bucket.blockedUntil <= now) {
+        this.memory.delete(bucketKey);
+      }
+    }
+  }
+
   private pruneExpiredMemoryBuckets(now: number): void {
     this.lastPrunedAt = now;
     for (const [bucketKey, bucket] of this.memory.entries()) {
       if (bucket.expiresAt <= now && bucket.blockedUntil <= now) {
         this.memory.delete(bucketKey);
       }
+    }
+    if (this.memory.size >= MAX_MEMORY_BUCKETS) {
+      this.evictUnblockedBuckets(now);
     }
     while (this.memory.size >= MAX_MEMORY_BUCKETS) {
       const oldestKey = this.memory.keys().next().value;
@@ -189,6 +203,8 @@ export class RedisThrottlerStorage implements ThrottlerStorage {
     const existing = this.memory.get(storageKey);
 
     if (existing && existing.blockedUntil > now) {
+      this.memory.delete(storageKey);
+      this.memory.set(storageKey, existing);
       const blockSec = Math.max(1, Math.ceil((existing.blockedUntil - now) / 1000));
       return {
         totalHits: limit + 1,
@@ -206,6 +222,9 @@ export class RedisThrottlerStorage implements ThrottlerStorage {
     bucket.hits += 1;
     if (bucket.hits > limit && blockDuration > 0) {
       bucket.blockedUntil = now + blockDuration;
+    }
+    if (existing) {
+      this.memory.delete(storageKey);
     }
     this.memory.set(storageKey, bucket);
 

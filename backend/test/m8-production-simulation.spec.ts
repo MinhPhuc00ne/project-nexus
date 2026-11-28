@@ -109,6 +109,20 @@ describe('M8 Production-Mode Validation & Live Compiled Runtime Simulation', () 
         JWT_SECRET: 'short',
       }),
     ).toThrow(/JWT_SECRET must be at least 16 characters/);
+
+    expect(() =>
+      validateBackendEnv({
+        ...validProd,
+        JWT_SECRET: 'your-jwt-secret-must-be-changed',
+      }),
+    ).toThrow(/JWT_SECRET must not use a placeholder value/);
+
+    expect(() =>
+      validateBackendEnv({
+        ...validProd,
+        REFRESH_TOKEN_SECRET: 'changeme-refresh-secret-value',
+      }),
+    ).toThrow(/REFRESH_TOKEN_SECRET must not use a placeholder value/);
   });
 
   it('refuses seed:demo when APP_ENV=production or NODE_ENV=production', () => {
@@ -125,40 +139,43 @@ describe('M8 Production-Mode Validation & Live Compiled Runtime Simulation', () 
         const baseUrl = `http://127.0.0.1:${port}`;
         const logs: string[] = [];
 
+        const childEnv: NodeJS.ProcessEnv = {
+          ...process.env,
+          NODE_ENV: 'production',
+          APP_ENV: 'production',
+          PORT: String(port),
+          PORT_BACKEND: String(port),
+          DATABASE_URL: process.env.DATABASE_URL,
+          REDIS_HOST: process.env.REDIS_HOST || '127.0.0.1',
+          REDIS_PORT: process.env.REDIS_PORT || '6379',
+          JWT_SECRET: 'prod-sim-jwt-secret-key-at-least-32-chars',
+          REFRESH_TOKEN_SECRET: 'prod-sim-refresh-secret-key-at-least-32-chars',
+          APP_PUBLIC_URL: 'https://api.nexus.example.com',
+          FRONTEND_URL: 'https://nexus.example.com',
+          CORS_ORIGINS: 'https://nexus.example.com',
+          PAYMENT_PROVIDER: 'payos',
+          PAYOS_CLIENT_ID: 'payos-client-id-sim',
+          PAYOS_API_KEY: 'payos-api-key-sim',
+          PAYOS_CHECKSUM_KEY: 'payos-checksum-key-sim',
+          SHIPPING_PROVIDER: 'ghn',
+          GHN_API_URL: 'https://online-gateway.ghn.vn/shiip/public-api/v2',
+          GHN_TOKEN: 'ghn-token-sim',
+          GHN_SHOP_ID: '123456',
+          GHN_WEBHOOK_SECRET: 'ghn-webhook-secret-sim',
+          STORAGE_PROVIDER: 'cloudinary',
+          CLOUDINARY_CLOUD_NAME: 'nexus-cloud',
+          CLOUDINARY_API_KEY: 'cloudinary-key',
+          CLOUDINARY_API_SECRET: 'cloudinary-secret',
+          MAIL_PROVIDER: 'smtp',
+          SMTP_HOST: 'smtp.nexus.example.com',
+          SMTP_USER: 'mailer@nexus.example.com',
+          SMTP_PASS: 'smtp-app-password-sim',
+        };
+        delete childEnv.SWAGGER_ENABLED;
+
         const child = spawn(process.execPath, [DIST_MAIN_PATH], {
           cwd: path.resolve(__dirname, '..'),
-          env: {
-            ...process.env,
-            NODE_ENV: 'production',
-            APP_ENV: 'production',
-            PORT: String(port),
-            PORT_BACKEND: String(port),
-            DATABASE_URL: process.env.DATABASE_URL,
-            REDIS_HOST: process.env.REDIS_HOST || '127.0.0.1',
-            REDIS_PORT: process.env.REDIS_PORT || '6379',
-            JWT_SECRET: 'prod-sim-jwt-secret-key-at-least-32-chars',
-            REFRESH_TOKEN_SECRET: 'prod-sim-refresh-secret-key-at-least-32-chars',
-            APP_PUBLIC_URL: 'https://api.nexus.example.com',
-            FRONTEND_URL: 'https://nexus.example.com',
-            CORS_ORIGINS: 'https://nexus.example.com',
-            PAYMENT_PROVIDER: 'payos',
-            PAYOS_CLIENT_ID: 'payos-client-id-sim',
-            PAYOS_API_KEY: 'payos-api-key-sim',
-            PAYOS_CHECKSUM_KEY: 'payos-checksum-key-sim',
-            SHIPPING_PROVIDER: 'ghn',
-            GHN_API_URL: 'https://online-gateway.ghn.vn/shiip/public-api/v2',
-            GHN_TOKEN: 'ghn-token-sim',
-            GHN_SHOP_ID: '123456',
-            GHN_WEBHOOK_SECRET: 'ghn-webhook-secret-sim',
-            STORAGE_PROVIDER: 'cloudinary',
-            CLOUDINARY_CLOUD_NAME: 'nexus-cloud',
-            CLOUDINARY_API_KEY: 'cloudinary-key',
-            CLOUDINARY_API_SECRET: 'cloudinary-secret',
-            MAIL_PROVIDER: 'smtp',
-            SMTP_HOST: 'smtp.nexus.example.com',
-            SMTP_USER: 'mailer@nexus.example.com',
-            SMTP_PASS: 'smtp-app-password-sim',
-          },
+          env: childEnv,
           stdio: ['ignore', 'pipe', 'pipe'],
         });
 

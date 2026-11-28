@@ -302,6 +302,7 @@ export class ChatService {
       where: { id: conversationId },
       select: {
         id: true,
+        type: true,
         participant1Id: true,
         participant2Id: true,
         assignedStaffId: true,
@@ -315,7 +316,9 @@ export class ChatService {
     const isAuditAdmin = role === 'ADMIN';
     const isAssignedStaff = conv.assignedStaffId === userId || conv.participant2Id === userId;
     const isParticipant = conv.participant1Id === userId || conv.participant2Id === userId;
-    const isStaffAllowed = role === 'SUPPORT_STAFF' && (isAssignedStaff || conv.status === 'OPEN');
+    const isStaffAllowed =
+      role === 'SUPPORT_STAFF' &&
+      (isAssignedStaff || (conv.status === 'OPEN' && conv.type !== 'BUYER_SELLER'));
 
     if (!isParticipant && !isStaffAllowed && !isAuditAdmin) {
       throw new ForbiddenException('You do not have permission to access this conversation.');
@@ -348,7 +351,9 @@ export class ChatService {
     const isAuditAdmin = role === 'ADMIN';
     const isAssignedStaff = conv.assignedStaffId === userId || conv.participant2Id === userId;
     const isParticipant = conv.participant1Id === userId || conv.participant2Id === userId;
-    const isStaffAllowed = role === 'SUPPORT_STAFF' && (isAssignedStaff || conv.status === 'OPEN');
+    const isStaffAllowed =
+      role === 'SUPPORT_STAFF' &&
+      (isAssignedStaff || (conv.status === 'OPEN' && conv.type !== 'BUYER_SELLER'));
 
     if (!isParticipant && !isStaffAllowed && !isAuditAdmin) {
       throw new ForbiddenException('Bạn không có quyền truy cập vào cuộc trò chuyện này.');
