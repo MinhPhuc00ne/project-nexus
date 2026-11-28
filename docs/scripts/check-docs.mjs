@@ -59,14 +59,79 @@ function stripCodeLinksAndPaths(line) {
     .replace(/https?:\/\/\S+/g, 'URL');
 }
 
+function extractMarkdownLinkTargets(line) {
+  const withoutInlineCode = line.replace(/`[^`]*`/g, '');
+  const targets = [];
+  let cursor = 0;
+
+  while (cursor < withoutInlineCode.length) {
+    const openBracket = withoutInlineCode.indexOf('[', cursor);
+    if (openBracket === -1) break;
+    const closeAndOpenParen = withoutInlineCode.indexOf('](', openBracket + 1);
+    if (closeAndOpenParen === -1) break;
+    const closeParen = withoutInlineCode.indexOf(')', closeAndOpenParen + 2);
+    if (closeParen === -1) break;
+
+    targets.push(withoutInlineCode.slice(closeAndOpenParen + 2, closeParen));
+    cursor = closeParen + 1;
+  }
+
+  return targets;
+}
+
+function extractRelativeTarget(rawTarget) {
+  let target = rawTarget.trim();
+  if (!target) return null;
+  if (target.startsWith('<') && target.includes('>')) {
+    target = target.slice(1, target.indexOf('>')).trim();
+  } else {
+    const firstWhitespace = target.search(/\s/);
+    if (firstWhitespace !== -1) {
+      const rest = target.slice(firstWhitespace).trimStart();
+      if (rest.startsWith('"') || rest.startsWith("'")) {
+        target = target.slice(0, firstWhitespace).trim();
+      }
+    }
+  }
+  if (
+    !target ||
+    target.startsWith('#') ||
+    target.startsWith('/') ||
+    /^(?:https?:|mailto:|tel:|data:)/i.test(target)
+  ) {
+    return null;
+  }
+  const cleanTarget = target.split(/[?#]/)[0].trim();
+  if (!cleanTarget) return null;
+  try {
+    return { raw: target, pathPart: decodeURIComponent(cleanTarget) };
+  } catch {
+    return { raw: target, pathPart: cleanTarget };
+  }
+}
+
+function collectBrokenRelativeLinks(rawLine, sourceDir, relPath, lineNo) {
+  const broken = [];
+  for (const rawTarget of extractMarkdownLinkTargets(rawLine)) {
+    const parsed = extractRelativeTarget(rawTarget);
+    if (!parsed) continue;
+    const resolvedTarget = path.resolve(sourceDir, parsed.pathPart);
+    if (!fs.existsSync(resolvedTarget)) {
+      broken.push(`${relPath}:${lineNo} contains broken relative link "${parsed.raw}"`);
+    }
+  }
+  return broken;
+}
+
 function validateMarkdownFile(filePath) {
   const relPath = path.relative(repoRoot, filePath).replaceAll('\\', '/');
+  const sourceDir = path.dirname(filePath);
   const content = fs.readFileSync(filePath, 'utf8');
   const lines = content.split(/\r?\n/);
   const errors = [];
 
   let inFrontmatter = false;
-  let inCodeBlock = false;
+  let activeFence = null;
 
   for (let i = 0; i < lines.length; i += 1) {
     const rawLine = lines[i];
@@ -83,13 +148,23 @@ function validateMarkdownFile(filePath) {
       continue;
     }
 
-    if (rawLine.trim().startsWith('```')) {
-      inCodeBlock = !inCodeBlock;
+    const fenceMatch = /^\s*(```+|~~~+)/.exec(rawLine);
+    if (fenceMatch) {
+      const fence = fenceMatch[1];
+      if (!activeFence) {
+        activeFence = fence;
+        continue;
+      }
+      if (fence[0] === activeFence[0] && fence.length >= activeFence.length) {
+        activeFence = null;
+        continue;
+      }
+    }
+    if (activeFence) {
       continue;
     }
-    if (inCodeBlock) {
-      continue;
-    }
+
+    errors.push(...collectBrokenRelativeLinks(rawLine, sourceDir, relPath, lineNo));
 
     const stripped = stripInlineCodeAndLinks(rawLine);
 
