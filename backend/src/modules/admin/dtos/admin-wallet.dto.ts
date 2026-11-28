@@ -6,13 +6,13 @@ const depositAdminWalletFields = {
   amount: z
     .number()
     .min(10000)
-    .describe('Số tiền nạp vào ví hệ thống (VND, tối thiểu 10.000 VNĐ)')
+    .describe('Amount to deposit into the system wallet (VND, minimum 10,000 VND)')
     .meta({ example: 1000000 }),
   description: nullAsAbsent(
     z
       .string()
-      .describe('Ghi chú lý do nạp tiền vào ví hệ thống')
-      .meta({ example: 'Nạp quỹ dự phòng bảo chứng thanh toán' }),
+      .describe('Note explaining the system wallet deposit')
+      .meta({ example: 'Top up payment escrow reserve fund' }),
   ),
 };
 
@@ -21,26 +21,26 @@ export const DepositAdminWalletSchema = z.object(depositAdminWalletFields).stric
 export type DepositAdminWalletInput = z.infer<typeof DepositAdminWalletSchema>;
 
 const queryAdminWalletTransactionsFields = {
-  page: z.coerce.number().int().min(1).describe('Số trang').meta({ example: 1 }).default(1),
+  page: z.coerce.number().int().min(1).describe('Page number').meta({ example: 1 }).default(1),
   limit: z.coerce
     .number()
     .int()
     .min(1)
-    .describe('Số bản ghi mỗi trang')
+    .describe('Records per page')
     .meta({ example: 10 })
     .default(10),
   type: nullAsAbsent(
     z
       .enum(WalletTransactionType)
-      .describe('Lọc theo loại giao dịch (PLATFORM_FEE, DEPOSIT, WITHDRAW...)'),
+      .describe('Filter by transaction type (PLATFORM_FEE, DEPOSIT, WITHDRAW...)'),
   ),
   startDate: nullAsAbsent(
-    z.string().describe('Từ ngày (YYYY-MM-DD)').meta({ example: '2026-10-01' }),
+    z.string().describe('Start date (YYYY-MM-DD)').meta({ example: '2026-10-01' }),
   ),
   endDate: nullAsAbsent(
-    z.string().describe('Đến ngày (YYYY-MM-DD)').meta({ example: '2026-10-31' }),
+    z.string().describe('End date (YYYY-MM-DD)').meta({ example: '2026-10-31' }),
   ),
-  search: nullAsAbsent(z.string().describe('Tìm kiếm theo mã đơn hàng hoặc mô tả')),
+  search: nullAsAbsent(z.string().describe('Search by order code or description')),
 };
 
 export const QueryAdminWalletTransactionsSchema = z
@@ -54,12 +54,12 @@ const queryPlatformUserWalletTransactionsFields = {
   status: nullAsAbsent(
     z
       .enum(WalletTransactionStatus)
-      .describe('Lọc theo trạng thái giao dịch (PENDING, SUCCESS, FAILED)'),
+      .describe('Filter by transaction status (PENDING, SUCCESS, FAILED)'),
   ),
   role: nullAsAbsent(
-    z.enum(Role).describe('Lọc theo vai trò người dùng (BUYER, SELLER, SUPPORT_STAFF, ADMIN)'),
+    z.enum(Role).describe('Filter by user role (BUYER, SELLER, SUPPORT_STAFF, ADMIN)'),
   ),
-  userId: nullAsAbsent(z.string().describe('Lọc theo ID người dùng cụ thể')),
+  userId: nullAsAbsent(z.string().describe('Filter by specific user ID')),
 };
 
 export const QueryPlatformUserWalletTransactionsSchema = z
@@ -71,26 +71,26 @@ export type QueryPlatformUserWalletTransactionsInput = z.infer<
 >;
 
 export const AdminWalletResponseSchema = z.object({
-  walletId: z.string().describe('ID của ví hệ thống').meta({ example: 'w-1234-5678' }),
-  userId: z.string().describe('ID tài khoản quản trị viên').meta({ example: 'u-admin-001' }),
-  balance: z.number().describe('Số dư khả dụng hiện tại (VND)').meta({ example: 5000000 }),
-  lockedBalance: z.number().describe('Số dư đóng băng / ký quỹ (VND)').meta({ example: 0 }),
-  currency: z.string().describe('Đơn vị tiền tệ').meta({ example: 'VND' }),
+  walletId: z.string().describe('System wallet ID').meta({ example: 'w-1234-5678' }),
+  userId: z.string().describe('Administrator user ID').meta({ example: 'u-admin-001' }),
+  balance: z.number().describe('Current available balance (VND)').meta({ example: 5000000 }),
+  lockedBalance: z.number().describe('Locked or escrow balance (VND)').meta({ example: 0 }),
+  currency: z.string().describe('Currency code').meta({ example: 'VND' }),
   totalPlatformFeeCollected: z
     .number()
-    .describe('Tổng doanh thu hoa hồng sàn (% phí sàn) đã thu')
+    .describe('Total platform commission fees collected')
     .meta({ example: 350000 }),
   totalDeposited: z
     .number()
-    .describe('Tổng số tiền Admin đã nạp vào ví hệ thống')
+    .describe('Total amount deposited into the system wallet by Admin')
     .meta({ example: 10000000 }),
   totalTransactions: z
     .number()
-    .describe('Tổng số lượng giao dịch phát sinh trên ví')
+    .describe('Total number of wallet transactions')
     .meta({ example: 42 }),
   updatedAt: z.iso
     .datetime()
-    .describe('Thời gian cập nhật gần nhất')
+    .describe('Last updated timestamp')
     .meta({ example: '2026-10-28T00:00:00.000Z' }),
 });
 
@@ -102,71 +102,63 @@ export type AdminWalletResponseDto = Omit<
 };
 
 export const AdminWalletOrderDetailsSchema = z.object({
-  orderId: z.string().describe('Mã đơn hàng liên kết').meta({ example: 'o-9876-5432' }),
-  buyerName: z
-    .string()
-    .optional()
-    .describe('Họ tên người mua (Buyer)')
-    .meta({ example: 'Nguyễn Văn A' }),
-  buyerEmail: z
-    .string()
-    .optional()
-    .describe('Email người mua')
-    .meta({ example: 'buyer@example.com' }),
+  orderId: z.string().describe('Linked order ID').meta({ example: 'o-9876-5432' }),
+  buyerName: z.string().optional().describe('Buyer full name').meta({ example: 'Jane Doe' }),
+  buyerEmail: z.string().optional().describe('Buyer email').meta({ example: 'buyer@example.com' }),
   shopName: z
     .string()
     .optional()
-    .describe('Tên người bán / cửa hàng (Seller/Shop)')
-    .meta({ example: 'Shop Thời Trang ABC' }),
+    .describe('Seller or shop name')
+    .meta({ example: 'ABC Fashion Shop' }),
   sellerEmail: z
     .string()
     .optional()
-    .describe('Email người bán')
+    .describe('Seller email')
     .meta({ example: 'seller@example.com' }),
-  subtotal: z.number().describe('Tiền hàng gốc (chưa gồm phí ship)').meta({ example: 100000 }),
-  shippingFee: z.number().describe('Cước vận chuyển GHN').meta({ example: 30000 }),
-  totalAmount: z.number().describe('Tổng tiền người mua đã thanh toán').meta({ example: 130000 }),
-  platformFee: z.number().describe('Phí sàn thu được từ đơn (7%)').meta({ example: 7000 }),
-  sellerPayout: z
+  subtotal: z.number().describe('Item subtotal before shipping').meta({ example: 100000 }),
+  shippingFee: z.number().describe('GHN shipping fee').meta({ example: 30000 }),
+  totalAmount: z.number().describe('Total amount paid by buyer').meta({ example: 130000 }),
+  platformFee: z
     .number()
-    .describe('Số tiền thực tế giải ngân cho người bán')
-    .meta({ example: 93000 }),
+    .describe('Platform fee collected from order (7%)')
+    .meta({ example: 7000 }),
+  sellerPayout: z.number().describe('Net amount disbursed to seller').meta({ example: 93000 }),
   waybillCode: z
     .string()
     .optional()
-    .describe('Mã vận đơn giao hàng')
+    .describe('Shipment waybill code')
     .meta({ example: 'GHN123456789VN' }),
-  carrier: z.string().optional().describe('Đơn vị vận chuyển').meta({ example: 'GHN' }),
+  carrier: z.string().optional().describe('Shipping carrier').meta({ example: 'GHN' }),
 });
 
 export type AdminWalletOrderDetailsDto = z.infer<typeof AdminWalletOrderDetailsSchema>;
 
 export const AdminWalletTransactionItemSchema = z.object({
-  id: z.string().describe('Mã giao dịch ví').meta({ example: 'tx-112233' }),
-  walletId: z.string().describe('Mã ví nhận / trừ tiền').meta({ example: 'w-1234-5678' }),
-  amount: z.number().describe('Số tiền biến động (VND)').meta({ example: 130000 }),
+  id: z.string().describe('Wallet transaction ID').meta({ example: 'tx-112233' }),
+  walletId: z.string().describe('Target wallet ID').meta({ example: 'w-1234-5678' }),
+  amount: z.number().describe('Transaction amount (VND)').meta({ example: 130000 }),
   type: z
     .enum(WalletTransactionType)
-    .describe('Loại biến động số dư')
+    .describe('Balance change type')
     .meta({ example: 'ESCROW_LOCK' }),
-  status: z.string().describe('Trạng thái giao dịch').meta({ example: 'SUCCESS' }),
+  status: z.string().describe('Transaction status').meta({ example: 'SUCCESS' }),
   referenceId: z
     .string()
     .optional()
-    .describe('Mã đối chiếu tham chiếu (Order ID)')
+    .describe('Reference Order ID')
     .meta({ example: 'o-9876-5432' }),
   description: z
     .string()
     .optional()
-    .describe('Nội dung mô tả')
-    .meta({ example: 'Tạm giữ thanh toán đơn hàng #o-9876-54' }),
+    .describe('Transaction description')
+    .meta({ example: 'Escrow hold for order #o-9876-54' }),
   createdAt: z.iso
     .datetime()
-    .describe('Thời điểm tạo giao dịch')
+    .describe('Transaction creation timestamp')
     .meta({ example: '2026-10-28T00:00:00.000Z' }),
   orderDetails: AdminWalletOrderDetailsSchema.nullable()
     .optional()
-    .describe('Thông tin chi tiết về người mua, shop và dòng tiền đơn hàng'),
+    .describe('Detailed buyer, shop, and order cashflow metadata'),
 });
 
 export type AdminWalletTransactionItemDto = Omit<
@@ -177,11 +169,11 @@ export type AdminWalletTransactionItemDto = Omit<
 };
 
 export const AdminWalletTransactionsResponseSchema = z.object({
-  total: z.number().describe('Tổng số giao dịch thỏa mãn điều kiện').meta({ example: 100 }),
-  page: z.number().describe('Trang hiện tại').meta({ example: 1 }),
-  limit: z.number().describe('Số bản ghi trên mỗi trang').meta({ example: 10 }),
-  totalPages: z.number().describe('Tổng số trang').meta({ example: 10 }),
-  items: z.array(AdminWalletTransactionItemSchema).describe('Danh sách các giao dịch'),
+  total: z.number().describe('Total matching transactions').meta({ example: 100 }),
+  page: z.number().describe('Current page').meta({ example: 1 }),
+  limit: z.number().describe('Records per page').meta({ example: 10 }),
+  totalPages: z.number().describe('Total pages').meta({ example: 10 }),
+  items: z.array(AdminWalletTransactionItemSchema).describe('List of transactions'),
 });
 
 export type AdminWalletTransactionsResponseDto = {

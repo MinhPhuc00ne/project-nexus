@@ -7,19 +7,19 @@ const createCategoryFields = {
     .trim()
     .min(1)
     .max(100)
-    .describe('Tên danh mục hàng hóa')
-    .meta({ example: 'Laptop & Máy tính xách tay' }),
+    .describe('Product category name')
+    .meta({ example: 'Laptops & Notebooks' }),
   slug: nullAsAbsent(
     z
       .string()
-      .describe('Đường dẫn định danh slug (nếu để trống hệ thống sẽ tự sinh từ tên)')
-      .meta({ example: 'laptop-may-tinh-xach-tay' }),
+      .describe('URL slug (auto-generated from name if omitted)')
+      .meta({ example: 'laptops-notebooks' }),
   ),
   parentId: nullAsAbsent(
     z
       .string()
       .nullable()
-      .describe('ID của danh mục cha (để trống nếu là danh mục gốc cấp 1)')
+      .describe('Parent category ID (omit for root level 1 category)')
       .meta({ example: 'cat-parent-uuid-123' }),
   ),
 };

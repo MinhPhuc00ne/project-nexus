@@ -8,7 +8,7 @@ const confirmChangePasswordOtpFields = {
     .min(6)
     .max(6)
     .regex(/^[0-9]{6}$/)
-    .describe('Mã xác thực OTP gồm đúng 6 chữ số gửi qua Gmail')
+    .describe('6-digit OTP verification code sent to email')
     .meta({ example: '123456' }),
   newPassword: z
     .string()
@@ -16,7 +16,7 @@ const confirmChangePasswordOtpFields = {
     .min(1)
     .min(8)
     .regex(/^(?=.*[A-Z])(?=.*[^a-zA-Z0-9\s]).+$/)
-    .describe('Mật khẩu mới (tối thiểu 8 ký tự, có ít nhất 1 chữ hoa và 1 ký tự đặc biệt)')
+    .describe('New password (min 8 chars, at least 1 uppercase and 1 special character)')
     .meta({ example: 'NewSecurePassword@2026' }),
 };
 

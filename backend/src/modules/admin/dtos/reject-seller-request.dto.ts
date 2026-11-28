@@ -5,8 +5,8 @@ const rejectSellerRequestFields = {
     .string()
     .trim()
     .min(1)
-    .describe('Lý do từ chối yêu cầu nâng cấp')
-    .meta({ example: 'Thông tin giấy tờ CCCD/CMND không khớp với tên đăng ký tài khoản.' }),
+    .describe('Reason for rejecting the seller upgrade request')
+    .meta({ example: 'Identity document name does not match the registered account name.' }),
 };
 
 export const RejectSellerRequestSchema = z.object(rejectSellerRequestFields).strict();

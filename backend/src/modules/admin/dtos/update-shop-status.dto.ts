@@ -4,16 +4,14 @@ import { nullAsAbsent } from '../../../core/validation/query-schemas';
 const updateShopStatusFields = {
   isSellerActive: z
     .boolean()
-    .describe(
-      'Trạng thái hoạt động của gian hàng (true: mở bán bình thường, false: đình chỉ/đóng băng gian hàng)',
-    )
+    .describe('Shop operating state (true: active, false: suspended/frozen)')
     .meta({ example: false }),
   reason: nullAsAbsent(
     z
       .string()
       .max(500)
-      .describe('Lý do đình chỉ hoặc mở lại gian hàng gửi đến người bán')
-      .meta({ example: 'Gian hàng bị tạm dừng do nhiều lần đăng sản phẩm vi phạm bản quyền' }),
+      .describe('Reason for suspending or reopening the shop (sent to Seller)')
+      .meta({ example: 'Shop suspended due to repeated copyright-infringing listings' }),
   ),
 };
 

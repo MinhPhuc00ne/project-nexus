@@ -10,7 +10,7 @@ const staffAuctionNoteFields = {
       .string()
       .max(2000)
       .describe('Support staff inspection or live room support note')
-      .meta({ example: 'Đã kiểm tra sơ bộ giấy kiểm định GIA và đối chiếu ảnh thực tế.' }),
+      .meta({ example: 'Verified GIA appraisal certificate against actual lot photos.' }),
   ),
 };
 

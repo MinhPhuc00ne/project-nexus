@@ -41,22 +41,22 @@ const updateBuyerProfileFields = {
     z.string().describe('Avatar URL').meta({ example: 'https://example.com/avatar.png' }),
   ),
   bankName: nullAsAbsent(
-    z.string().describe('Tên ngân hàng thụ hưởng').meta({ example: 'Vietcombank' }),
+    z.string().describe('Beneficiary bank name').meta({ example: 'Vietcombank' }),
   ),
   accountNumber: nullAsAbsent(
-    z.string().describe('Số tài khoản ngân hàng thụ hưởng').meta({ example: '1029384756' }),
+    z.string().describe('Beneficiary bank account number').meta({ example: '1029384756' }),
   ),
   accountHolderName: nullAsAbsent(
     z
       .string()
-      .describe('Họ và tên chủ tài khoản ngân hàng (viết hoa)')
+      .describe('Bank account holder full name (uppercase)')
       .meta({ example: 'NGUYEN VAN A' }),
   ),
   password: nullAsAbsent(
-    z.string().describe('Mật khẩu tài khoản để xác minh trực tiếp khi Seller cập nhật hồ sơ'),
+    z.string().describe('Account password for direct seller profile verification'),
   ),
   verificationToken: nullAsAbsent(
-    z.string().describe('Mã token xác minh đăng nhập gần đây của Seller'),
+    z.string().describe('Recent reauthentication token for seller profile update'),
   ),
 };
 
@@ -69,37 +69,35 @@ const createAddressFields = {
     .string()
     .trim()
     .min(1)
-    .describe('Họ tên người nhận hàng')
-    .meta({ example: 'Đinh Tú Liên' }),
+    .describe('Recipient full name')
+    .meta({ example: 'Jane Doe' }),
   phone: z
     .string()
     .trim()
     .min(1)
-    .describe('Số điện thoại người nhận')
+    .describe('Recipient phone number')
     .meta({ example: '0909123456' }),
   street: z
     .string()
     .trim()
     .min(1)
-    .describe('Địa chỉ cụ thể')
-    .meta({ example: 'Tòa nhà Landmark 81, 720A Điện Biên Phủ' }),
-  ward: nullAsAbsent(z.string().meta({ example: 'Phường 22' })),
-  district: nullAsAbsent(z.string().meta({ example: 'Quận Bình Thạnh' })),
-  city: z.string().trim().min(1).meta({ example: 'TP. Hồ Chí Minh' }),
-  latitude: nullAsAbsent(
-    z.coerce.number().describe('Vĩ độ GPS (Latitude) từ bản đồ').meta({ example: 10.795 }),
-  ),
+    .describe('Street address')
+    .meta({ example: 'Landmark 81, 720A Dien Bien Phu' }),
+  ward: nullAsAbsent(z.string().meta({ example: 'Ward 22' })),
+  district: nullAsAbsent(z.string().meta({ example: 'Binh Thanh District' })),
+  city: z.string().trim().min(1).meta({ example: 'Ho Chi Minh City' }),
+  latitude: nullAsAbsent(z.coerce.number().describe('Map GPS latitude').meta({ example: 10.795 })),
   longitude: nullAsAbsent(
-    z.coerce.number().describe('Kinh độ GPS (Longitude) từ bản đồ').meta({ example: 106.721 }),
+    z.coerce.number().describe('Map GPS longitude').meta({ example: 106.721 }),
   ),
   formattedAddress: nullAsAbsent(
     z
       .string()
-      .describe('Địa chỉ đầy đủ định dạng chuẩn bản đồ')
-      .meta({ example: 'Landmark 81, 720A Điện Biên Phủ, Phường 22, Bình Thạnh, TP. Hồ Chí Minh' }),
+      .describe('Full standardized map address')
+      .meta({ example: 'Landmark 81, 720A Dien Bien Phu, Ward 22, Binh Thanh, Ho Chi Minh City' }),
   ),
   placeId: nullAsAbsent(
-    z.string().describe('Google / OSM Place ID').meta({ example: 'ChIJw8qV...' }),
+    z.string().describe('Google or OSM Place ID').meta({ example: 'ChIJw8qV...' }),
   ),
   isDefault: z.boolean().meta({ example: true }).default(false),
 };
@@ -110,14 +108,14 @@ export type CreateAddressInput = z.infer<typeof CreateAddressSchema>;
 const updateAddressFields = {
   recipientName: nullAsAbsent(z.string().meta({ example: 'Nguyen Van A' })),
   phone: nullAsAbsent(z.string().meta({ example: '0909123456' })),
-  street: nullAsAbsent(z.string().meta({ example: 'Tòa nhà Landmark 81, 720A Điện Biên Phủ' })),
-  ward: nullAsAbsent(z.string().meta({ example: 'Phường 22' })),
-  district: nullAsAbsent(z.string().meta({ example: 'Quận Bình Thạnh' })),
-  city: nullAsAbsent(z.string().meta({ example: 'TP. Hồ Chí Minh' })),
+  street: nullAsAbsent(z.string().meta({ example: 'Landmark 81, 720A Dien Bien Phu' })),
+  ward: nullAsAbsent(z.string().meta({ example: 'Ward 22' })),
+  district: nullAsAbsent(z.string().meta({ example: 'Binh Thanh District' })),
+  city: nullAsAbsent(z.string().meta({ example: 'Ho Chi Minh City' })),
   latitude: nullAsAbsent(z.coerce.number().meta({ example: 10.795 })),
   longitude: nullAsAbsent(z.coerce.number().meta({ example: 106.721 })),
   formattedAddress: nullAsAbsent(
-    z.string().meta({ example: 'Landmark 81, 720A Điện Biên Phủ, Bình Thạnh' }),
+    z.string().meta({ example: 'Landmark 81, 720A Dien Bien Phu, Binh Thanh' }),
   ),
   placeId: nullAsAbsent(z.string().meta({ example: 'ChIJw8qV...' })),
   isDefault: nullAsAbsent(z.boolean().meta({ example: false })),

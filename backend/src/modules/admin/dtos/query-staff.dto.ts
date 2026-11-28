@@ -3,10 +3,10 @@ import { nullAsAbsent } from '../../../core/validation/query-schemas';
 
 const queryStaffFields = {
   search: nullAsAbsent(
-    z.string().describe('Từ khóa tìm kiếm theo họ tên hoặc email').meta({ example: 'staff' }),
+    z.string().describe('Search keyword by full name or email').meta({ example: 'staff' }),
   ),
-  page: z.coerce.number().int().min(1).describe('Trang hiện tại (bắt đầu từ 1)').default(1),
-  limit: z.coerce.number().int().min(1).describe('Số bản ghi trên mỗi trang').default(10),
+  page: z.coerce.number().int().min(1).describe('Current page (1-based)').default(1),
+  limit: z.coerce.number().int().min(1).describe('Records per page').default(10),
 };
 
 export const QueryStaffSchema = z.object(queryStaffFields).strict();

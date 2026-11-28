@@ -7,47 +7,38 @@ const createProductFields = {
     z
       .array(ProductOptionSchema)
       .max(6)
-      .describe('Màu, size... dùng chung giá và tồn kho của sản phẩm'),
+      .describe('Product options (e.g., color, size) sharing price and stock'),
   ),
-  title: z.string().trim().min(1).meta({ example: 'Đồng Hồ Audemars Piguet Skeleton' }),
-  description: z.string().trim().min(1).meta({ example: 'Phiên bản lộ cơ cao cấp chuẩn Thụy Sĩ' }),
-  basePrice: z.coerce
-    .number()
-    .min(1000)
-    .describe('Giá bán cơ sở (VNĐ)')
-    .meta({ example: 125000000 }),
+  title: z.string().trim().min(1).meta({ example: 'Audemars Piguet Skeleton Watch' }),
+  description: z.string().trim().min(1).meta({ example: 'Swiss luxury skeleton mechanical watch' }),
+  basePrice: z.coerce.number().min(1000).describe('Base price (VND)').meta({ example: 125000000 }),
   categoryId: z
     .string()
     .trim()
     .min(1)
-    .describe('ID danh mục sản phẩm')
+    .describe('Product category ID')
     .meta({ example: 'uuid-category-id' }),
-  quantity: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .describe('Số lượng tồn kho ban đầu')
-    .meta({ example: 4 }),
+  quantity: z.coerce.number().int().min(1).describe('Initial stock quantity').meta({ example: 4 }),
   images: z
     .array(z.string())
     .min(1)
     .max(5)
-    .describe('Danh sách URL ảnh sản phẩm (tối đa 5 ảnh)')
+    .describe('Product image URLs (max 5)')
     .meta({ example: ['https://res.cloudinary.com/demo/image/upload/v1/watch.jpg'] }),
   weightGrams: nullAsAbsent(
-    z.coerce.number().int().min(1).describe('Khối lượng (grams)').meta({ example: 500 }),
+    z.coerce.number().int().min(1).describe('Weight (grams)').meta({ example: 500 }),
   ),
   lengthCm: nullAsAbsent(
-    z.coerce.number().int().min(1).describe('Chiều dài (cm)').meta({ example: 15 }),
+    z.coerce.number().int().min(1).describe('Length (cm)').meta({ example: 15 }),
   ),
   widthCm: nullAsAbsent(
-    z.coerce.number().int().min(1).describe('Chiều rộng (cm)').meta({ example: 10 }),
+    z.coerce.number().int().min(1).describe('Width (cm)').meta({ example: 10 }),
   ),
   heightCm: nullAsAbsent(
-    z.coerce.number().int().min(1).describe('Chiều cao (cm)').meta({ example: 8 }),
+    z.coerce.number().int().min(1).describe('Height (cm)').meta({ example: 8 }),
   ),
   threeModelKey: nullAsAbsent(
-    z.string().describe('Key model 3D (nếu có)').meta({ example: 'watch' }),
+    z.string().describe('3D model key (optional)').meta({ example: 'watch' }),
   ),
 };
 

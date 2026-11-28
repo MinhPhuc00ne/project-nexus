@@ -5,14 +5,14 @@ import { ProductStatus } from '@prisma/client';
 const updateProductStatusFields = {
   status: z
     .enum(ProductStatus)
-    .describe('Trạng thái sản phẩm mong muốn (ACTIVE: hiển thị bán, INACTIVE: ẩn/khóa)')
+    .describe('Target product status (ACTIVE: visible for sale, INACTIVE: hidden/locked)')
     .meta({ example: ProductStatus.INACTIVE }),
   reason: nullAsAbsent(
     z
       .string()
       .max(500)
-      .describe('Lý do thay đổi trạng thái hoặc nhắc nhở dành cho Seller')
-      .meta({ example: 'Sản phẩm vi phạm tiêu chuẩn cộng đồng hoặc chứa nội dung nhạy cảm' }),
+      .describe('Reason for status change or notice to Seller')
+      .meta({ example: 'Product violates community guidelines or contains sensitive content' }),
   ),
 };
 

@@ -9,21 +9,15 @@ const querySellerReviewsFields = {
       .int()
       .min(1)
       .max(5)
-      .describe('Lọc theo số sao đánh giá (1 - 5)')
+      .describe('Filter by star rating (1 - 5)')
       .meta({ example: 5 }),
   ),
   sortBy: z
     .enum(['newest', 'oldest'])
-    .describe('Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)')
+    .describe('Sort reviews by newest or oldest')
     .default('newest'),
-  page: z.coerce.number().int().min(1).describe('Số trang (bắt đầu từ 1)').default(1),
-  limit: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(100)
-    .describe('Số lượng đánh giá mỗi trang (1 - 100)')
-    .default(10),
+  page: z.coerce.number().int().min(1).describe('Page number (1-based)').default(1),
+  limit: z.coerce.number().int().min(1).max(100).describe('Reviews per page (1 - 100)').default(10),
 };
 
 export const QuerySellerReviewsSchema = z.object(querySellerReviewsFields).strict();
@@ -31,14 +25,14 @@ export const QuerySellerReviewsSchema = z.object(querySellerReviewsFields).stric
 export type QuerySellerReviewsInput = z.infer<typeof QuerySellerReviewsSchema>;
 
 const querySellerDisputesFields = {
-  status: nullAsAbsent(z.enum(DisputeStatus).describe('Lọc theo trạng thái khiếu nại')),
-  page: z.coerce.number().int().min(1).describe('Số trang (bắt đầu từ 1)').default(1),
+  status: nullAsAbsent(z.enum(DisputeStatus).describe('Filter by dispute status')),
+  page: z.coerce.number().int().min(1).describe('Page number (1-based)').default(1),
   limit: z.coerce
     .number()
     .int()
     .min(1)
     .max(100)
-    .describe('Số lượng khiếu nại mỗi trang (1 - 100)')
+    .describe('Disputes per page (1 - 100)')
     .default(10),
 };
 
@@ -47,18 +41,13 @@ export const QuerySellerDisputesSchema = z.object(querySellerDisputesFields).str
 export type QuerySellerDisputesInput = z.infer<typeof QuerySellerDisputesSchema>;
 
 const respondDisputeFields = {
-  responseNotes: z
-    .string()
-    .trim()
-    .min(1)
-    .describe('Nội dung phản hồi / giải trình từ phía người bán')
-    .meta({
-      example: 'Tôi đã đóng gói đúng hàng và gửi qua GHN, bưu kiện có dán tem niêm phong đầy đủ.',
-    }),
+  responseNotes: z.string().trim().min(1).describe('Seller response and explanation notes').meta({
+    example: 'The item was packed accurately and handed over to GHN with an intact seal.',
+  }),
   evidenceUrls: nullAsAbsent(
     z
       .array(z.string())
-      .describe('Danh sách URL hình ảnh / video bằng chứng đối chất của người bán')
+      .describe('List of seller supporting image or video URLs')
       .meta({ example: ['https://storage.nexus.vn/evidence/pack_proof_1.jpg'] }),
   ),
 };

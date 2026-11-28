@@ -4,29 +4,26 @@ import { ChatContextType, ChatConversationType } from '@prisma/client';
 
 const createConversationFields = {
   participantId: nullAsAbsent(
-    z.string().describe('ID của người dùng muốn trò chuyện cùng (Seller, Buyer hoặc Staff)'),
+    z.string().describe('Target user ID to chat with (Seller, Buyer, or Staff)'),
   ),
   targetUserId: nullAsAbsent(
-    z.string().describe('ID người nhận (alias tương đương participantId, tương thích format cũ)'),
+    z.string().describe('Target user ID (legacy alias for participantId)'),
   ),
   type: z
     .enum(ChatConversationType)
-    .describe('Loại cuộc trò chuyện: BUYER_SELLER, STAFF_SELLER, STAFF_BUYER')
+    .describe('Conversation type: BUYER_SELLER, STAFF_SELLER, STAFF_BUYER')
     .default(ChatConversationType.BUYER_SELLER),
-  title: nullAsAbsent(z.string().max(200).describe('Tiêu đề cuộc trò chuyện / chủ đề trao đổi')),
+  title: nullAsAbsent(z.string().max(200).describe('Conversation title or topic')),
   contextId: nullAsAbsent(
-    z.string().describe('ID ngữ cảnh liên quan (mã đơn hàng, mã sản phẩm, mã khiếu nại...)'),
+    z.string().describe('Related context ID (order ID, product ID, dispute ID...)'),
   ),
   contextType: nullAsAbsent(
     z
       .enum(ChatContextType)
-      .describe('Loại ngữ cảnh: GENERAL, ORDER, PRODUCT, AUCTION, DISPUTE, TICKET'),
+      .describe('Context type: GENERAL, ORDER, PRODUCT, AUCTION, DISPUTE, TICKET'),
   ),
   initialMessage: nullAsAbsent(
-    z
-      .string()
-      .max(1000)
-      .describe('Nội dung tin nhắn đầu tiên gửi kèm khi khởi tạo cuộc trò chuyện'),
+    z.string().max(1000).describe('Initial message sent when creating the conversation'),
   ),
 };
 

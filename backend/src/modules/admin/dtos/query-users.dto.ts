@@ -18,23 +18,23 @@ const queryUsersFields = {
   search: nullAsAbsent(
     z
       .string()
-      .describe('Từ khóa tìm kiếm theo tên, email, sđt hoặc email công tác')
-      .meta({ example: 'nguyen van a' }),
+      .describe('Search keyword by name, email, phone, or staff email')
+      .meta({ example: 'jane doe' }),
   ),
   role: nullAsAbsent(
     z
       .enum(AdminTargetRole)
       .describe(
-        'Lọc theo vai trò: BUYER, SELLER, SUPPORT_STAFF, ADMIN (Mặc định không truyền sẽ lấy tất cả vai trò, tự động loại trừ GUEST)',
+        'Filter by role: BUYER, SELLER, SUPPORT_STAFF, ADMIN (returns all non-GUEST roles when omitted)',
       )
       .meta({ example: AdminTargetRole.BUYER }),
   ),
   status: z
     .enum(UserStatusFilter)
-    .describe('Lọc theo trạng thái tài khoản: ALL, ACTIVE, LOCKED')
+    .describe('Filter by account status: ALL, ACTIVE, LOCKED')
     .default(UserStatusFilter.ALL),
-  page: z.coerce.number().int().min(1).describe('Trang hiện tại (bắt đầu từ 1)').default(1),
-  limit: z.coerce.number().int().min(1).describe('Số lượng người dùng trên mỗi trang').default(10),
+  page: z.coerce.number().int().min(1).describe('Current page (1-based)').default(1),
+  limit: z.coerce.number().int().min(1).describe('Users per page').default(10),
 };
 
 export const QueryUsersSchema = z.object(queryUsersFields).strict();

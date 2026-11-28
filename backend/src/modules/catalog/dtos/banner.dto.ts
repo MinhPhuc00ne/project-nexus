@@ -4,7 +4,7 @@ import { isAuctionTargetUrl } from '../../../core/navigation/auction-navigation'
 
 /** Validated banner content; creator attribution is always supplied by the server. */
 const bannerFields = {
-  title: z.string().trim().min(2).max(150).meta({ example: 'Ưu đãi tháng 11' }),
+  title: z.string().trim().min(2).max(150).meta({ example: 'November Promotion' }),
   imageUrl: httpUrl.meta({ example: 'https://example.com/banner.png' }),
   /**
    * Where the banner sends a visitor.

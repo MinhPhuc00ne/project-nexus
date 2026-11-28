@@ -13,7 +13,7 @@ const createAuctionComplaintFields = {
     .max(2000)
     .describe('Detailed complaint reason submitted to Admin')
     .meta({
-      example: 'Người mua thắng đấu giá nhưng chưa hoàn tất thanh toán sau thời hạn quy định.',
+      example: 'Winning buyer has not completed payment after the checkout deadline.',
     }),
   evidenceUrls: nullAsAbsent(
     z.array(z.string()).describe('Optional evidence image or document URLs'),
@@ -42,7 +42,7 @@ const resolveAuctionComplaintFields = {
       .string()
       .max(1000)
       .describe('Optional resolution note sent back to the requester')
-      .meta({ example: 'Đã tiếp nhận khiếu nại và chuyển sang bước xử lý quá hạn thanh toán.' }),
+      .meta({ example: 'Complaint accepted and escalated to payment default processing.' }),
   ),
 };
 

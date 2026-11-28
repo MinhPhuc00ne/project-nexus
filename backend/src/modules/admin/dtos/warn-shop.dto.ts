@@ -5,12 +5,12 @@ const warnShopFields = {
     .string()
     .trim()
     .min(1)
-    .describe('Lý do cảnh cáo gian hàng')
-    .meta({ example: 'Đăng tải thông tin sản phẩm sai lệch với thực tế' }),
+    .describe('Reason for warning the shop')
+    .meta({ example: 'Published misleading product specifications' }),
   penaltyPoints: z
     .number()
     .min(0)
-    .describe('Số điểm uy tín (reputationScore) bị trừ kèm theo (nếu có)')
+    .describe('Reputation score penalty points to deduct (if any)')
     .meta({ example: 10 })
     .default(0),
 };

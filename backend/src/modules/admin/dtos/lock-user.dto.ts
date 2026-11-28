@@ -6,8 +6,8 @@ const lockUserFields = {
     z
       .string()
       .max(500)
-      .describe('Lý do khóa hoặc mở khóa tài khoản người dùng')
-      .meta({ example: 'Vi phạm quy định giao dịch hoặc có hành vi gian lận' }),
+      .describe('Reason for locking or unlocking the user account')
+      .meta({ example: 'Policy violation or fraudulent transaction activity' }),
   ),
 };
 
@@ -19,15 +19,15 @@ const updateUserStatusFields = {
   isLocked: nullAsAbsent(
     z
       .boolean()
-      .describe('Trạng thái khóa tài khoản: true (khóa) hoặc false (mở khóa)')
+      .describe('Account lock state: true (locked) or false (unlocked)')
       .meta({ example: true }),
   ),
   reason: nullAsAbsent(
     z
       .string()
       .max(500)
-      .describe('Lý do thay đổi trạng thái tài khoản')
-      .meta({ example: 'Khóa tài khoản theo yêu cầu xử lý vi phạm' }),
+      .describe('Reason for updating account status')
+      .meta({ example: 'Account locked following violation review' }),
   ),
 };
 

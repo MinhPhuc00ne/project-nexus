@@ -20,7 +20,7 @@ export const MergeCartSchema = z
     items: z
       .array(MergeCartItemSchema)
       .max(100)
-      .describe('Danh sách các sản phẩm và số lượng lưu tạm từ LocalStorage của Guest'),
+      .describe('Guest cart items and quantities from browser localStorage'),
   })
   .strict();
 

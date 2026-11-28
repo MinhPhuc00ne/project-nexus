@@ -5,8 +5,8 @@ import { ProductOptionSchema } from './product-features.dto';
 
 const updateProductFields = {
   options: nullAsAbsent(z.array(ProductOptionSchema).max(6)),
-  title: nullAsAbsent(z.string().meta({ example: 'Đồng Hồ Audemars Piguet Skeleton New Edition' })),
-  description: nullAsAbsent(z.string().meta({ example: 'Mô tả cập nhật' })),
+  title: nullAsAbsent(z.string().meta({ example: 'Audemars Piguet Skeleton Watch New Edition' })),
+  description: nullAsAbsent(z.string().meta({ example: 'Updated product description' })),
   basePrice: nullAsAbsent(z.coerce.number().min(1000).meta({ example: 130000000 })),
   categoryId: nullAsAbsent(z.string().meta({ example: 'uuid-category-id' })),
   quantity: nullAsAbsent(
@@ -14,7 +14,7 @@ const updateProductFields = {
       .number()
       .int()
       .min(0)
-      .describe('Số lượng tồn kho cập nhật (thay đổi số lượng thực tế trong kho)')
+      .describe('Updated stock quantity (sets actual warehouse stock)')
       .meta({ example: 10 }),
   ),
   images: nullAsAbsent(
