@@ -14,7 +14,7 @@ const adminAwardActionFields = {
       .string()
       .max(1000)
       .describe('Optional administrative note describing the action')
-      .meta({ example: 'Người mua không hoàn tất thanh toán phần còn lại trong thời hạn 24 giờ.' }),
+      .meta({ example: 'Buyer failed to complete remaining payment within the 24-hour window.' }),
   ),
 };
 

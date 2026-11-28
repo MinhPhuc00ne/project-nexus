@@ -9,12 +9,12 @@ const addressFields = {
   /** A whole address nested as an object. */
   shippingAddress: ShippingAddressSchema.optional(),
 
-  recipientName: z.string().trim().min(1).optional().meta({ example: 'Nguyễn Văn A' }),
+  recipientName: z.string().trim().min(1).optional().meta({ example: 'Jane Doe' }),
   phone: z.string().trim().min(1).optional().meta({ example: '0987654321' }),
-  city: z.string().trim().min(1).optional().meta({ example: 'TP. Hồ Chí Minh' }),
-  district: z.string().optional().meta({ example: 'Quận 1' }),
-  ward: z.string().optional().meta({ example: 'Phường Bến Nghé' }),
-  street: z.string().trim().min(1).optional().meta({ example: '123 Lê Lợi' }),
+  city: z.string().trim().min(1).optional().meta({ example: 'Ho Chi Minh City' }),
+  district: z.string().optional().meta({ example: 'District 1' }),
+  ward: z.string().optional().meta({ example: 'Ben Nghe Ward' }),
+  street: z.string().trim().min(1).optional().meta({ example: '123 Le Loi' }),
   country: z.enum(['VN']).optional(),
 
   /** Kept for older clients; the fee comes from the carrier, not the request. */

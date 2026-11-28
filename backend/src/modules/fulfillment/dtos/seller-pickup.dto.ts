@@ -21,7 +21,7 @@ const verifySellerPickupFields = {
     .number()
     .int()
     .min(1)
-    .describe('Shop ID GHN đã tạo cho điểm lấy hàng này, thuộc tài khoản của sàn'),
+    .describe('GHN Shop ID created for this pickup point under the platform account'),
 };
 
 export const VerifySellerPickupSchema = z.object(verifySellerPickupFields).strict();

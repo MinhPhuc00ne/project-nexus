@@ -4,25 +4,20 @@ import { nullAsAbsent } from '../../../core/validation/query-schemas';
 const createStaffFields = {
   email: z
     .email()
-    .describe('Email cá nhân nhận tài khoản @staff.com và mật khẩu ngẫu nhiên để đăng nhập ngay')
-    .meta({ example: 'hotro.canhan@gmail.com' }),
-  fullName: z
-    .string()
-    .trim()
-    .min(1)
-    .describe('Họ và tên nhân viên')
-    .meta({ example: 'Nguyễn Văn Hỗ Trợ' }),
+    .describe('Personal email to receive the @staff.com account and generated password')
+    .meta({ example: 'support.personal@gmail.com' }),
+  fullName: z.string().trim().min(1).describe('Staff full name').meta({ example: 'Alex Support' }),
   phoneNumber: nullAsAbsent(
-    z.string().describe('Số điện thoại nhân viên').meta({ example: '0987654321' }),
+    z.string().describe('Staff phone number').meta({ example: '0987654321' }),
   ),
   department: nullAsAbsent(
-    z.string().describe('Phòng ban / Bộ phận phụ trách').meta({ example: 'Chăm sóc khách hàng' }),
+    z.string().describe('Assigned department').meta({ example: 'Customer Support' }),
   ),
   password: nullAsAbsent(
     z
       .string()
       .describe(
-        'Trường cũ được chấp nhận nhưng bỏ qua; backend luôn sinh mật khẩu ngẫu nhiên và gửi qua email cá nhân',
+        'Legacy field accepted but ignored; backend always generates a random password and sends it to the personal email',
       )
       .meta({ example: 'Staff@123456' }),
   ),

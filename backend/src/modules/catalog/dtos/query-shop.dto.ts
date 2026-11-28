@@ -5,30 +5,24 @@ const queryShopFields = {
   search: nullAsAbsent(
     z
       .string()
-      .describe('Từ khóa tìm kiếm theo tên gian hàng, mô tả hoặc tên chủ shop')
-      .meta({ example: 'Hoàng Gia' }),
+      .describe('Search keyword by shop name, description, or owner name')
+      .meta({ example: 'Royal' }),
   ),
   city: nullAsAbsent(
-    z.string().describe('Lọc shop theo tỉnh / thành phố').meta({ example: 'Hồ Chí Minh' }),
+    z.string().describe('Filter shops by province or city').meta({ example: 'Ho Chi Minh' }),
   ),
-  page: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .describe('Số trang hiện tại')
-    .meta({ example: 1 })
-    .default(1),
+  page: z.coerce.number().int().min(1).describe('Current page').meta({ example: 1 }).default(1),
   limit: z.coerce
     .number()
     .int()
     .min(1)
-    .describe('Số lượng kết quả mỗi trang')
+    .describe('Results per page')
     .meta({ example: 12 })
     .default(12),
   sortBy: nullAsAbsent(
     z
       .enum(['reputation', 'newest', 'products_count'])
-      .describe('Tiêu chí sắp xếp kết quả')
+      .describe('Sort order')
       .meta({ example: 'reputation' }),
   ),
 };

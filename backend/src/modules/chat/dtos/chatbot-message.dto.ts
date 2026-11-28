@@ -17,13 +17,13 @@ const guestChatbotMessageFields = {
     .trim()
     .min(1)
     .max(2000)
-    .meta({ example: 'Tôi muốn hủy đơn hàng đã được shop xác nhận' }),
+    .meta({ example: 'I want to cancel an order already confirmed by the shop' }),
   history: nullAsAbsent(
     z
       .array(ChatbotHistoryMessageSchema)
       .max(12)
       .describe(
-        'Tối đa 12 tin gần nhất, không gồm tin hiện tại; không gửi dữ liệu đơn hàng hoặc bí mật.',
+        'Up to 12 recent messages excluding the current one; never include order data or secrets.',
       ),
   ),
 };
@@ -38,13 +38,13 @@ const chatbotMessageFields = {
     z
       .enum(['PURCHASES', 'SALES', 'CART'])
       .describe(
-        'PURCHASES: lịch sử đặt hàng cá nhân cho mọi role; SALES: đơn bán; CART: giỏ cá nhân. Có thể nhận diện từ message nếu bỏ trống.',
+        'PURCHASES: personal order history for any role; SALES: seller orders; CART: personal cart. Inferred from message if omitted.',
       ),
   ),
   status: nullAsAbsent(z.enum(OrderStatus)),
   page: nullAsAbsent(z.coerce.number().int().min(1).max(100000)),
   limit: nullAsAbsent(z.coerce.number().int().min(1).max(20)),
-  orderId: nullAsAbsent(z.uuid().describe('Mã đơn NEXUS cần tra cứu; không phải mã vận đơn GHN')),
+  orderId: nullAsAbsent(z.uuid().describe('NEXUS order UUID to query (not a GHN waybill code)')),
 };
 
 export const ChatbotMessageSchema = z.object(chatbotMessageFields).strict();

@@ -6,7 +6,7 @@ const toggleSellerFields = {
     z
       .boolean()
       .describe(
-        'Chế độ người bán (true: bật chế độ Seller, false: chuyển về chế độ Buyer). Nếu không truyền trường này, hệ thống sẽ tự động đảo trạng thái hiện tại.',
+        'Seller mode flag (true: Seller mode, false: Buyer mode). Toggles current state if omitted.',
       )
       .meta({ example: true }),
   ),

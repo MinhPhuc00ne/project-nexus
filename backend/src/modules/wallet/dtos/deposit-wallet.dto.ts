@@ -5,16 +5,16 @@ export const DepositWalletSchema = z
     amount: z
       .number()
       .min(10000)
-      .describe('Số tiền nạp vào ví cá nhân (VND, tối thiểu 10.000 VNĐ)')
+      .describe('Top-up amount for personal wallet (VND, minimum 10,000 VND)')
       .meta({ example: 500000 }),
     description: z
       .string()
-      .describe('Ghi chú lý do nạp tiền')
-      .meta({ example: 'Nạp tiền vào ví NEXUS Pay để mua hàng' })
+      .describe('Optional deposit note')
+      .meta({ example: 'Top up NEXUS Pay wallet for shopping' })
       .optional(),
     provider: z
       .enum(['PAYOS', 'DIRECT'])
-      .describe('Phương thức nạp: PAYOS (tạo VietQR thanh toán) hoặc DIRECT (nạp thử nghiệm)')
+      .describe('Deposit method: PAYOS (VietQR link) or DIRECT (test top-up)')
       .default('PAYOS'),
   })
   .strict();

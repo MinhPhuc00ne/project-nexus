@@ -3,12 +3,12 @@ import { nullAsAbsent } from '../../../core/validation/query-schemas';
 
 const sendMessageFields = {
   conversationId: nullAsAbsent(
-    z.string().describe('ID của cuộc trò chuyện (tùy chọn khi gửi qua endpoint có param :id)'),
+    z.string().describe('Conversation ID (optional when passed via :id route parameter)'),
   ),
-  content: nullAsAbsent(z.string().max(4000).describe('Nội dung tin nhắn văn bản')),
-  body: nullAsAbsent(z.string().max(4000).describe('Nội dung văn bản (alias tương đương content)')),
+  content: nullAsAbsent(z.string().max(4000).describe('Message text content')),
+  body: nullAsAbsent(z.string().max(4000).describe('Message text content (alias for content)')),
   attachments: nullAsAbsent(
-    z.array(z.string()).describe('Danh sách URL hình ảnh / tài liệu đính kèm (URL từ Cloudinary)'),
+    z.array(z.string()).describe('List of attachment URLs (e.g., Cloudinary URLs)'),
   ),
 };
 

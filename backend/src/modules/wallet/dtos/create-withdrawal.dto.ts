@@ -5,29 +5,29 @@ export const CreateWithdrawalSchema = z
     amount: z.coerce
       .number()
       .min(1)
-      .describe('Số tiền muốn rút (VND, phải lớn hơn 0)')
+      .describe('Withdrawal amount (VND, must be greater than 0)')
       .meta({ example: 50000 }),
     bankName: z
       .string()
       .describe(
-        'Tên ngân hàng thụ hưởng (e.g., Vietcombank, MB Bank). Nếu để trống sẽ lấy từ Hồ sơ cá nhân.',
+        'Beneficiary bank name (e.g., Vietcombank, MB Bank). Defaults to user profile bank if omitted.',
       )
       .meta({ example: 'Vietcombank' })
       .optional(),
     accountNumber: z
       .string()
-      .describe('Số tài khoản ngân hàng thụ hưởng. Nếu để trống sẽ lấy từ Hồ sơ cá nhân.')
+      .describe('Beneficiary bank account number. Defaults to user profile if omitted.')
       .meta({ example: '1029384756' })
       .optional(),
     accountHolderName: z
       .string()
-      .describe('Họ và tên chủ tài khoản thụ hưởng. Nếu để trống sẽ lấy từ Hồ sơ cá nhân.')
+      .describe('Beneficiary account holder full name. Defaults to user profile if omitted.')
       .meta({ example: 'NGUYEN VAN A' })
       .optional(),
     note: z
       .string()
-      .describe('Ghi chú thêm của người bán')
-      .meta({ example: 'Rút tiền doanh thu bán hàng tháng 10' })
+      .describe('Optional seller withdrawal note')
+      .meta({ example: 'October sales payout withdrawal' })
       .optional(),
   })
   .strict();

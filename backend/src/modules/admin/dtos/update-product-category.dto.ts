@@ -6,15 +6,15 @@ const updateProductCategoryFields = {
     .string()
     .trim()
     .min(1)
-    .describe('ID danh mục mới muốn gắn cho sản phẩm')
+    .describe('Target category ID to assign to the product')
     .meta({ example: 'uuid-category-id' }),
   reason: nullAsAbsent(
     z
       .string()
       .trim()
       .max(500)
-      .describe('Ghi chú hoặc lý do gắn/đổi danh mục gửi tới Seller')
-      .meta({ example: 'Phân loại lại vào danh mục mới phù hợp hơn với sản phẩm' }),
+      .describe('Note or reason for reassigning the category (sent to Seller)')
+      .meta({ example: 'Reclassified to a more accurate product category' }),
   ),
 };
 

@@ -291,7 +291,7 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 256,
-                    "description": "Mã opaque dùng một lần nhận được từ redirect của Google callback",
+                    "description": "Single-use opaque code received from Google callback redirect",
                     "example": "q1w2e3r4t5y6u7i8o9p0asdfghjklzxcvbnm1234567890ABCDEF"
                   }
                 },
@@ -383,14 +383,14 @@
                     "type": "string",
                     "format": "email",
                     "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
-                    "description": "Email cần xác thực",
+                    "description": "Email address to verify",
                     "example": "user@nexus.com"
                   },
                   "code": {
                     "type": "string",
                     "minLength": 6,
                     "maxLength": 6,
-                    "description": "Mã OTP 6 chữ số gửi qua email",
+                    "description": "6-digit OTP code sent via email",
                     "example": "123456"
                   }
                 },
@@ -511,7 +511,7 @@
                   "refreshToken": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Refresh Token nhận được khi đăng nhập",
+                    "description": "Refresh token issued upon sign-in",
                     "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                   }
                 },
@@ -547,7 +547,7 @@
                   "refreshToken": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Refresh Token nhận được khi đăng nhập",
+                    "description": "Refresh token issued upon sign-in",
                     "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                   }
                 },
@@ -602,29 +602,29 @@
                 "properties": {
                   "password": {
                     "type": "string",
-                    "description": "Mật khẩu xác minh lại khi Seller cập nhật hồ sơ"
+                    "description": "Current password for seller profile verification"
                   },
                   "verificationToken": {
                     "type": "string",
-                    "description": "Token PROFILE_UPDATE do API reauthenticate cấp, hạn 5 phút"
+                    "description": "PROFILE_UPDATE token issued by reauthenticate (5-minute TTL)"
                   },
                   "fullName": {
                     "type": "string",
                     "minLength": 2,
                     "maxLength": 100,
-                    "description": "Họ và tên của người dùng (từ 2 đến 100 ký tự)",
+                    "description": "User full name (2 to 100 characters)",
                     "example": "Nguyen Van A"
                   },
                   "phoneNumber": {
                     "type": "string",
                     "pattern": "^\\+?[0-9]{9,15}$",
-                    "description": "Số điện thoại liên lạc (9 đến 15 chữ số)",
+                    "description": "Contact phone number (9 to 15 digits)",
                     "example": "0912345678"
                   },
                   "avatarUrl": {
                     "type": "string",
                     "pattern": "^https?:\\/\\/\\S+$",
-                    "description": "Đường dẫn ảnh đại diện hợp lệ (http hoặc https)",
+                    "description": "Valid avatar image URL (http or https)",
                     "example": "https://example.com/avatar.jpg"
                   }
                 },
@@ -668,7 +668,7 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 200,
-                    "description": "Mật khẩu hiện tại để xác minh hồ sơ"
+                    "description": "Current password for profile verification"
                   }
                 },
                 "required": ["password"],
@@ -730,14 +730,14 @@
                     "minLength": 6,
                     "maxLength": 6,
                     "pattern": "^[0-9]{6}$",
-                    "description": "Mã xác thực OTP gồm đúng 6 chữ số gửi qua Gmail",
+                    "description": "6-digit OTP verification code sent to email",
                     "example": "123456"
                   },
                   "newPassword": {
                     "type": "string",
                     "minLength": 8,
                     "pattern": "^(?=.*[A-Z])(?=.*[^a-zA-Z0-9\\s]).+$",
-                    "description": "Mật khẩu mới (tối thiểu 8 ký tự, có ít nhất 1 chữ hoa và 1 ký tự đặc biệt)",
+                    "description": "New password (min 8 chars, at least 1 uppercase and 1 special character)",
                     "example": "NewSecurePassword@2026"
                   }
                 },
@@ -807,31 +807,31 @@
                   "token": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Mã token kích hoạt tài khoản nhận qua email cá nhân",
+                    "description": "Account activation token received via personal email",
                     "example": "a1b2c3d4e5f6..."
                   },
                   "fullName": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Xác nhận Họ và tên nhân viên",
-                    "example": "Nguyễn Quang Huy"
+                    "description": "Confirm staff full name",
+                    "example": "Huy Nguyen"
                   },
                   "phoneNumber": {
                     "type": "string",
-                    "description": "Xác nhận Số điện thoại nhân viên",
+                    "description": "Confirm staff phone number",
                     "example": "0912345678"
                   },
                   "newPassword": {
                     "type": "string",
                     "minLength": 8,
                     "pattern": "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[^a-zA-Z0-9\\s]).+$",
-                    "description": "Mật khẩu mới (tối thiểu 8 ký tự, có ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt)",
+                    "description": "New password (min 8 chars, at least 1 uppercase, 1 lowercase, 1 digit, and 1 special character)",
                     "example": "Staff@123456"
                   },
                   "confirmPassword": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Xác nhận lại mật khẩu mới",
+                    "description": "Confirm new password",
                     "example": "Staff@123456"
                   }
                 },
@@ -928,7 +928,7 @@
                     "type": "string",
                     "format": "email",
                     "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
-                    "description": "Tài khoản công tác @staff.com; OTP gửi về email cá nhân đã liên kết",
+                    "description": "Assigned @staff.com account; OTP is sent to the linked personal email",
                     "example": "HuyNQ@staff.com"
                   }
                 },
@@ -963,20 +963,20 @@
                     "type": "string",
                     "format": "email",
                     "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
-                    "description": "Tài khoản công tác @staff.com dùng khi yêu cầu OTP",
+                    "description": "Assigned @staff.com account used when requesting OTP",
                     "example": "HuyNQ@staff.com"
                   },
                   "otp": {
                     "type": "string",
                     "minLength": 1,
                     "pattern": "^\\d{6}$",
-                    "description": "Mã OTP 6 số nhận qua email cá nhân",
+                    "description": "6-digit OTP received via personal email",
                     "example": "123456"
                   },
                   "newPassword": {
                     "type": "string",
                     "minLength": 6,
-                    "description": "Mật khẩu mới",
+                    "description": "New password",
                     "example": "NewStaffPassword123!"
                   }
                 },
@@ -1076,7 +1076,7 @@
                 "properties": {
                   "isSellerActive": {
                     "type": "boolean",
-                    "description": "Chế độ người bán (true: bật chế độ Seller, false: chuyển về chế độ Buyer). Nếu không truyền trường này, hệ thống sẽ tự động đảo trạng thái hiện tại.",
+                    "description": "Seller mode flag (true: Seller mode, false: Buyer mode). Toggles current state if omitted.",
                     "example": true
                   }
                 },
@@ -1117,82 +1117,82 @@
                   "file": {
                     "type": "string",
                     "format": "binary",
-                    "description": "File chứng minh (ảnh CCCD/CMND, giấy phép kinh doanh, hợp đồng thương nhân...)"
+                    "description": "Verification document file (national ID, business license, merchant contract)"
                   },
                   "storeName": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Tên gian hàng / thương hiệu của người bán",
-                    "example": "Cổ Vật Hoàng Gia Store"
+                    "description": "Seller shop or brand name",
+                    "example": "Royal Vintage Timepieces Store"
                   },
                   "storeDescription": {
                     "type": "string",
-                    "description": "Mô tả ngắn gọn về gian hàng và sản phẩm dự định kinh doanh",
-                    "example": "Chuyên cung cấp đồ cổ sưu tầm, kỷ vật lịch sử và các tác phẩm gốm sứ độc bản."
+                    "description": "Brief description of the shop and planned inventory",
+                    "example": "Curated vintage collectibles, mechanical watches, and rare editions."
                   },
                   "phone": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Số điện thoại liên hệ của cửa hàng / người bán",
+                    "description": "Shop or seller contact phone number",
                     "example": "0987654321"
                   },
                   "businessEmail": {
                     "type": "string",
                     "format": "email",
                     "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
-                    "description": "Email liên hệ công việc / cửa hàng (nếu khác email tài khoản)",
+                    "description": "Business contact email (if different from account email)",
                     "example": "shop@hoanggiavintage.com"
                   },
                   "identityCardNumber": {
                     "type": "string",
-                    "description": "Số CMND/CCCD hoặc Mã số định danh doanh nghiệp để xác minh danh tính",
+                    "description": "National ID or business registration number",
                     "example": "001202008888"
                   },
                   "attachmentUrl": {
                     "type": "string",
-                    "description": "Đường dẫn file hoặc tài liệu chứng minh đã tải lên (nếu không tải qua multipart form-data)",
+                    "description": "Pre-uploaded verification document URL (when not uploading via multipart/form-data)",
                     "example": "/uploads/seller-proofs/proof-1728123456789.png"
                   },
                   "street": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Địa chỉ cụ thể / số nhà, tên đường của cửa hàng hoặc kho lấy hàng",
-                    "example": "720A Điện Biên Phủ"
+                    "description": "Shop or pickup warehouse street address",
+                    "example": "720A Dien Bien Phu"
                   },
                   "ward": {
                     "type": "string",
-                    "description": "Phường / Xã của cửa hàng",
-                    "example": "Phường 22"
+                    "description": "Shop ward",
+                    "example": "Ward 22"
                   },
                   "district": {
                     "type": "string",
-                    "description": "Quận / Huyện của cửa hàng",
-                    "example": "Quận Bình Thạnh"
+                    "description": "Shop district",
+                    "example": "Binh Thanh District"
                   },
                   "city": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Tỉnh / Thành phố của cửa hàng",
-                    "example": "TP. Hồ Chí Minh"
+                    "description": "Shop province or city",
+                    "example": "Ho Chi Minh City"
                   },
                   "latitude": {
                     "type": "number",
-                    "description": "Vĩ độ GPS (Latitude) định vị gian hàng trên bản đồ",
+                    "description": "Map GPS latitude for shop location",
                     "example": 10.795
                   },
                   "longitude": {
                     "type": "number",
-                    "description": "Kinh độ GPS (Longitude) định vị gian hàng trên bản đồ",
+                    "description": "Map GPS longitude for shop location",
                     "example": 106.721
                   },
                   "formattedAddress": {
                     "type": "string",
-                    "description": "Địa chỉ chuẩn hóa đầy đủ từ bản đồ toàn cầu (Google Maps / OSM)",
-                    "example": "Landmark 81, 720A Điện Biên Phủ, Phường 22, Bình Thạnh, TP. Hồ Chí Minh"
+                    "description": "Full standardized address from geocoder (Google Maps or OSM)",
+                    "example": "Landmark 81, 720A Dien Bien Phu, Ward 22, Binh Thanh, Ho Chi Minh City"
                   },
                   "placeId": {
                     "type": "string",
-                    "description": "Place ID bản đồ",
+                    "description": "Map Place ID",
                     "example": "ChIJw8qV..."
                   }
                 },
@@ -1207,82 +1207,82 @@
                   "file": {
                     "type": "string",
                     "format": "binary",
-                    "description": "File chứng minh (ảnh CCCD/CMND, giấy phép kinh doanh, hợp đồng thương nhân...)"
+                    "description": "Verification document file (national ID, business license, merchant contract)"
                   },
                   "storeName": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Tên gian hàng / thương hiệu của người bán",
-                    "example": "Cổ Vật Hoàng Gia Store"
+                    "description": "Seller shop or brand name",
+                    "example": "Royal Vintage Timepieces Store"
                   },
                   "storeDescription": {
                     "type": "string",
-                    "description": "Mô tả ngắn gọn về gian hàng và sản phẩm dự định kinh doanh",
-                    "example": "Chuyên cung cấp đồ cổ sưu tầm, kỷ vật lịch sử và các tác phẩm gốm sứ độc bản."
+                    "description": "Brief description of the shop and planned inventory",
+                    "example": "Curated vintage collectibles, mechanical watches, and rare editions."
                   },
                   "phone": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Số điện thoại liên hệ của cửa hàng / người bán",
+                    "description": "Shop or seller contact phone number",
                     "example": "0987654321"
                   },
                   "businessEmail": {
                     "type": "string",
                     "format": "email",
                     "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
-                    "description": "Email liên hệ công việc / cửa hàng (nếu khác email tài khoản)",
+                    "description": "Business contact email (if different from account email)",
                     "example": "shop@hoanggiavintage.com"
                   },
                   "identityCardNumber": {
                     "type": "string",
-                    "description": "Số CMND/CCCD hoặc Mã số định danh doanh nghiệp để xác minh danh tính",
+                    "description": "National ID or business registration number",
                     "example": "001202008888"
                   },
                   "attachmentUrl": {
                     "type": "string",
-                    "description": "Đường dẫn file hoặc tài liệu chứng minh đã tải lên (nếu không tải qua multipart form-data)",
+                    "description": "Pre-uploaded verification document URL (when not uploading via multipart/form-data)",
                     "example": "/uploads/seller-proofs/proof-1728123456789.png"
                   },
                   "street": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Địa chỉ cụ thể / số nhà, tên đường của cửa hàng hoặc kho lấy hàng",
-                    "example": "720A Điện Biên Phủ"
+                    "description": "Shop or pickup warehouse street address",
+                    "example": "720A Dien Bien Phu"
                   },
                   "ward": {
                     "type": "string",
-                    "description": "Phường / Xã của cửa hàng",
-                    "example": "Phường 22"
+                    "description": "Shop ward",
+                    "example": "Ward 22"
                   },
                   "district": {
                     "type": "string",
-                    "description": "Quận / Huyện của cửa hàng",
-                    "example": "Quận Bình Thạnh"
+                    "description": "Shop district",
+                    "example": "Binh Thanh District"
                   },
                   "city": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Tỉnh / Thành phố của cửa hàng",
-                    "example": "TP. Hồ Chí Minh"
+                    "description": "Shop province or city",
+                    "example": "Ho Chi Minh City"
                   },
                   "latitude": {
                     "type": "number",
-                    "description": "Vĩ độ GPS (Latitude) định vị gian hàng trên bản đồ",
+                    "description": "Map GPS latitude for shop location",
                     "example": 10.795
                   },
                   "longitude": {
                     "type": "number",
-                    "description": "Kinh độ GPS (Longitude) định vị gian hàng trên bản đồ",
+                    "description": "Map GPS longitude for shop location",
                     "example": 106.721
                   },
                   "formattedAddress": {
                     "type": "string",
-                    "description": "Địa chỉ chuẩn hóa đầy đủ từ bản đồ toàn cầu (Google Maps / OSM)",
-                    "example": "Landmark 81, 720A Điện Biên Phủ, Phường 22, Bình Thạnh, TP. Hồ Chí Minh"
+                    "description": "Full standardized address from geocoder (Google Maps or OSM)",
+                    "example": "Landmark 81, 720A Dien Bien Phu, Ward 22, Binh Thanh, Ho Chi Minh City"
                   },
                   "placeId": {
                     "type": "string",
-                    "description": "Place ID bản đồ",
+                    "description": "Map Place ID",
                     "example": "ChIJw8qV..."
                   }
                 },
@@ -1496,26 +1496,26 @@
                   },
                   "bankName": {
                     "type": "string",
-                    "description": "Tên ngân hàng thụ hưởng",
+                    "description": "Beneficiary bank name",
                     "example": "Vietcombank"
                   },
                   "accountNumber": {
                     "type": "string",
-                    "description": "Số tài khoản ngân hàng thụ hưởng",
+                    "description": "Beneficiary bank account number",
                     "example": "1029384756"
                   },
                   "accountHolderName": {
                     "type": "string",
-                    "description": "Họ và tên chủ tài khoản ngân hàng (viết hoa)",
+                    "description": "Bank account holder full name (uppercase)",
                     "example": "NGUYEN VAN A"
                   },
                   "password": {
                     "type": "string",
-                    "description": "Mật khẩu tài khoản để xác minh trực tiếp khi Seller cập nhật hồ sơ"
+                    "description": "Account password for direct seller profile verification"
                   },
                   "verificationToken": {
                     "type": "string",
-                    "description": "Mã token xác minh đăng nhập gần đây của Seller"
+                    "description": "Recent reauthentication token for seller profile update"
                   }
                 },
                 "additionalProperties": false
@@ -1655,52 +1655,52 @@
                   "recipientName": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Họ tên người nhận hàng",
-                    "example": "Đinh Tú Liên"
+                    "description": "Recipient full name",
+                    "example": "Jane Doe"
                   },
                   "phone": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Số điện thoại người nhận",
+                    "description": "Recipient phone number",
                     "example": "0909123456"
                   },
                   "street": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Địa chỉ cụ thể",
-                    "example": "Tòa nhà Landmark 81, 720A Điện Biên Phủ"
+                    "description": "Street address",
+                    "example": "Landmark 81, 720A Dien Bien Phu"
                   },
                   "ward": {
                     "type": "string",
-                    "example": "Phường 22"
+                    "example": "Ward 22"
                   },
                   "district": {
                     "type": "string",
-                    "example": "Quận Bình Thạnh"
+                    "example": "Binh Thanh District"
                   },
                   "city": {
                     "type": "string",
                     "minLength": 1,
-                    "example": "TP. Hồ Chí Minh"
+                    "example": "Ho Chi Minh City"
                   },
                   "latitude": {
                     "type": "number",
-                    "description": "Vĩ độ GPS (Latitude) từ bản đồ",
+                    "description": "Map GPS latitude",
                     "example": 10.795
                   },
                   "longitude": {
                     "type": "number",
-                    "description": "Kinh độ GPS (Longitude) từ bản đồ",
+                    "description": "Map GPS longitude",
                     "example": 106.721
                   },
                   "formattedAddress": {
                     "type": "string",
-                    "description": "Địa chỉ đầy đủ định dạng chuẩn bản đồ",
-                    "example": "Landmark 81, 720A Điện Biên Phủ, Phường 22, Bình Thạnh, TP. Hồ Chí Minh"
+                    "description": "Full standardized map address",
+                    "example": "Landmark 81, 720A Dien Bien Phu, Ward 22, Binh Thanh, Ho Chi Minh City"
                   },
                   "placeId": {
                     "type": "string",
-                    "description": "Google / OSM Place ID",
+                    "description": "Google or OSM Place ID",
                     "example": "ChIJw8qV..."
                   },
                   "isDefault": {
@@ -1761,19 +1761,19 @@
                   },
                   "street": {
                     "type": "string",
-                    "example": "Tòa nhà Landmark 81, 720A Điện Biên Phủ"
+                    "example": "Landmark 81, 720A Dien Bien Phu"
                   },
                   "ward": {
                     "type": "string",
-                    "example": "Phường 22"
+                    "example": "Ward 22"
                   },
                   "district": {
                     "type": "string",
-                    "example": "Quận Bình Thạnh"
+                    "example": "Binh Thanh District"
                   },
                   "city": {
                     "type": "string",
-                    "example": "TP. Hồ Chí Minh"
+                    "example": "Ho Chi Minh City"
                   },
                   "latitude": {
                     "type": "number",
@@ -1785,7 +1785,7 @@
                   },
                   "formattedAddress": {
                     "type": "string",
-                    "example": "Landmark 81, 720A Điện Biên Phủ, Bình Thạnh"
+                    "example": "Landmark 81, 720A Dien Bien Phu, Binh Thanh"
                   },
                   "placeId": {
                     "type": "string",
@@ -2053,66 +2053,66 @@
                 "properties": {
                   "shopAvatarUrl": {
                     "nullable": true,
-                    "description": "Avatar riêng của gian hàng, không đổi avatar cá nhân",
+                    "description": "Dedicated shop avatar URL (does not alter personal avatar)",
                     "type": "string",
                     "format": "uri"
                   },
                   "storeName": {
                     "type": "string",
-                    "description": "Tên gian hàng / thương hiệu của người bán",
-                    "example": "Gốm Sứ Bát Tràng Store - Chi nhánh HCM"
+                    "description": "Seller shop or brand name",
+                    "example": "Bat Trang Ceramics Store - HCM Branch"
                   },
                   "storeDescription": {
                     "type": "string",
-                    "description": "Mô tả chi tiết gian hàng",
-                    "example": "Chuyên cung cấp các sản phẩm gốm sứ phong thủy, bình hoa mỹ nghệ cao cấp chuẩn Bát Tràng."
+                    "description": "Detailed shop description",
+                    "example": "Curated ceramic art, handcrafted vases, and authentic collector pieces."
                   },
                   "phone": {
                     "type": "string",
-                    "description": "Số điện thoại liên hệ của cửa hàng / hotline",
+                    "description": "Shop contact phone or hotline",
                     "example": "0987654321"
                   },
                   "businessEmail": {
                     "type": "string",
                     "format": "email",
                     "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
-                    "description": "Email liên hệ kinh doanh của shop",
+                    "description": "Shop business contact email",
                     "example": "contact@battrangceramics.vn"
                   },
                   "street": {
                     "type": "string",
-                    "description": "Địa chỉ cụ thể / số nhà, tên đường của kho / cửa hàng",
-                    "example": "720A Điện Biên Phủ"
+                    "description": "Warehouse or shop street address",
+                    "example": "720A Dien Bien Phu"
                   },
                   "ward": {
                     "type": "string",
-                    "description": "Phường/Xã",
-                    "example": "Phường 22"
+                    "description": "Ward",
+                    "example": "Ward 22"
                   },
                   "district": {
                     "type": "string",
-                    "description": "Quận/Huyện",
-                    "example": "Quận Bình Thạnh"
+                    "description": "District",
+                    "example": "Binh Thanh District"
                   },
                   "city": {
                     "type": "string",
-                    "description": "Tỉnh/Thành phố",
-                    "example": "TP. Hồ Chí Minh"
+                    "description": "Province or city",
+                    "example": "Ho Chi Minh City"
                   },
                   "latitude": {
                     "type": "number",
-                    "description": "Vĩ độ GPS bản đồ",
+                    "description": "Map GPS latitude",
                     "example": 10.795
                   },
                   "longitude": {
                     "type": "number",
-                    "description": "Kinh độ GPS bản đồ",
+                    "description": "Map GPS longitude",
                     "example": 106.721
                   },
                   "formattedAddress": {
                     "type": "string",
-                    "description": "Địa chỉ đầy đủ định dạng chuẩn bản đồ",
-                    "example": "Landmark 81, 720A Điện Biên Phủ, Phường 22, Bình Thạnh, TP. Hồ Chí Minh"
+                    "description": "Full standardized map address",
+                    "example": "Landmark 81, 720A Dien Bien Phu, Ward 22, Binh Thanh, Ho Chi Minh City"
                   },
                   "placeId": {
                     "type": "string",
@@ -2177,23 +2177,23 @@
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 9007199254740991,
-                    "description": "Mã Quận/Huyện nhận hàng (GHN District ID)",
+                    "description": "Destination GHN District ID",
                     "example": 1444
                   },
                   "toWardCode": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Mã Phường/Xã nhận hàng (GHN Ward Code)",
+                    "description": "Destination GHN Ward Code",
                     "example": "20308"
                   },
                   "fromDistrictId": {
                     "type": "number",
-                    "description": "Mã Quận/Huyện gửi hàng (nếu bỏ trống hệ thống tự lấy theo kho/shop người bán)",
+                    "description": "Origin GHN District ID (auto-resolved from seller shop/warehouse if omitted)",
                     "example": 1442
                   },
                   "fromWardCode": {
                     "type": "string",
-                    "description": "Mã Phường/Xã gửi hàng",
+                    "description": "Origin GHN Ward Code",
                     "example": "20101"
                   },
                   "weightGrams": {
@@ -2201,35 +2201,35 @@
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 9007199254740991,
-                    "description": "Trọng lượng gói hàng tính theo gram",
+                    "description": "Parcel weight in grams",
                     "example": 1000
                   },
                   "lengthCm": {
                     "default": 10,
                     "type": "number",
                     "minimum": 1,
-                    "description": "Chiều dài kiện hàng (cm)",
+                    "description": "Parcel length (cm)",
                     "example": 20
                   },
                   "widthCm": {
                     "default": 10,
                     "type": "number",
                     "minimum": 1,
-                    "description": "Chiều rộng kiện hàng (cm)",
+                    "description": "Parcel width (cm)",
                     "example": 15
                   },
                   "heightCm": {
                     "default": 10,
                     "type": "number",
                     "minimum": 1,
-                    "description": "Chiều cao kiện hàng (cm)",
+                    "description": "Parcel height (cm)",
                     "example": 10
                   },
                   "insuranceValue": {
                     "default": 0,
                     "type": "number",
                     "minimum": 0,
-                    "description": "Giá trị khai giá / bảo hiểm hàng hóa (VNĐ)",
+                    "description": "Declared insurance value (VND)",
                     "example": 500000
                   },
                   "serviceTypeId": {
@@ -2243,7 +2243,7 @@
                         "enum": [5]
                       }
                     ],
-                    "description": "Dịch vụ GHN: 2 (hàng nhẹ), 5 (hàng nặng/nhiều kiện). Bỏ trống để chọn theo khối lượng.",
+                    "description": "GHN service type: 2 (light goods), 5 (heavy or multi-parcel). Omit to auto-select by weight.",
                     "example": 2
                   },
                   "items": {
@@ -2264,25 +2264,25 @@
                           "type": "integer",
                           "minimum": 1,
                           "maximum": 9007199254740991,
-                          "description": "Khối lượng một sản phẩm/kiện, gram"
+                          "description": "Item or parcel weight, grams"
                         },
                         "length": {
                           "type": "integer",
                           "minimum": 1,
                           "maximum": 9007199254740991,
-                          "description": "Chiều dài, cm"
+                          "description": "Length, cm"
                         },
                         "width": {
                           "type": "integer",
                           "minimum": 1,
                           "maximum": 9007199254740991,
-                          "description": "Chiều rộng, cm"
+                          "description": "Width, cm"
                         },
                         "height": {
                           "type": "integer",
                           "minimum": 1,
                           "maximum": 9007199254740991,
-                          "description": "Chiều cao, cm"
+                          "description": "Height, cm"
                         },
                         "price": {
                           "type": "integer",
@@ -2301,7 +2301,7 @@
                       ],
                       "additionalProperties": false
                     },
-                    "description": "Bắt buộc với dịch vụ hàng nặng GHN"
+                    "description": "Required for GHN heavy-goods service type 5"
                   }
                 },
                 "required": ["toDistrictId", "toWardCode"],
@@ -2338,47 +2338,47 @@
                 "properties": {
                   "addressId": {
                     "type": "string",
-                    "description": "Mã địa chỉ người nhận trong sổ địa chỉ (UserAddress)"
+                    "description": "Saved recipient address ID (UserAddress)"
                   },
                   "warehouseId": {
                     "type": "string",
-                    "description": "Mã kho gửi hàng (mặc định WH_001)"
+                    "description": "Origin warehouse ID (defaults to WH_001)"
                   },
                   "sellerId": {
                     "type": "string",
-                    "description": "Mã người bán (để tính khoảng cách từ gian hàng)"
+                    "description": "Seller ID for shop origin lookup"
                   },
                   "originLatitude": {
                     "type": "number",
-                    "description": "Vĩ độ điểm gửi (GPS Latitude)"
+                    "description": "Origin GPS latitude"
                   },
                   "originLongitude": {
                     "type": "number",
-                    "description": "Kinh độ điểm gửi (GPS Longitude)"
+                    "description": "Origin GPS longitude"
                   },
                   "destLatitude": {
                     "type": "number",
-                    "description": "Vĩ độ điểm nhận (GPS Latitude)"
+                    "description": "Destination GPS latitude"
                   },
                   "destLongitude": {
                     "type": "number",
-                    "description": "Kinh độ điểm nhận (GPS Longitude)"
+                    "description": "Destination GPS longitude"
                   },
                   "fromDistrictId": {
                     "type": "number",
-                    "description": "Mã quận/huyện người gửi GHN"
+                    "description": "Origin GHN district ID"
                   },
                   "fromWardCode": {
                     "type": "string",
-                    "description": "Mã phường/xã người gửi GHN"
+                    "description": "Origin GHN ward code"
                   },
                   "toDistrictId": {
                     "type": "number",
-                    "description": "Mã quận/huyện người nhận GHN"
+                    "description": "Destination GHN district ID"
                   },
                   "toWardCode": {
                     "type": "string",
-                    "description": "Mã phường/xã người nhận GHN"
+                    "description": "Destination GHN ward code"
                   },
                   "items": {
                     "type": "array",
@@ -2387,41 +2387,41 @@
                       "properties": {
                         "productId": {
                           "type": "string",
-                          "description": "Mã ID sản phẩm"
+                          "description": "Product ID"
                         },
                         "quantity": {
                           "default": 1,
                           "type": "integer",
                           "minimum": 1,
                           "maximum": 9007199254740991,
-                          "description": "Số lượng món hàng"
+                          "description": "Item quantity"
                         },
                         "weightGrams": {
                           "default": 500,
                           "type": "number",
                           "minimum": 1,
-                          "description": "Khối lượng tính theo gram"
+                          "description": "Weight in grams"
                         },
                         "lengthCm": {
                           "default": 10,
                           "type": "number",
-                          "description": "Chiều dài (cm)"
+                          "description": "Length (cm)"
                         },
                         "widthCm": {
                           "default": 10,
                           "type": "number",
-                          "description": "Chiều rộng (cm)"
+                          "description": "Width (cm)"
                         },
                         "heightCm": {
                           "default": 10,
                           "type": "number",
-                          "description": "Chiều cao (cm)"
+                          "description": "Height (cm)"
                         }
                       },
                       "required": ["productId"],
                       "additionalProperties": false
                     },
-                    "description": "Danh sách sản phẩm cần tính cước vận chuyển"
+                    "description": "Items to quote shipping fees for"
                   }
                 },
                 "required": ["items"],
@@ -2458,28 +2458,28 @@
                 "properties": {
                   "originLat": {
                     "type": "number",
-                    "description": "Vĩ độ điểm xuất phát (Latitude)",
+                    "description": "Origin latitude",
                     "example": 10.7769
                   },
                   "originLon": {
                     "type": "number",
-                    "description": "Kinh độ điểm xuất phát (Longitude)",
+                    "description": "Origin longitude",
                     "example": 106.7009
                   },
                   "destLat": {
                     "type": "number",
-                    "description": "Vĩ độ điểm đến (Latitude)",
+                    "description": "Destination latitude",
                     "example": 10.7327
                   },
                   "destLon": {
                     "type": "number",
-                    "description": "Kinh độ điểm đến (Longitude)",
+                    "description": "Destination longitude",
                     "example": 106.717
                   },
                   "weightGrams": {
                     "default": 500,
                     "type": "number",
-                    "description": "Tổng trọng lượng hàng hóa (gram) để tính cước kèm theo"
+                    "description": "Total parcel weight (grams)"
                   }
                 },
                 "required": ["originLat", "originLon", "destLat", "destLon"],
@@ -2838,7 +2838,7 @@
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 9007199254740991,
-                    "description": "Shop ID GHN đã tạo cho điểm lấy hàng này, thuộc tài khoản của sàn"
+                    "description": "GHN Shop ID created for this pickup point under the platform account"
                   }
                 },
                 "required": ["ghnShopId"],
@@ -3111,19 +3111,19 @@
                         "channel": {
                           "type": "string",
                           "enum": ["EMAIL", "PUSH", "IN_APP"],
-                          "description": "Kênh nhận thông báo: EMAIL, PUSH, IN_APP",
+                          "description": "Notification channel: EMAIL, PUSH, IN_APP",
                           "example": "EMAIL"
                         },
                         "isEnabled": {
                           "type": "boolean",
-                          "description": "Bật (true) hoặc tắt (false) nhận thông báo qua kênh này",
+                          "description": "Enable (true) or disable (false) notifications on this channel",
                           "example": true
                         }
                       },
                       "required": ["channel", "isEnabled"],
                       "additionalProperties": false
                     },
-                    "description": "Danh sách cài đặt bật/tắt nhận thông báo cho từng kênh",
+                    "description": "Channel notification preference settings",
                     "example": [
                       {
                         "channel": "IN_APP",
@@ -3245,28 +3245,28 @@
                     "type": "string",
                     "format": "email",
                     "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
-                    "description": "Email cá nhân nhận tài khoản @staff.com và mật khẩu ngẫu nhiên để đăng nhập ngay",
-                    "example": "hotro.canhan@gmail.com"
+                    "description": "Personal email to receive the @staff.com account and generated password",
+                    "example": "support.personal@gmail.com"
                   },
                   "fullName": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Họ và tên nhân viên",
-                    "example": "Nguyễn Văn Hỗ Trợ"
+                    "description": "Staff full name",
+                    "example": "Alex Support"
                   },
                   "phoneNumber": {
                     "type": "string",
-                    "description": "Số điện thoại nhân viên",
+                    "description": "Staff phone number",
                     "example": "0987654321"
                   },
                   "department": {
                     "type": "string",
-                    "description": "Phòng ban / Bộ phận phụ trách",
-                    "example": "Chăm sóc khách hàng"
+                    "description": "Assigned department",
+                    "example": "Customer Support"
                   },
                   "password": {
                     "type": "string",
-                    "description": "Trường cũ được chấp nhận nhưng bỏ qua; backend luôn sinh mật khẩu ngẫu nhiên và gửi qua email cá nhân",
+                    "description": "Legacy field accepted but ignored; backend always generates a random password and sends it to the personal email",
                     "example": "Staff@123456"
                   }
                 },
@@ -3302,10 +3302,10 @@
             "name": "search",
             "required": false,
             "in": "query",
-            "description": "Từ khóa tìm kiếm theo họ tên hoặc email",
+            "description": "Search keyword by full name or email",
             "schema": {
               "type": "string",
-              "description": "Từ khóa tìm kiếm theo họ tên hoặc email",
+              "description": "Search keyword by full name or email",
               "example": "staff"
             }
           },
@@ -3313,26 +3313,26 @@
             "name": "page",
             "required": false,
             "in": "query",
-            "description": "Trang hiện tại (bắt đầu từ 1)",
+            "description": "Current page (1-based)",
             "schema": {
               "default": 1,
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Trang hiện tại (bắt đầu từ 1)"
+              "description": "Current page (1-based)"
             }
           },
           {
             "name": "limit",
             "required": false,
             "in": "query",
-            "description": "Số bản ghi trên mỗi trang",
+            "description": "Records per page",
             "schema": {
               "default": 10,
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Số bản ghi trên mỗi trang"
+              "description": "Records per page"
             }
           }
         ],
@@ -3365,25 +3365,25 @@
                   "fullName": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Họ và tên nhân viên",
-                    "example": "Nguyễn Văn Staff"
+                    "description": "Staff full name",
+                    "example": "Alex Staff"
                   },
                   "email": {
                     "type": "string",
                     "format": "email",
                     "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
-                    "description": "Email cá nhân của nhân viên để nhận link xác thực",
+                    "description": "Staff personal email to receive verification link",
                     "example": "staff.personal@gmail.com"
                   },
                   "phoneNumber": {
                     "type": "string",
-                    "description": "Số điện thoại của nhân viên",
+                    "description": "Staff phone number",
                     "example": "0912345678"
                   },
                   "department": {
                     "type": "string",
-                    "description": "Phòng ban / Bộ phận phụ trách",
-                    "example": "Chăm sóc khách hàng"
+                    "description": "Assigned department",
+                    "example": "Customer Support"
                   }
                 },
                 "required": ["fullName", "email"],
@@ -3415,37 +3415,37 @@
             "name": "status",
             "required": false,
             "in": "query",
-            "description": "Lọc theo trạng thái yêu cầu (PENDING, APPROVED, REJECTED)",
+            "description": "Filter by request status (PENDING, APPROVED, REJECTED)",
             "schema": {
               "type": "string",
               "enum": ["PENDING", "APPROVED", "REJECTED"],
-              "description": "Lọc theo trạng thái yêu cầu (PENDING, APPROVED, REJECTED)"
+              "description": "Filter by request status (PENDING, APPROVED, REJECTED)"
             }
           },
           {
             "name": "page",
             "required": false,
             "in": "query",
-            "description": "Trang hiện tại (bắt đầu từ 1)",
+            "description": "Current page (1-based)",
             "schema": {
               "default": 1,
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Trang hiện tại (bắt đầu từ 1)"
+              "description": "Current page (1-based)"
             }
           },
           {
             "name": "limit",
             "required": false,
             "in": "query",
-            "description": "Số bản ghi trên mỗi trang",
+            "description": "Records per page",
             "schema": {
               "default": 10,
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Số bản ghi trên mỗi trang"
+              "description": "Records per page"
             }
           }
         ],
@@ -3557,8 +3557,8 @@
                   "rejectionReason": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Lý do từ chối yêu cầu nâng cấp",
-                    "example": "Thông tin giấy tờ CCCD/CMND không khớp với tên đăng ký tài khoản."
+                    "description": "Reason for rejecting the seller upgrade request",
+                    "example": "Identity document name does not match the registered account name."
                   }
                 },
                 "required": ["rejectionReason"],
@@ -3596,22 +3596,22 @@
             "name": "search",
             "required": false,
             "in": "query",
-            "description": "Từ khóa tìm kiếm theo tên, email, sđt hoặc email công tác",
+            "description": "Search keyword by name, email, phone, or staff email",
             "schema": {
               "type": "string",
-              "description": "Từ khóa tìm kiếm theo tên, email, sđt hoặc email công tác",
-              "example": "nguyen van a"
+              "description": "Search keyword by name, email, phone, or staff email",
+              "example": "jane doe"
             }
           },
           {
             "name": "role",
             "required": false,
             "in": "query",
-            "description": "Lọc theo vai trò: BUYER, SELLER, SUPPORT_STAFF, ADMIN (Mặc định không truyền sẽ lấy tất cả vai trò, tự động loại trừ GUEST)",
+            "description": "Filter by role: BUYER, SELLER, SUPPORT_STAFF, ADMIN (returns all non-GUEST roles when omitted)",
             "schema": {
               "type": "string",
               "enum": ["BUYER", "SELLER", "SUPPORT_STAFF", "ADMIN"],
-              "description": "Lọc theo vai trò: BUYER, SELLER, SUPPORT_STAFF, ADMIN (Mặc định không truyền sẽ lấy tất cả vai trò, tự động loại trừ GUEST)",
+              "description": "Filter by role: BUYER, SELLER, SUPPORT_STAFF, ADMIN (returns all non-GUEST roles when omitted)",
               "example": "BUYER"
             }
           },
@@ -3619,38 +3619,38 @@
             "name": "status",
             "required": false,
             "in": "query",
-            "description": "Lọc theo trạng thái tài khoản: ALL, ACTIVE, LOCKED",
+            "description": "Filter by account status: ALL, ACTIVE, LOCKED",
             "schema": {
               "default": "ALL",
               "type": "string",
               "enum": ["ALL", "ACTIVE", "LOCKED"],
-              "description": "Lọc theo trạng thái tài khoản: ALL, ACTIVE, LOCKED"
+              "description": "Filter by account status: ALL, ACTIVE, LOCKED"
             }
           },
           {
             "name": "page",
             "required": false,
             "in": "query",
-            "description": "Trang hiện tại (bắt đầu từ 1)",
+            "description": "Current page (1-based)",
             "schema": {
               "default": 1,
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Trang hiện tại (bắt đầu từ 1)"
+              "description": "Current page (1-based)"
             }
           },
           {
             "name": "limit",
             "required": false,
             "in": "query",
-            "description": "Số lượng người dùng trên mỗi trang",
+            "description": "Users per page",
             "schema": {
               "default": 10,
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Số lượng người dùng trên mỗi trang"
+              "description": "Users per page"
             }
           }
         ],
@@ -3727,8 +3727,8 @@
                   "reason": {
                     "type": "string",
                     "maxLength": 500,
-                    "description": "Lý do khóa hoặc mở khóa tài khoản người dùng",
-                    "example": "Vi phạm quy định giao dịch hoặc có hành vi gian lận"
+                    "description": "Reason for locking or unlocking the user account",
+                    "example": "Policy violation or fraudulent transaction activity"
                   }
                 },
                 "additionalProperties": false
@@ -3782,8 +3782,8 @@
                   "reason": {
                     "type": "string",
                     "maxLength": 500,
-                    "description": "Lý do khóa hoặc mở khóa tài khoản người dùng",
-                    "example": "Vi phạm quy định giao dịch hoặc có hành vi gian lận"
+                    "description": "Reason for locking or unlocking the user account",
+                    "example": "Policy violation or fraudulent transaction activity"
                   }
                 },
                 "additionalProperties": false
@@ -3836,14 +3836,14 @@
                 "properties": {
                   "isLocked": {
                     "type": "boolean",
-                    "description": "Trạng thái khóa tài khoản: true (khóa) hoặc false (mở khóa)",
+                    "description": "Account lock state: true (locked) or false (unlocked)",
                     "example": true
                   },
                   "reason": {
                     "type": "string",
                     "maxLength": 500,
-                    "description": "Lý do thay đổi trạng thái tài khoản",
-                    "example": "Khóa tài khoản theo yêu cầu xử lý vi phạm"
+                    "description": "Reason for updating account status",
+                    "example": "Account locked following violation review"
                   }
                 },
                 "additionalProperties": false
@@ -3891,7 +3891,7 @@
                   "role": {
                     "type": "string",
                     "enum": ["ADMIN", "SUPPORT_STAFF", "SELLER", "BUYER", "GUEST"],
-                    "description": "Vai trò mới muốn gán cho tài khoản",
+                    "description": "New role to assign to the account",
                     "example": "SUPPORT_STAFF"
                   }
                 },
@@ -3930,12 +3930,12 @@
             "name": "page",
             "required": false,
             "in": "query",
-            "description": "Số trang (mặc định 1)",
+            "description": "Page number (default 1)",
             "schema": {
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Số trang (mặc định 1)",
+              "description": "Page number (default 1)",
               "example": 1
             }
           },
@@ -3943,12 +3943,12 @@
             "name": "limit",
             "required": false,
             "in": "query",
-            "description": "Số lượng sản phẩm mỗi trang (mặc định 10)",
+            "description": "Products per page (default 10)",
             "schema": {
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Số lượng sản phẩm mỗi trang (mặc định 10)",
+              "description": "Products per page (default 10)",
               "example": 10
             }
           },
@@ -3956,42 +3956,42 @@
             "name": "search",
             "required": false,
             "in": "query",
-            "description": "Từ khóa tìm kiếm theo tên sản phẩm hoặc tên/email người bán",
+            "description": "Search keyword by product title or seller name/email",
             "schema": {
               "type": "string",
-              "description": "Từ khóa tìm kiếm theo tên sản phẩm hoặc tên/email người bán",
-              "example": "đồng hồ"
+              "description": "Search keyword by product title or seller name/email",
+              "example": "watch"
             }
           },
           {
             "name": "status",
             "required": false,
             "in": "query",
-            "description": "Lọc theo trạng thái sản phẩm: ACTIVE, INACTIVE, DRAFT",
+            "description": "Filter by product status: ACTIVE, INACTIVE, DRAFT",
             "schema": {
               "type": "string",
               "enum": ["DRAFT", "ACTIVE", "INACTIVE"],
-              "description": "Lọc theo trạng thái sản phẩm: ACTIVE, INACTIVE, DRAFT"
+              "description": "Filter by product status: ACTIVE, INACTIVE, DRAFT"
             }
           },
           {
             "name": "sellerId",
             "required": false,
             "in": "query",
-            "description": "Lọc theo ID người bán (Seller ID)",
+            "description": "Filter by seller ID",
             "schema": {
               "type": "string",
-              "description": "Lọc theo ID người bán (Seller ID)"
+              "description": "Filter by seller ID"
             }
           },
           {
             "name": "categoryId",
             "required": false,
             "in": "query",
-            "description": "Lọc theo ID danh mục (Category ID)",
+            "description": "Filter by category ID",
             "schema": {
               "type": "string",
-              "description": "Lọc theo ID danh mục (Category ID)"
+              "description": "Filter by category ID"
             }
           }
         ],
@@ -4128,14 +4128,14 @@
                   "status": {
                     "type": "string",
                     "enum": ["DRAFT", "ACTIVE", "INACTIVE"],
-                    "description": "Trạng thái sản phẩm mong muốn (ACTIVE: hiển thị bán, INACTIVE: ẩn/khóa)",
+                    "description": "Target product status (ACTIVE: visible for sale, INACTIVE: hidden/locked)",
                     "example": "INACTIVE"
                   },
                   "reason": {
                     "type": "string",
                     "maxLength": 500,
-                    "description": "Lý do thay đổi trạng thái hoặc nhắc nhở dành cho Seller",
-                    "example": "Sản phẩm vi phạm tiêu chuẩn cộng đồng hoặc chứa nội dung nhạy cảm"
+                    "description": "Reason for status change or notice to Seller",
+                    "example": "Product violates community guidelines or contains sensitive content"
                   }
                 },
                 "required": ["status"],
@@ -4187,14 +4187,14 @@
                   "categoryId": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "ID danh mục mới muốn gắn cho sản phẩm",
+                    "description": "Target category ID to assign to the product",
                     "example": "uuid-category-id"
                   },
                   "reason": {
                     "type": "string",
                     "maxLength": 500,
-                    "description": "Ghi chú hoặc lý do gắn/đổi danh mục gửi tới Seller",
-                    "example": "Phân loại lại vào danh mục mới phù hợp hơn với sản phẩm"
+                    "description": "Note or reason for reassigning the category (sent to Seller)",
+                    "example": "Reclassified to a more accurate product category"
                   }
                 },
                 "required": ["categoryId"],
@@ -4246,8 +4246,8 @@
                   "reason": {
                     "type": "string",
                     "maxLength": 500,
-                    "description": "Lý do Admin gỡ sản phẩm khỏi danh sách Xu hướng (gửi thông báo tới Seller)",
-                    "example": "Sản phẩm không còn phù hợp hiển thị tại mục Xu hướng"
+                    "description": "Reason for removing the product from Trending (notifies the Seller)",
+                    "example": "Product is no longer eligible for the Trending section"
                   }
                 },
                 "additionalProperties": false
@@ -4288,17 +4288,17 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 100,
-                    "description": "Tên danh mục hàng hóa",
-                    "example": "Laptop & Máy tính xách tay"
+                    "description": "Product category name",
+                    "example": "Laptops & Notebooks"
                   },
                   "slug": {
                     "type": "string",
-                    "description": "Đường dẫn định danh slug (nếu để trống hệ thống sẽ tự sinh từ tên)",
-                    "example": "laptop-may-tinh-xach-tay"
+                    "description": "URL slug (auto-generated from name if omitted)",
+                    "example": "laptops-notebooks"
                   },
                   "parentId": {
                     "nullable": true,
-                    "description": "ID của danh mục cha (để trống nếu là danh mục gốc cấp 1)",
+                    "description": "Parent category ID (omit for root level 1 category)",
                     "example": "cat-parent-uuid-123",
                     "type": "string"
                   }
@@ -4355,17 +4355,17 @@
                   "name": {
                     "type": "string",
                     "maxLength": 100,
-                    "description": "Tên danh mục hàng hóa mới",
-                    "example": "Laptop Gaming & Workstation"
+                    "description": "New product category name",
+                    "example": "Gaming & Workstation Laptops"
                   },
                   "slug": {
                     "type": "string",
-                    "description": "Đường dẫn định danh slug mới",
-                    "example": "laptop-gaming-workstation"
+                    "description": "New URL slug",
+                    "example": "gaming-workstation-laptops"
                   },
                   "parentId": {
                     "nullable": true,
-                    "description": "ID của danh mục cha mới (truyền null nếu muốn đưa về danh mục gốc cấp 1)",
+                    "description": "New parent category ID (pass null to move to root level 1)",
                     "example": "cat-parent-uuid-456",
                     "type": "string"
                   }
@@ -4438,12 +4438,12 @@
             "name": "page",
             "required": false,
             "in": "query",
-            "description": "Số trang (mặc định 1)",
+            "description": "Page number (default 1)",
             "schema": {
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Số trang (mặc định 1)",
+              "description": "Page number (default 1)",
               "example": 1
             }
           },
@@ -4451,12 +4451,12 @@
             "name": "limit",
             "required": false,
             "in": "query",
-            "description": "Số lượng gian hàng mỗi trang (mặc định 10)",
+            "description": "Shops per page (default 10)",
             "schema": {
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Số lượng gian hàng mỗi trang (mặc định 10)",
+              "description": "Shops per page (default 10)",
               "example": 10
             }
           },
@@ -4464,33 +4464,33 @@
             "name": "search",
             "required": false,
             "in": "query",
-            "description": "Tìm kiếm theo tên gian hàng, mô tả hoặc tên/email/sđt chủ shop",
+            "description": "Search by shop name, description, or owner name/email/phone",
             "schema": {
               "type": "string",
-              "description": "Tìm kiếm theo tên gian hàng, mô tả hoặc tên/email/sđt chủ shop",
-              "example": "Gốm sứ"
+              "description": "Search by shop name, description, or owner name/email/phone",
+              "example": "Ceramic"
             }
           },
           {
             "name": "status",
             "required": false,
             "in": "query",
-            "description": "Lọc theo trạng thái hoạt động của gian hàng: ACTIVE (đang mở) hoặc SUSPENDED (bị đình chỉ)",
+            "description": "Filter by shop status: ACTIVE or SUSPENDED",
             "schema": {
               "type": "string",
               "enum": ["ACTIVE", "SUSPENDED"],
-              "description": "Lọc theo trạng thái hoạt động của gian hàng: ACTIVE (đang mở) hoặc SUSPENDED (bị đình chỉ)"
+              "description": "Filter by shop status: ACTIVE or SUSPENDED"
             }
           },
           {
             "name": "city",
             "required": false,
             "in": "query",
-            "description": "Lọc theo Tỉnh / Thành phố của gian hàng",
+            "description": "Filter by shop province or city",
             "schema": {
               "type": "string",
-              "description": "Lọc theo Tỉnh / Thành phố của gian hàng",
-              "example": "TP. Hồ Chí Minh"
+              "description": "Filter by shop province or city",
+              "example": "Ho Chi Minh City"
             }
           }
         ],
@@ -4533,14 +4533,14 @@
                 "properties": {
                   "isSellerActive": {
                     "type": "boolean",
-                    "description": "Trạng thái hoạt động của gian hàng (true: mở bán bình thường, false: đình chỉ/đóng băng gian hàng)",
+                    "description": "Shop operating state (true: active, false: suspended/frozen)",
                     "example": false
                   },
                   "reason": {
                     "type": "string",
                     "maxLength": 500,
-                    "description": "Lý do đình chỉ hoặc mở lại gian hàng gửi đến người bán",
-                    "example": "Gian hàng bị tạm dừng do nhiều lần đăng sản phẩm vi phạm bản quyền"
+                    "description": "Reason for suspending or reopening the shop (sent to Seller)",
+                    "example": "Shop suspended due to repeated copyright-infringing listings"
                   }
                 },
                 "required": ["isSellerActive"],
@@ -4695,14 +4695,14 @@
                   "reason": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Lý do cảnh cáo gian hàng",
-                    "example": "Đăng tải thông tin sản phẩm sai lệch với thực tế"
+                    "description": "Reason for warning the shop",
+                    "example": "Published misleading product specifications"
                   },
                   "penaltyPoints": {
                     "default": 0,
                     "type": "number",
                     "minimum": 0,
-                    "description": "Số điểm uy tín (reputationScore) bị trừ kèm theo (nếu có)",
+                    "description": "Reputation score penalty points to deduct (if any)",
                     "example": 10
                   }
                 },
@@ -4816,21 +4816,21 @@
                   "title": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Tiêu đề vi phạm của shop",
-                    "example": "Bán hàng giả mạo nhãn hiệu đã bảo hộ"
+                    "description": "Shop violation title",
+                    "example": "Selling counterfeit trademarked goods"
                   },
                   "description": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Mô tả chi tiết hành vi vi phạm",
-                    "example": "Shop có hành vi đăng bán sản phẩm vi phạm bản quyền thương hiệu, không xuất trình được hóa đơn nguồn gốc."
+                    "description": "Detailed violation description",
+                    "example": "The shop listed trademark-infringing products without providing authentic supplier invoices."
                   },
                   "evidenceUrls": {
                     "type": "array",
                     "items": {
                       "type": "string"
                     },
-                    "description": "Danh sách URL hình ảnh hoặc tài liệu bằng chứng vi phạm",
+                    "description": "List of image or document URLs evidencing the violation",
                     "example": [
                       "https://example.com/evidence1.jpg",
                       "https://example.com/report.pdf"
@@ -4846,20 +4846,20 @@
                       "MISREPRESENTATION",
                       "FRAUD"
                     ],
-                    "description": "Mức độ xử lý vi phạm: WARNING, PENALTY_POINTS, TEMPORARY_SUSPENSION, PERMANENT_BAN, MISREPRESENTATION, FRAUD",
+                    "description": "Violation penalty level: WARNING, PENALTY_POINTS, TEMPORARY_SUSPENSION, PERMANENT_BAN, MISREPRESENTATION, FRAUD",
                     "example": "TEMPORARY_SUSPENSION"
                   },
                   "status": {
                     "default": "CONFIRMED",
                     "type": "string",
                     "enum": ["PENDING", "INVESTIGATING", "CONFIRMED", "DISMISSED"],
-                    "description": "Trạng thái vi phạm: PENDING, INVESTIGATING, CONFIRMED, DISMISSED",
+                    "description": "Violation status: PENDING, INVESTIGATING, CONFIRMED, DISMISSED",
                     "example": "CONFIRMED"
                   },
                   "resolutionNotes": {
                     "type": "string",
-                    "description": "Ghi chú giải quyết của Quản trị viên",
-                    "example": "Đã xác minh đối soát với chủ thương hiệu, tiến hành tạm ẩn sản phẩm và cảnh cáo shop."
+                    "description": "Administrator resolution notes",
+                    "example": "Verified with brand owner, temporarily hid infringing listings, and issued a shop warning."
                   }
                 },
                 "required": ["title", "description"],
@@ -5018,18 +5018,18 @@
                   "status": {
                     "type": "string",
                     "enum": ["APPROVED", "REJECTED", "COMPLETED"],
-                    "description": "Trạng thái xét duyệt: APPROVED (chấp thuận), REJECTED (từ chối hoàn tiền ví), COMPLETED (đã chuyển khoản thành công)",
+                    "description": "Review status: APPROVED, REJECTED (refunds wallet), or COMPLETED (bank transfer completed)",
                     "example": "COMPLETED"
                   },
                   "rejectionReason": {
                     "type": "string",
-                    "description": "Lý do từ chối (bắt buộc nếu status = REJECTED)",
-                    "example": "Thông tin số tài khoản không đúng với tên chủ tài khoản thụ hưởng"
+                    "description": "Rejection reason (required when status = REJECTED)",
+                    "example": "Bank account number does not match the beneficiary account name"
                   },
                   "adminNote": {
                     "type": "string",
-                    "description": "Ghi chú của Quản trị viên",
-                    "example": "Đã chuyển khoản qua Vietcombank mã GD: VCB12345678"
+                    "description": "Administrator note",
+                    "example": "Transferred via Vietcombank, ref: VCB12345678"
                   }
                 },
                 "required": ["status"],
@@ -5092,49 +5092,49 @@
                   "properties": {
                     "walletId": {
                       "type": "string",
-                      "description": "ID của ví hệ thống",
+                      "description": "System wallet ID",
                       "example": "w-1234-5678"
                     },
                     "userId": {
                       "type": "string",
-                      "description": "ID tài khoản quản trị viên",
+                      "description": "Administrator user ID",
                       "example": "u-admin-001"
                     },
                     "balance": {
                       "type": "number",
-                      "description": "Số dư khả dụng hiện tại (VND)",
+                      "description": "Current available balance (VND)",
                       "example": 5000000
                     },
                     "lockedBalance": {
                       "type": "number",
-                      "description": "Số dư đóng băng / ký quỹ (VND)",
+                      "description": "Locked or escrow balance (VND)",
                       "example": 0
                     },
                     "currency": {
                       "type": "string",
-                      "description": "Đơn vị tiền tệ",
+                      "description": "Currency code",
                       "example": "VND"
                     },
                     "totalPlatformFeeCollected": {
                       "type": "number",
-                      "description": "Tổng doanh thu hoa hồng sàn (% phí sàn) đã thu",
+                      "description": "Total platform commission fees collected",
                       "example": 350000
                     },
                     "totalDeposited": {
                       "type": "number",
-                      "description": "Tổng số tiền Admin đã nạp vào ví hệ thống",
+                      "description": "Total amount deposited into the system wallet by Admin",
                       "example": 10000000
                     },
                     "totalTransactions": {
                       "type": "number",
-                      "description": "Tổng số lượng giao dịch phát sinh trên ví",
+                      "description": "Total number of wallet transactions",
                       "example": 42
                     },
                     "updatedAt": {
                       "type": "string",
                       "format": "date-time",
                       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
-                      "description": "Thời gian cập nhật gần nhất",
+                      "description": "Last updated timestamp",
                       "example": "2026-10-28T00:00:00.000Z"
                     }
                   },
@@ -5173,13 +5173,13 @@
             "name": "page",
             "required": false,
             "in": "query",
-            "description": "Số trang",
+            "description": "Page number",
             "schema": {
               "default": 1,
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Số trang",
+              "description": "Page number",
               "example": 1
             }
           },
@@ -5187,13 +5187,13 @@
             "name": "limit",
             "required": false,
             "in": "query",
-            "description": "Số bản ghi mỗi trang",
+            "description": "Records per page",
             "schema": {
               "default": 10,
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Số bản ghi mỗi trang",
+              "description": "Records per page",
               "example": 10
             }
           },
@@ -5201,7 +5201,7 @@
             "name": "type",
             "required": false,
             "in": "query",
-            "description": "Lọc theo loại giao dịch (PLATFORM_FEE, DEPOSIT, WITHDRAW...)",
+            "description": "Filter by transaction type (PLATFORM_FEE, DEPOSIT, WITHDRAW...)",
             "schema": {
               "type": "string",
               "enum": [
@@ -5217,17 +5217,17 @@
                 "AUCTION_DEPOSIT_FORFEIT",
                 "AUCTION_DEPOSIT_COMPENSATION"
               ],
-              "description": "Lọc theo loại giao dịch (PLATFORM_FEE, DEPOSIT, WITHDRAW...)"
+              "description": "Filter by transaction type (PLATFORM_FEE, DEPOSIT, WITHDRAW...)"
             }
           },
           {
             "name": "startDate",
             "required": false,
             "in": "query",
-            "description": "Từ ngày (YYYY-MM-DD)",
+            "description": "Start date (YYYY-MM-DD)",
             "schema": {
               "type": "string",
-              "description": "Từ ngày (YYYY-MM-DD)",
+              "description": "Start date (YYYY-MM-DD)",
               "example": "2026-10-01"
             }
           },
@@ -5235,10 +5235,10 @@
             "name": "endDate",
             "required": false,
             "in": "query",
-            "description": "Đến ngày (YYYY-MM-DD)",
+            "description": "End date (YYYY-MM-DD)",
             "schema": {
               "type": "string",
-              "description": "Đến ngày (YYYY-MM-DD)",
+              "description": "End date (YYYY-MM-DD)",
               "example": "2026-10-31"
             }
           },
@@ -5246,10 +5246,10 @@
             "name": "search",
             "required": false,
             "in": "query",
-            "description": "Tìm kiếm theo mã đơn hàng hoặc mô tả",
+            "description": "Search by order code or description",
             "schema": {
               "type": "string",
-              "description": "Tìm kiếm theo mã đơn hàng hoặc mô tả"
+              "description": "Search by order code or description"
             }
           }
         ],
@@ -5263,22 +5263,22 @@
                   "properties": {
                     "total": {
                       "type": "number",
-                      "description": "Tổng số giao dịch thỏa mãn điều kiện",
+                      "description": "Total matching transactions",
                       "example": 100
                     },
                     "page": {
                       "type": "number",
-                      "description": "Trang hiện tại",
+                      "description": "Current page",
                       "example": 1
                     },
                     "limit": {
                       "type": "number",
-                      "description": "Số bản ghi trên mỗi trang",
+                      "description": "Records per page",
                       "example": 10
                     },
                     "totalPages": {
                       "type": "number",
-                      "description": "Tổng số trang",
+                      "description": "Total pages",
                       "example": 10
                     },
                     "items": {
@@ -5288,17 +5288,17 @@
                         "properties": {
                           "id": {
                             "type": "string",
-                            "description": "Mã giao dịch ví",
+                            "description": "Wallet transaction ID",
                             "example": "tx-112233"
                           },
                           "walletId": {
                             "type": "string",
-                            "description": "Mã ví nhận / trừ tiền",
+                            "description": "Target wallet ID",
                             "example": "w-1234-5678"
                           },
                           "amount": {
                             "type": "number",
-                            "description": "Số tiền biến động (VND)",
+                            "description": "Transaction amount (VND)",
                             "example": 130000
                           },
                           "type": {
@@ -5316,93 +5316,93 @@
                               "AUCTION_DEPOSIT_FORFEIT",
                               "AUCTION_DEPOSIT_COMPENSATION"
                             ],
-                            "description": "Loại biến động số dư",
+                            "description": "Balance change type",
                             "example": "ESCROW_LOCK"
                           },
                           "status": {
                             "type": "string",
-                            "description": "Trạng thái giao dịch",
+                            "description": "Transaction status",
                             "example": "SUCCESS"
                           },
                           "referenceId": {
-                            "description": "Mã đối chiếu tham chiếu (Order ID)",
+                            "description": "Reference Order ID",
                             "example": "o-9876-5432",
                             "type": "string"
                           },
                           "description": {
-                            "description": "Nội dung mô tả",
-                            "example": "Tạm giữ thanh toán đơn hàng #o-9876-54",
+                            "description": "Transaction description",
+                            "example": "Escrow hold for order #o-9876-54",
                             "type": "string"
                           },
                           "createdAt": {
                             "type": "string",
                             "format": "date-time",
                             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
-                            "description": "Thời điểm tạo giao dịch",
+                            "description": "Transaction creation timestamp",
                             "example": "2026-10-28T00:00:00.000Z"
                           },
                           "orderDetails": {
-                            "description": "Thông tin chi tiết về người mua, shop và dòng tiền đơn hàng",
+                            "description": "Detailed buyer, shop, and order cashflow metadata",
                             "nullable": true,
                             "type": "object",
                             "properties": {
                               "orderId": {
                                 "type": "string",
-                                "description": "Mã đơn hàng liên kết",
+                                "description": "Linked order ID",
                                 "example": "o-9876-5432"
                               },
                               "buyerName": {
-                                "description": "Họ tên người mua (Buyer)",
-                                "example": "Nguyễn Văn A",
+                                "description": "Buyer full name",
+                                "example": "Jane Doe",
                                 "type": "string"
                               },
                               "buyerEmail": {
-                                "description": "Email người mua",
+                                "description": "Buyer email",
                                 "example": "buyer@example.com",
                                 "type": "string"
                               },
                               "shopName": {
-                                "description": "Tên người bán / cửa hàng (Seller/Shop)",
-                                "example": "Shop Thời Trang ABC",
+                                "description": "Seller or shop name",
+                                "example": "ABC Fashion Shop",
                                 "type": "string"
                               },
                               "sellerEmail": {
-                                "description": "Email người bán",
+                                "description": "Seller email",
                                 "example": "seller@example.com",
                                 "type": "string"
                               },
                               "subtotal": {
                                 "type": "number",
-                                "description": "Tiền hàng gốc (chưa gồm phí ship)",
+                                "description": "Item subtotal before shipping",
                                 "example": 100000
                               },
                               "shippingFee": {
                                 "type": "number",
-                                "description": "Cước vận chuyển GHN",
+                                "description": "GHN shipping fee",
                                 "example": 30000
                               },
                               "totalAmount": {
                                 "type": "number",
-                                "description": "Tổng tiền người mua đã thanh toán",
+                                "description": "Total amount paid by buyer",
                                 "example": 130000
                               },
                               "platformFee": {
                                 "type": "number",
-                                "description": "Phí sàn thu được từ đơn (7%)",
+                                "description": "Platform fee collected from order (7%)",
                                 "example": 7000
                               },
                               "sellerPayout": {
                                 "type": "number",
-                                "description": "Số tiền thực tế giải ngân cho người bán",
+                                "description": "Net amount disbursed to seller",
                                 "example": 93000
                               },
                               "waybillCode": {
-                                "description": "Mã vận đơn giao hàng",
+                                "description": "Shipment waybill code",
                                 "example": "GHN123456789VN",
                                 "type": "string"
                               },
                               "carrier": {
-                                "description": "Đơn vị vận chuyển",
+                                "description": "Shipping carrier",
                                 "example": "GHN",
                                 "type": "string"
                               }
@@ -5421,7 +5421,7 @@
                         "required": ["id", "walletId", "amount", "type", "status", "createdAt"],
                         "additionalProperties": false
                       },
-                      "description": "Danh sách các giao dịch"
+                      "description": "List of transactions"
                     }
                   },
                   "required": ["total", "page", "limit", "totalPages", "items"],
@@ -5449,13 +5449,13 @@
             "name": "page",
             "required": false,
             "in": "query",
-            "description": "Số trang",
+            "description": "Page number",
             "schema": {
               "default": 1,
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Số trang",
+              "description": "Page number",
               "example": 1
             }
           },
@@ -5463,13 +5463,13 @@
             "name": "limit",
             "required": false,
             "in": "query",
-            "description": "Số bản ghi mỗi trang",
+            "description": "Records per page",
             "schema": {
               "default": 10,
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Số bản ghi mỗi trang",
+              "description": "Records per page",
               "example": 10
             }
           },
@@ -5477,7 +5477,7 @@
             "name": "type",
             "required": false,
             "in": "query",
-            "description": "Lọc theo loại giao dịch (PLATFORM_FEE, DEPOSIT, WITHDRAW...)",
+            "description": "Filter by transaction type (PLATFORM_FEE, DEPOSIT, WITHDRAW...)",
             "schema": {
               "type": "string",
               "enum": [
@@ -5493,17 +5493,17 @@
                 "AUCTION_DEPOSIT_FORFEIT",
                 "AUCTION_DEPOSIT_COMPENSATION"
               ],
-              "description": "Lọc theo loại giao dịch (PLATFORM_FEE, DEPOSIT, WITHDRAW...)"
+              "description": "Filter by transaction type (PLATFORM_FEE, DEPOSIT, WITHDRAW...)"
             }
           },
           {
             "name": "startDate",
             "required": false,
             "in": "query",
-            "description": "Từ ngày (YYYY-MM-DD)",
+            "description": "Start date (YYYY-MM-DD)",
             "schema": {
               "type": "string",
-              "description": "Từ ngày (YYYY-MM-DD)",
+              "description": "Start date (YYYY-MM-DD)",
               "example": "2026-10-01"
             }
           },
@@ -5511,10 +5511,10 @@
             "name": "endDate",
             "required": false,
             "in": "query",
-            "description": "Đến ngày (YYYY-MM-DD)",
+            "description": "End date (YYYY-MM-DD)",
             "schema": {
               "type": "string",
-              "description": "Đến ngày (YYYY-MM-DD)",
+              "description": "End date (YYYY-MM-DD)",
               "example": "2026-10-31"
             }
           },
@@ -5522,42 +5522,42 @@
             "name": "search",
             "required": false,
             "in": "query",
-            "description": "Tìm kiếm theo mã đơn hàng hoặc mô tả",
+            "description": "Search by order code or description",
             "schema": {
               "type": "string",
-              "description": "Tìm kiếm theo mã đơn hàng hoặc mô tả"
+              "description": "Search by order code or description"
             }
           },
           {
             "name": "status",
             "required": false,
             "in": "query",
-            "description": "Lọc theo trạng thái giao dịch (PENDING, SUCCESS, FAILED)",
+            "description": "Filter by transaction status (PENDING, SUCCESS, FAILED)",
             "schema": {
               "type": "string",
               "enum": ["PENDING", "SUCCESS", "FAILED"],
-              "description": "Lọc theo trạng thái giao dịch (PENDING, SUCCESS, FAILED)"
+              "description": "Filter by transaction status (PENDING, SUCCESS, FAILED)"
             }
           },
           {
             "name": "role",
             "required": false,
             "in": "query",
-            "description": "Lọc theo vai trò người dùng (BUYER, SELLER, SUPPORT_STAFF, ADMIN)",
+            "description": "Filter by user role (BUYER, SELLER, SUPPORT_STAFF, ADMIN)",
             "schema": {
               "type": "string",
               "enum": ["ADMIN", "SUPPORT_STAFF", "SELLER", "BUYER", "GUEST"],
-              "description": "Lọc theo vai trò người dùng (BUYER, SELLER, SUPPORT_STAFF, ADMIN)"
+              "description": "Filter by user role (BUYER, SELLER, SUPPORT_STAFF, ADMIN)"
             }
           },
           {
             "name": "userId",
             "required": false,
             "in": "query",
-            "description": "Lọc theo ID người dùng cụ thể",
+            "description": "Filter by specific user ID",
             "schema": {
               "type": "string",
-              "description": "Lọc theo ID người dùng cụ thể"
+              "description": "Filter by specific user ID"
             }
           }
         ],
@@ -5590,13 +5590,13 @@
                   "amount": {
                     "type": "number",
                     "minimum": 10000,
-                    "description": "Số tiền nạp vào ví hệ thống (VND, tối thiểu 10.000 VNĐ)",
+                    "description": "Amount to deposit into the system wallet (VND, minimum 10,000 VND)",
                     "example": 1000000
                   },
                   "description": {
                     "type": "string",
-                    "description": "Ghi chú lý do nạp tiền vào ví hệ thống",
-                    "example": "Nạp quỹ dự phòng bảo chứng thanh toán"
+                    "description": "Note explaining the system wallet deposit",
+                    "example": "Top up payment escrow reserve fund"
                   }
                 },
                 "required": ["amount"],
@@ -5631,13 +5631,13 @@
             "name": "page",
             "required": false,
             "in": "query",
-            "description": "Trang hiện tại (bắt đầu từ 1)",
+            "description": "Current page (1-based)",
             "schema": {
               "default": 1,
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Trang hiện tại (bắt đầu từ 1)",
+              "description": "Current page (1-based)",
               "example": 1
             }
           },
@@ -5645,13 +5645,13 @@
             "name": "limit",
             "required": false,
             "in": "query",
-            "description": "Số lượng bản ghi trên mỗi trang (tối đa 100)",
+            "description": "Records per page (max 100)",
             "schema": {
               "default": 10,
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Số lượng bản ghi trên mỗi trang (tối đa 100)",
+              "description": "Records per page (max 100)",
               "example": 10
             }
           },
@@ -5659,7 +5659,7 @@
             "name": "status",
             "required": false,
             "in": "query",
-            "description": "Lọc theo trạng thái khiếu nại (OPEN, UNDER_REVIEW, RESOLVED_SELLER_FAVOR, RESOLVED_BUYER_FAVOR, CANCELLED)",
+            "description": "Filter by dispute status (OPEN, UNDER_REVIEW, RESOLVED_SELLER_FAVOR, RESOLVED_BUYER_FAVOR, CANCELLED)",
             "schema": {
               "type": "string",
               "enum": [
@@ -5669,17 +5669,17 @@
                 "RESOLVED_BUYER_FAVOR",
                 "CANCELLED"
               ],
-              "description": "Lọc theo trạng thái khiếu nại (OPEN, UNDER_REVIEW, RESOLVED_SELLER_FAVOR, RESOLVED_BUYER_FAVOR, CANCELLED)"
+              "description": "Filter by dispute status (OPEN, UNDER_REVIEW, RESOLVED_SELLER_FAVOR, RESOLVED_BUYER_FAVOR, CANCELLED)"
             }
           },
           {
             "name": "search",
             "required": false,
             "in": "query",
-            "description": "Tìm kiếm theo mã khiếu nại (id), mã đơn hàng (orderId), lý do hoặc thông tin người liên quan",
+            "description": "Search by dispute ID, orderId, reason, or participant details",
             "schema": {
               "type": "string",
-              "description": "Tìm kiếm theo mã khiếu nại (id), mã đơn hàng (orderId), lý do hoặc thông tin người liên quan",
+              "description": "Search by dispute ID, orderId, reason, or participant details",
               "example": "o1"
             }
           }
@@ -5750,63 +5750,63 @@
                     "type": "number",
                     "minimum": 0,
                     "maximum": 100,
-                    "description": "Tỷ lệ phần trăm hoa hồng / phí sàn thu từ người bán (%)",
+                    "description": "Platform commission fee percentage collected from sellers (%)",
                     "example": 7
                   },
                   "cartExpirationDays": {
                     "type": "number",
                     "minimum": 1,
                     "maximum": 90,
-                    "description": "Thời gian giỏ hàng không hoạt động trước khi hết hạn (ngày)",
+                    "description": "Inactive cart expiration duration (days)",
                     "example": 7
                   },
                   "checkoutTimeoutMinutes": {
                     "type": "number",
                     "minimum": 5,
                     "maximum": 120,
-                    "description": "Thời gian giữ tạm tồn kho khi người mua checkout (phút)",
+                    "description": "Temporary inventory hold duration during checkout (minutes)",
                     "example": 15
                   },
                   "inventoryReservationTimeout": {
                     "type": "number",
                     "minimum": 5,
                     "maximum": 240,
-                    "description": "Thời gian hết hạn khóa tồn kho reservation (phút)",
+                    "description": "Inventory reservation lock expiration duration (minutes)",
                     "example": 30
                   },
                   "maxActiveCartPerUser": {
                     "type": "number",
                     "minimum": 1,
                     "maximum": 5,
-                    "description": "Số lượng giỏ hàng hoạt động tối đa của mỗi người dùng",
+                    "description": "Maximum active carts per user",
                     "example": 1
                   },
                   "categoryMaxLevel": {
                     "type": "number",
                     "minimum": 1,
                     "maximum": 5,
-                    "description": "Độ sâu phân cấp tối đa của danh mục hàng hóa (cấp)",
+                    "description": "Maximum product category hierarchy depth (levels)",
                     "example": 3
                   },
                   "maxProductImages": {
                     "type": "number",
                     "minimum": 1,
                     "maximum": 20,
-                    "description": "Số lượng ảnh tối đa cho mỗi sản phẩm đăng bán",
+                    "description": "Maximum number of images per product listing",
                     "example": 5
                   },
                   "antiSnipingTriggerMinutes": {
                     "type": "number",
                     "minimum": 1,
                     "maximum": 30,
-                    "description": "Ngưỡng đếm ngược kích hoạt gia hạn chống bắn tỉa đấu giá (phút)",
+                    "description": "Remaining time threshold that triggers auction anti-sniping extension (minutes)",
                     "example": 2
                   },
                   "antiSnipingExtendMinutes": {
                     "type": "number",
                     "minimum": 1,
                     "maximum": 30,
-                    "description": "Số phút gia hạn cộng thêm khi chống bắn tỉa kích hoạt (phút)",
+                    "description": "Extension duration added when anti-sniping triggers (minutes)",
                     "example": 5
                   }
                 },
@@ -5838,13 +5838,13 @@
             "name": "page",
             "required": false,
             "in": "query",
-            "description": "Trang hiện tại (bắt đầu từ 1)",
+            "description": "Current page (1-based)",
             "schema": {
               "default": 1,
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Trang hiện tại (bắt đầu từ 1)",
+              "description": "Current page (1-based)",
               "example": 1
             }
           },
@@ -5852,13 +5852,13 @@
             "name": "limit",
             "required": false,
             "in": "query",
-            "description": "Số lượng bản ghi trên mỗi trang (tối đa 100)",
+            "description": "Records per page (max 100)",
             "schema": {
               "default": 10,
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Số lượng bản ghi trên mỗi trang (tối đa 100)",
+              "description": "Records per page (max 100)",
               "example": 10
             }
           },
@@ -5866,7 +5866,7 @@
             "name": "status",
             "required": false,
             "in": "query",
-            "description": "Lọc theo trạng thái khiếu nại (OPEN, UNDER_REVIEW, RESOLVED_SELLER_FAVOR, RESOLVED_BUYER_FAVOR, CANCELLED)",
+            "description": "Filter by dispute status (OPEN, UNDER_REVIEW, RESOLVED_SELLER_FAVOR, RESOLVED_BUYER_FAVOR, CANCELLED)",
             "schema": {
               "type": "string",
               "enum": [
@@ -5876,17 +5876,17 @@
                 "RESOLVED_BUYER_FAVOR",
                 "CANCELLED"
               ],
-              "description": "Lọc theo trạng thái khiếu nại (OPEN, UNDER_REVIEW, RESOLVED_SELLER_FAVOR, RESOLVED_BUYER_FAVOR, CANCELLED)"
+              "description": "Filter by dispute status (OPEN, UNDER_REVIEW, RESOLVED_SELLER_FAVOR, RESOLVED_BUYER_FAVOR, CANCELLED)"
             }
           },
           {
             "name": "search",
             "required": false,
             "in": "query",
-            "description": "Tìm kiếm theo mã khiếu nại (id), mã đơn hàng (orderId), lý do hoặc thông tin người liên quan",
+            "description": "Search by dispute ID, orderId, reason, or participant details",
             "schema": {
               "type": "string",
-              "description": "Tìm kiếm theo mã khiếu nại (id), mã đơn hàng (orderId), lý do hoặc thông tin người liên quan",
+              "description": "Search by dispute ID, orderId, reason, or participant details",
               "example": "o1"
             }
           }
@@ -5953,11 +5953,11 @@
             "name": "search",
             "required": false,
             "in": "query",
-            "description": "Mã đơn, vận đơn, tên/email người mua hoặc người bán",
+            "description": "Order code, waybill code, or buyer/seller name or email",
             "schema": {
               "type": "string",
               "maxLength": 200,
-              "description": "Mã đơn, vận đơn, tên/email người mua hoặc người bán"
+              "description": "Order code, waybill code, or buyer/seller name or email"
             }
           },
           {
@@ -6132,34 +6132,34 @@
             "name": "search",
             "required": false,
             "in": "query",
-            "description": "Từ khóa tìm kiếm theo nội dung bình luận",
+            "description": "Search keyword in review comments",
             "schema": {
               "type": "string",
-              "description": "Từ khóa tìm kiếm theo nội dung bình luận"
+              "description": "Search keyword in review comments"
             }
           },
           {
             "name": "rating",
             "required": false,
             "in": "query",
-            "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả",
+            "description": "Filter by star rating (1 - 5); omit to return all",
             "schema": {
               "type": "integer",
               "minimum": 1,
               "maximum": 5,
-              "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả"
+              "description": "Filter by star rating (1 - 5); omit to return all"
             }
           },
           {
             "name": "sortBy",
             "required": false,
             "in": "query",
-            "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)",
+            "description": "Sort reviews by newest or oldest",
             "schema": {
               "default": "newest",
               "type": "string",
               "enum": ["newest", "oldest"],
-              "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)"
+              "description": "Sort reviews by newest or oldest"
             }
           }
         ],
@@ -6203,13 +6203,13 @@
                     "type": "string",
                     "minLength": 5,
                     "maxLength": 1000,
-                    "example": "Bình luận dùng ngôn từ thô tục, xúc phạm người bán"
+                    "example": "Review contains profanity or harassment toward the seller"
                   },
                   "pointsToDeduct": {
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 9007199254740991,
-                    "description": "Số điểm uy tín muốn trừ của người đánh giá",
+                    "description": "Reputation points to deduct from the reviewer",
                     "example": 10
                   }
                 },
@@ -6259,13 +6259,13 @@
                     "type": "string",
                     "minLength": 5,
                     "maxLength": 1000,
-                    "example": "Bình luận dùng ngôn từ thô tục, xúc phạm người bán"
+                    "example": "Review contains profanity or harassment toward the seller"
                   },
                   "pointsToDeduct": {
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 9007199254740991,
-                    "description": "Số điểm uy tín muốn trừ của người đánh giá",
+                    "description": "Reputation points to deduct from the reviewer",
                     "example": 10
                   }
                 },
@@ -6315,13 +6315,13 @@
                     "type": "string",
                     "minLength": 5,
                     "maxLength": 1000,
-                    "example": "Bình luận dùng ngôn từ thô tục, xúc phạm người bán"
+                    "example": "Review contains profanity or harassment toward the seller"
                   },
                   "pointsToDeduct": {
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 9007199254740991,
-                    "description": "Số điểm uy tín muốn trừ của người đánh giá",
+                    "description": "Reputation points to deduct from the reviewer",
                     "example": 10
                   }
                 },
@@ -6369,19 +6369,19 @@
                 "properties": {
                   "isHidden": {
                     "type": "boolean",
-                    "description": "true = ẩn đánh giá/phản hồi tiêu cực vi phạm, false = bỏ ẩn",
+                    "description": "true = hide violating negative review/reply, false = unhide",
                     "example": true
                   },
                   "reason": {
                     "type": "string",
                     "maxLength": 1000,
-                    "example": "Nội dung chứa từ ngữ xúc phạm hoặc tiêu cực không phù hợp."
+                    "example": "Content contains offensive or inappropriate language."
                   },
                   "pointsToDeduct": {
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 9007199254740991,
-                    "description": "Số điểm uy tín muốn trừ của tác giả khi ẩn (mặc định 0 nếu không trừ)",
+                    "description": "Reputation points to deduct from the author when hiding (defaults to 0)",
                     "example": 10
                   },
                   "targetType": {
@@ -6434,19 +6434,19 @@
                 "properties": {
                   "isHidden": {
                     "type": "boolean",
-                    "description": "true = ẩn đánh giá/phản hồi tiêu cực vi phạm, false = bỏ ẩn",
+                    "description": "true = hide violating negative review/reply, false = unhide",
                     "example": true
                   },
                   "reason": {
                     "type": "string",
                     "maxLength": 1000,
-                    "example": "Nội dung chứa từ ngữ xúc phạm hoặc tiêu cực không phù hợp."
+                    "example": "Content contains offensive or inappropriate language."
                   },
                   "pointsToDeduct": {
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 9007199254740991,
-                    "description": "Số điểm uy tín muốn trừ của tác giả khi ẩn (mặc định 0 nếu không trừ)",
+                    "description": "Reputation points to deduct from the author when hiding (defaults to 0)",
                     "example": 10
                   },
                   "targetType": {
@@ -6499,19 +6499,19 @@
                 "properties": {
                   "isHidden": {
                     "type": "boolean",
-                    "description": "true = ẩn đánh giá/phản hồi tiêu cực vi phạm, false = bỏ ẩn",
+                    "description": "true = hide violating negative review/reply, false = unhide",
                     "example": true
                   },
                   "reason": {
                     "type": "string",
                     "maxLength": 1000,
-                    "example": "Nội dung chứa từ ngữ xúc phạm hoặc tiêu cực không phù hợp."
+                    "example": "Content contains offensive or inappropriate language."
                   },
                   "pointsToDeduct": {
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 9007199254740991,
-                    "description": "Số điểm uy tín muốn trừ của tác giả khi ẩn (mặc định 0 nếu không trừ)",
+                    "description": "Reputation points to deduct from the author when hiding (defaults to 0)",
                     "example": 10
                   },
                   "targetType": {
@@ -6676,17 +6676,17 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 100,
-                    "description": "Tên danh mục hàng hóa",
-                    "example": "Laptop & Máy tính xách tay"
+                    "description": "Product category name",
+                    "example": "Laptops & Notebooks"
                   },
                   "slug": {
                     "type": "string",
-                    "description": "Đường dẫn định danh slug (nếu để trống hệ thống sẽ tự sinh từ tên)",
-                    "example": "laptop-may-tinh-xach-tay"
+                    "description": "URL slug (auto-generated from name if omitted)",
+                    "example": "laptops-notebooks"
                   },
                   "parentId": {
                     "nullable": true,
-                    "description": "ID của danh mục cha (để trống nếu là danh mục gốc cấp 1)",
+                    "description": "Parent category ID (omit for root level 1 category)",
                     "example": "cat-parent-uuid-123",
                     "type": "string"
                   }
@@ -6743,17 +6743,17 @@
                   "name": {
                     "type": "string",
                     "maxLength": 100,
-                    "description": "Tên danh mục hàng hóa mới",
-                    "example": "Laptop Gaming & Workstation"
+                    "description": "New product category name",
+                    "example": "Gaming & Workstation Laptops"
                   },
                   "slug": {
                     "type": "string",
-                    "description": "Đường dẫn định danh slug mới",
-                    "example": "laptop-gaming-workstation"
+                    "description": "New URL slug",
+                    "example": "gaming-workstation-laptops"
                   },
                   "parentId": {
                     "nullable": true,
-                    "description": "ID của danh mục cha mới (truyền null nếu muốn đưa về danh mục gốc cấp 1)",
+                    "description": "New parent category ID (pass null to move to root level 1)",
                     "example": "cat-parent-uuid-456",
                     "type": "string"
                   }
@@ -6841,7 +6841,7 @@
                 "properties": {
                   "salePrice": {
                     "nullable": true,
-                    "description": "Giá sale; null để dừng sale",
+                    "description": "Sale price; pass null to stop sale",
                     "example": 150000,
                     "type": "number",
                     "minimum": 1000
@@ -7096,7 +7096,7 @@
                           "type": "string",
                           "minLength": 1,
                           "maxLength": 40,
-                          "example": "Màu sắc"
+                          "example": "Color"
                         },
                         "values": {
                           "minItems": 1,
@@ -7107,41 +7107,41 @@
                             "minLength": 1,
                             "maxLength": 80
                           },
-                          "example": ["Đen", "Trắng"]
+                          "example": ["Black", "White"]
                         }
                       },
                       "required": ["name", "values"],
                       "additionalProperties": false
                     },
-                    "description": "Màu, size... dùng chung giá và tồn kho của sản phẩm"
+                    "description": "Product options (e.g., color, size) sharing price and stock"
                   },
                   "title": {
                     "type": "string",
                     "minLength": 1,
-                    "example": "Đồng Hồ Audemars Piguet Skeleton"
+                    "example": "Audemars Piguet Skeleton Watch"
                   },
                   "description": {
                     "type": "string",
                     "minLength": 1,
-                    "example": "Phiên bản lộ cơ cao cấp chuẩn Thụy Sĩ"
+                    "example": "Swiss luxury skeleton mechanical watch"
                   },
                   "basePrice": {
                     "type": "number",
                     "minimum": 1000,
-                    "description": "Giá bán cơ sở (VNĐ)",
+                    "description": "Base price (VND)",
                     "example": 125000000
                   },
                   "categoryId": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "ID danh mục sản phẩm",
+                    "description": "Product category ID",
                     "example": "uuid-category-id"
                   },
                   "quantity": {
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 9007199254740991,
-                    "description": "Số lượng tồn kho ban đầu",
+                    "description": "Initial stock quantity",
                     "example": 4
                   },
                   "images": {
@@ -7151,40 +7151,40 @@
                     "items": {
                       "type": "string"
                     },
-                    "description": "Danh sách URL ảnh sản phẩm (tối đa 5 ảnh)",
+                    "description": "Product image URLs (max 5)",
                     "example": ["https://res.cloudinary.com/demo/image/upload/v1/watch.jpg"]
                   },
                   "weightGrams": {
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 9007199254740991,
-                    "description": "Khối lượng (grams)",
+                    "description": "Weight (grams)",
                     "example": 500
                   },
                   "lengthCm": {
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 9007199254740991,
-                    "description": "Chiều dài (cm)",
+                    "description": "Length (cm)",
                     "example": 15
                   },
                   "widthCm": {
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 9007199254740991,
-                    "description": "Chiều rộng (cm)",
+                    "description": "Width (cm)",
                     "example": 10
                   },
                   "heightCm": {
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 9007199254740991,
-                    "description": "Chiều cao (cm)",
+                    "description": "Height (cm)",
                     "example": 8
                   },
                   "threeModelKey": {
                     "type": "string",
-                    "description": "Key model 3D (nếu có)",
+                    "description": "3D model key (optional)",
                     "example": "watch"
                   }
                 },
@@ -7321,7 +7321,7 @@
                           "type": "string",
                           "minLength": 1,
                           "maxLength": 40,
-                          "example": "Màu sắc"
+                          "example": "Color"
                         },
                         "values": {
                           "minItems": 1,
@@ -7332,7 +7332,7 @@
                             "minLength": 1,
                             "maxLength": 80
                           },
-                          "example": ["Đen", "Trắng"]
+                          "example": ["Black", "White"]
                         }
                       },
                       "required": ["name", "values"],
@@ -7341,11 +7341,11 @@
                   },
                   "title": {
                     "type": "string",
-                    "example": "Đồng Hồ Audemars Piguet Skeleton New Edition"
+                    "example": "Audemars Piguet Skeleton Watch New Edition"
                   },
                   "description": {
                     "type": "string",
-                    "example": "Mô tả cập nhật"
+                    "example": "Updated product description"
                   },
                   "basePrice": {
                     "type": "number",
@@ -7360,7 +7360,7 @@
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 9007199254740991,
-                    "description": "Số lượng tồn kho cập nhật (thay đổi số lượng thực tế trong kho)",
+                    "description": "Updated stock quantity (sets actual warehouse stock)",
                     "example": 10
                   },
                   "images": {
@@ -7470,35 +7470,35 @@
             "name": "search",
             "required": false,
             "in": "query",
-            "description": "Từ khóa tìm kiếm theo tên gian hàng, mô tả hoặc tên chủ shop",
+            "description": "Search keyword by shop name, description, or owner name",
             "schema": {
               "type": "string",
-              "description": "Từ khóa tìm kiếm theo tên gian hàng, mô tả hoặc tên chủ shop",
-              "example": "Hoàng Gia"
+              "description": "Search keyword by shop name, description, or owner name",
+              "example": "Royal"
             }
           },
           {
             "name": "city",
             "required": false,
             "in": "query",
-            "description": "Lọc shop theo tỉnh / thành phố",
+            "description": "Filter shops by province or city",
             "schema": {
               "type": "string",
-              "description": "Lọc shop theo tỉnh / thành phố",
-              "example": "Hồ Chí Minh"
+              "description": "Filter shops by province or city",
+              "example": "Ho Chi Minh"
             }
           },
           {
             "name": "page",
             "required": false,
             "in": "query",
-            "description": "Số trang hiện tại",
+            "description": "Current page",
             "schema": {
               "default": 1,
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Số trang hiện tại",
+              "description": "Current page",
               "example": 1
             }
           },
@@ -7506,13 +7506,13 @@
             "name": "limit",
             "required": false,
             "in": "query",
-            "description": "Số lượng kết quả mỗi trang",
+            "description": "Results per page",
             "schema": {
               "default": 12,
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Số lượng kết quả mỗi trang",
+              "description": "Results per page",
               "example": 12
             }
           },
@@ -7520,11 +7520,11 @@
             "name": "sortBy",
             "required": false,
             "in": "query",
-            "description": "Tiêu chí sắp xếp kết quả",
+            "description": "Sort order",
             "schema": {
               "type": "string",
               "enum": ["reputation", "newest", "products_count"],
-              "description": "Tiêu chí sắp xếp kết quả",
+              "description": "Sort order",
               "example": "reputation"
             }
           }
@@ -7661,7 +7661,7 @@
                     "type": "string",
                     "minLength": 2,
                     "maxLength": 150,
-                    "example": "Ưu đãi tháng 11"
+                    "example": "November Promotion"
                   },
                   "imageUrl": {
                     "type": "string",
@@ -7867,7 +7867,7 @@
                     "type": "string",
                     "minLength": 2,
                     "maxLength": 150,
-                    "example": "Ưu đãi tháng 11"
+                    "example": "November Promotion"
                   },
                   "imageUrl": {
                     "type": "string",
@@ -8629,7 +8629,7 @@
                     "minLength": 1,
                     "maxLength": 2000,
                     "description": "Reply message content between buyer and seller",
-                    "example": "Cảm ơn bạn đã phản hồi, shop xin hỗ trợ đổi trả ngay ạ."
+                    "example": "Thank you for your feedback, we will assist with an exchange right away."
                   },
                   "mediaUrls": {
                     "description": "Image or video URLs attached to this reply",
@@ -8654,7 +8654,7 @@
                     "minLength": 1,
                     "maxLength": 2000,
                     "description": "Reply message content between buyer and seller",
-                    "example": "Cảm ơn bạn đã phản hồi, shop xin hỗ trợ đổi trả ngay ạ."
+                    "example": "Thank you for your feedback, we will assist with an exchange right away."
                   },
                   "mediaUrls": {
                     "description": "Image or video URLs attached to this reply",
@@ -8713,7 +8713,7 @@
                     "minLength": 1,
                     "maxLength": 2000,
                     "description": "Reply message content between buyer and seller",
-                    "example": "Cảm ơn bạn đã phản hồi, shop xin hỗ trợ đổi trả ngay ạ."
+                    "example": "Thank you for your feedback, we will assist with an exchange right away."
                   },
                   "mediaUrls": {
                     "description": "Image or video URLs attached to this reply",
@@ -8738,7 +8738,7 @@
                     "minLength": 1,
                     "maxLength": 2000,
                     "description": "Reply message content between buyer and seller",
-                    "example": "Cảm ơn bạn đã phản hồi, shop xin hỗ trợ đổi trả ngay ạ."
+                    "example": "Thank you for your feedback, we will assist with an exchange right away."
                   },
                   "mediaUrls": {
                     "description": "Image or video URLs attached to this reply",
@@ -8800,12 +8800,12 @@
             "name": "rating",
             "required": false,
             "in": "query",
-            "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá",
+            "description": "Filter by star rating (1 - 5); omit to return all reviews",
             "schema": {
               "type": "integer",
               "minimum": 1,
               "maximum": 5,
-              "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá",
+              "description": "Filter by star rating (1 - 5); omit to return all reviews",
               "example": 5
             }
           },
@@ -8813,12 +8813,12 @@
             "name": "sortBy",
             "required": false,
             "in": "query",
-            "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)",
+            "description": "Sort reviews by newest or oldest",
             "schema": {
               "default": "newest",
               "type": "string",
               "enum": ["newest", "oldest"],
-              "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)"
+              "description": "Sort reviews by newest or oldest"
             }
           }
         ],
@@ -8875,12 +8875,12 @@
             "name": "rating",
             "required": false,
             "in": "query",
-            "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá",
+            "description": "Filter by star rating (1 - 5); omit to return all reviews",
             "schema": {
               "type": "integer",
               "minimum": 1,
               "maximum": 5,
-              "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá",
+              "description": "Filter by star rating (1 - 5); omit to return all reviews",
               "example": 5
             }
           },
@@ -8888,12 +8888,12 @@
             "name": "sortBy",
             "required": false,
             "in": "query",
-            "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)",
+            "description": "Sort reviews by newest or oldest",
             "schema": {
               "default": "newest",
               "type": "string",
               "enum": ["newest", "oldest"],
-              "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)"
+              "description": "Sort reviews by newest or oldest"
             }
           }
         ],
@@ -8946,12 +8946,12 @@
             "name": "rating",
             "required": false,
             "in": "query",
-            "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá",
+            "description": "Filter by star rating (1 - 5); omit to return all reviews",
             "schema": {
               "type": "integer",
               "minimum": 1,
               "maximum": 5,
-              "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá",
+              "description": "Filter by star rating (1 - 5); omit to return all reviews",
               "example": 5
             }
           },
@@ -8959,12 +8959,12 @@
             "name": "sortBy",
             "required": false,
             "in": "query",
-            "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)",
+            "description": "Sort reviews by newest or oldest",
             "schema": {
               "default": "newest",
               "type": "string",
               "enum": ["newest", "oldest"],
-              "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)"
+              "description": "Sort reviews by newest or oldest"
             }
           }
         ],
@@ -9016,12 +9016,12 @@
             "name": "rating",
             "required": false,
             "in": "query",
-            "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá",
+            "description": "Filter by star rating (1 - 5); omit to return all reviews",
             "schema": {
               "type": "integer",
               "minimum": 1,
               "maximum": 5,
-              "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá",
+              "description": "Filter by star rating (1 - 5); omit to return all reviews",
               "example": 5
             }
           },
@@ -9029,12 +9029,12 @@
             "name": "sortBy",
             "required": false,
             "in": "query",
-            "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)",
+            "description": "Sort reviews by newest or oldest",
             "schema": {
               "default": "newest",
               "type": "string",
               "enum": ["newest", "oldest"],
-              "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)"
+              "description": "Sort reviews by newest or oldest"
             }
           }
         ],
@@ -9087,12 +9087,12 @@
             "name": "rating",
             "required": false,
             "in": "query",
-            "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá",
+            "description": "Filter by star rating (1 - 5); omit to return all reviews",
             "schema": {
               "type": "integer",
               "minimum": 1,
               "maximum": 5,
-              "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá",
+              "description": "Filter by star rating (1 - 5); omit to return all reviews",
               "example": 5
             }
           },
@@ -9100,12 +9100,12 @@
             "name": "sortBy",
             "required": false,
             "in": "query",
-            "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)",
+            "description": "Sort reviews by newest or oldest",
             "schema": {
               "default": "newest",
               "type": "string",
               "enum": ["newest", "oldest"],
-              "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)"
+              "description": "Sort reviews by newest or oldest"
             }
           }
         ],
@@ -9210,12 +9210,12 @@
             "name": "rating",
             "required": false,
             "in": "query",
-            "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá",
+            "description": "Filter by star rating (1 - 5); omit to return all reviews",
             "schema": {
               "type": "integer",
               "minimum": 1,
               "maximum": 5,
-              "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá",
+              "description": "Filter by star rating (1 - 5); omit to return all reviews",
               "example": 5
             }
           },
@@ -9223,12 +9223,12 @@
             "name": "sortBy",
             "required": false,
             "in": "query",
-            "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)",
+            "description": "Sort reviews by newest or oldest",
             "schema": {
               "default": "newest",
               "type": "string",
               "enum": ["newest", "oldest"],
-              "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)"
+              "description": "Sort reviews by newest or oldest"
             }
           }
         ],
@@ -9272,7 +9272,7 @@
                     "minLength": 2,
                     "maxLength": 2000,
                     "description": "Seller reply content for a product review",
-                    "example": "Cảm ơn bạn đã ủng hộ shop! Shop sẽ đóng gói kỹ hơn ở đơn sau ạ."
+                    "example": "Thank you for supporting our shop! We will pack even more carefully next time."
                   },
                   "mediaUrls": {
                     "description": "Optional image or video URLs attached to the reply",
@@ -9380,13 +9380,13 @@
                     "type": "string",
                     "minLength": 5,
                     "maxLength": 150,
-                    "example": "Sản phẩm không đúng mô tả"
+                    "example": "Product does not match description"
                   },
                   "description": {
                     "type": "string",
                     "minLength": 10,
                     "maxLength": 5000,
-                    "example": "Nội dung mô tả chi tiết vi phạm cần kiểm tra."
+                    "example": "Detailed description of the policy violation to investigate."
                   },
                   "evidenceUrls": {
                     "maxItems": 10,
@@ -9442,13 +9442,13 @@
                     "type": "string",
                     "minLength": 5,
                     "maxLength": 150,
-                    "example": "Sản phẩm không đúng mô tả"
+                    "example": "Product does not match description"
                   },
                   "description": {
                     "type": "string",
                     "minLength": 10,
                     "maxLength": 5000,
-                    "example": "Nội dung mô tả chi tiết vi phạm cần kiểm tra."
+                    "example": "Detailed description of the policy violation to investigate."
                   },
                   "evidenceUrls": {
                     "maxItems": 10,
@@ -9487,12 +9487,12 @@
             "name": "rating",
             "required": false,
             "in": "query",
-            "description": "Lọc theo số sao đánh giá (1 - 5)",
+            "description": "Filter by star rating (1 - 5)",
             "schema": {
               "type": "integer",
               "minimum": 1,
               "maximum": 5,
-              "description": "Lọc theo số sao đánh giá (1 - 5)",
+              "description": "Filter by star rating (1 - 5)",
               "example": 5
             }
           },
@@ -9500,38 +9500,38 @@
             "name": "sortBy",
             "required": false,
             "in": "query",
-            "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)",
+            "description": "Sort reviews by newest or oldest",
             "schema": {
               "default": "newest",
               "type": "string",
               "enum": ["newest", "oldest"],
-              "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)"
+              "description": "Sort reviews by newest or oldest"
             }
           },
           {
             "name": "page",
             "required": false,
             "in": "query",
-            "description": "Số trang (bắt đầu từ 1)",
+            "description": "Page number (1-based)",
             "schema": {
               "default": 1,
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Số trang (bắt đầu từ 1)"
+              "description": "Page number (1-based)"
             }
           },
           {
             "name": "limit",
             "required": false,
             "in": "query",
-            "description": "Số lượng đánh giá mỗi trang (1 - 100)",
+            "description": "Reviews per page (1 - 100)",
             "schema": {
               "default": 10,
               "type": "integer",
               "minimum": 1,
               "maximum": 100,
-              "description": "Số lượng đánh giá mỗi trang (1 - 100)"
+              "description": "Reviews per page (1 - 100)"
             }
           }
         ],
@@ -9558,7 +9558,7 @@
             "name": "status",
             "required": false,
             "in": "query",
-            "description": "Lọc theo trạng thái khiếu nại",
+            "description": "Filter by dispute status",
             "schema": {
               "type": "string",
               "enum": [
@@ -9568,33 +9568,33 @@
                 "RESOLVED_BUYER_FAVOR",
                 "CANCELLED"
               ],
-              "description": "Lọc theo trạng thái khiếu nại"
+              "description": "Filter by dispute status"
             }
           },
           {
             "name": "page",
             "required": false,
             "in": "query",
-            "description": "Số trang (bắt đầu từ 1)",
+            "description": "Page number (1-based)",
             "schema": {
               "default": 1,
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Số trang (bắt đầu từ 1)"
+              "description": "Page number (1-based)"
             }
           },
           {
             "name": "limit",
             "required": false,
             "in": "query",
-            "description": "Số lượng khiếu nại mỗi trang (1 - 100)",
+            "description": "Disputes per page (1 - 100)",
             "schema": {
               "default": 10,
               "type": "integer",
               "minimum": 1,
               "maximum": 100,
-              "description": "Số lượng khiếu nại mỗi trang (1 - 100)"
+              "description": "Disputes per page (1 - 100)"
             }
           }
         ],
@@ -9638,15 +9638,15 @@
                   "responseNotes": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Nội dung phản hồi / giải trình từ phía người bán",
-                    "example": "Tôi đã đóng gói đúng hàng và gửi qua GHN, bưu kiện có dán tem niêm phong đầy đủ."
+                    "description": "Seller response and explanation notes",
+                    "example": "The item was packed accurately and handed over to GHN with an intact seal."
                   },
                   "evidenceUrls": {
                     "type": "array",
                     "items": {
                       "type": "string"
                     },
-                    "description": "Danh sách URL hình ảnh / video bằng chứng đối chất của người bán",
+                    "description": "List of seller supporting image or video URLs",
                     "example": ["https://storage.nexus.vn/evidence/pack_proof_1.jpg"]
                   }
                 },
@@ -9709,36 +9709,36 @@
                   "properties": {
                     "url": {
                       "type": "string",
-                      "description": "Đường dẫn URL của file ảnh sau khi upload lên server/Cloudinary",
+                      "description": "Uploaded image URL on local storage or Cloudinary",
                       "example": "https://res.cloudinary.com/demo/image/upload/sample.jpg"
                     },
                     "publicId": {
-                      "description": "Mã định danh duy nhất của file media trên hệ thống lưu trữ",
+                      "description": "Unique media identifier in storage",
                       "example": "nexus/media/sample_123",
                       "type": "string"
                     },
                     "fileName": {
                       "type": "string",
-                      "description": "Tên file được lưu trên máy chủ",
+                      "description": "Stored filename on server",
                       "example": "media-1729410000000-a1b2c3d4.png"
                     },
                     "originalName": {
                       "type": "string",
-                      "description": "Tên file gốc do client tải lên",
+                      "description": "Original filename uploaded by client",
                       "example": "cover-chapter-1.png"
                     },
                     "mimeType": {
                       "type": "string",
-                      "description": "MIME type của file ảnh",
+                      "description": "Image MIME type",
                       "example": "image/png"
                     },
                     "size": {
                       "type": "number",
-                      "description": "Kích thước file theo bytes",
+                      "description": "File size in bytes",
                       "example": 245120
                     },
                     "urls": {
-                      "description": "Mảng URL của các ảnh đã tải lên",
+                      "description": "Array of uploaded image URLs",
                       "example": ["https://res.cloudinary.com/demo/image/upload/sample.jpg"],
                       "type": "array",
                       "items": {
@@ -9804,7 +9804,7 @@
                       "items": {
                         "type": "string"
                       },
-                      "description": "Mảng chứa danh sách các URL của toàn bộ file ảnh vừa được tải lên",
+                      "description": "List of URLs for all uploaded image files",
                       "example": [
                         "https://res.cloudinary.com/demo/image/upload/sample1.jpg",
                         "https://res.cloudinary.com/demo/image/upload/sample2.jpg"
@@ -9817,36 +9817,36 @@
                         "properties": {
                           "url": {
                             "type": "string",
-                            "description": "Đường dẫn URL của file ảnh sau khi upload lên server/Cloudinary",
+                            "description": "Uploaded image URL on local storage or Cloudinary",
                             "example": "https://res.cloudinary.com/demo/image/upload/sample.jpg"
                           },
                           "publicId": {
-                            "description": "Mã định danh duy nhất của file media trên hệ thống lưu trữ",
+                            "description": "Unique media identifier in storage",
                             "example": "nexus/media/sample_123",
                             "type": "string"
                           },
                           "fileName": {
                             "type": "string",
-                            "description": "Tên file được lưu trên máy chủ",
+                            "description": "Stored filename on server",
                             "example": "media-1729410000000-a1b2c3d4.png"
                           },
                           "originalName": {
                             "type": "string",
-                            "description": "Tên file gốc do client tải lên",
+                            "description": "Original filename uploaded by client",
                             "example": "cover-chapter-1.png"
                           },
                           "mimeType": {
                             "type": "string",
-                            "description": "MIME type của file ảnh",
+                            "description": "Image MIME type",
                             "example": "image/png"
                           },
                           "size": {
                             "type": "number",
-                            "description": "Kích thước file theo bytes",
+                            "description": "File size in bytes",
                             "example": 245120
                           },
                           "urls": {
-                            "description": "Mảng URL của các ảnh đã tải lên",
+                            "description": "Array of uploaded image URLs",
                             "example": ["https://res.cloudinary.com/demo/image/upload/sample.jpg"],
                             "type": "array",
                             "items": {
@@ -9857,7 +9857,7 @@
                         "required": ["url", "fileName", "originalName", "mimeType", "size"],
                         "additionalProperties": false
                       },
-                      "description": "Danh sách chi tiết thông tin của từng file ảnh vừa được tải lên"
+                      "description": "Detailed metadata for each uploaded image file"
                     }
                   },
                   "required": ["urls", "items"],
@@ -9918,7 +9918,7 @@
                       "items": {
                         "type": "string"
                       },
-                      "description": "Mảng chứa danh sách các URL của toàn bộ file ảnh vừa được tải lên",
+                      "description": "List of URLs for all uploaded image files",
                       "example": [
                         "https://res.cloudinary.com/demo/image/upload/sample1.jpg",
                         "https://res.cloudinary.com/demo/image/upload/sample2.jpg"
@@ -9931,36 +9931,36 @@
                         "properties": {
                           "url": {
                             "type": "string",
-                            "description": "Đường dẫn URL của file ảnh sau khi upload lên server/Cloudinary",
+                            "description": "Uploaded image URL on local storage or Cloudinary",
                             "example": "https://res.cloudinary.com/demo/image/upload/sample.jpg"
                           },
                           "publicId": {
-                            "description": "Mã định danh duy nhất của file media trên hệ thống lưu trữ",
+                            "description": "Unique media identifier in storage",
                             "example": "nexus/media/sample_123",
                             "type": "string"
                           },
                           "fileName": {
                             "type": "string",
-                            "description": "Tên file được lưu trên máy chủ",
+                            "description": "Stored filename on server",
                             "example": "media-1729410000000-a1b2c3d4.png"
                           },
                           "originalName": {
                             "type": "string",
-                            "description": "Tên file gốc do client tải lên",
+                            "description": "Original filename uploaded by client",
                             "example": "cover-chapter-1.png"
                           },
                           "mimeType": {
                             "type": "string",
-                            "description": "MIME type của file ảnh",
+                            "description": "Image MIME type",
                             "example": "image/png"
                           },
                           "size": {
                             "type": "number",
-                            "description": "Kích thước file theo bytes",
+                            "description": "File size in bytes",
                             "example": 245120
                           },
                           "urls": {
-                            "description": "Mảng URL của các ảnh đã tải lên",
+                            "description": "Array of uploaded image URLs",
                             "example": ["https://res.cloudinary.com/demo/image/upload/sample.jpg"],
                             "type": "array",
                             "items": {
@@ -9971,7 +9971,7 @@
                         "required": ["url", "fileName", "originalName", "mimeType", "size"],
                         "additionalProperties": false
                       },
-                      "description": "Danh sách chi tiết thông tin của từng file ảnh vừa được tải lên"
+                      "description": "Detailed metadata for each uploaded image file"
                     }
                   },
                   "required": ["urls", "items"],
@@ -10202,7 +10202,7 @@
                       "required": ["productId", "quantity"],
                       "additionalProperties": false
                     },
-                    "description": "Danh sách các sản phẩm và số lượng lưu tạm từ LocalStorage của Guest"
+                    "description": "Guest cart items and quantities from browser localStorage"
                   }
                 },
                 "required": ["items"],
@@ -11035,16 +11035,16 @@
                     "default": "PAYOS",
                     "type": "string",
                     "enum": ["PAYOS", "WALLET", "COD"],
-                    "description": "Cổng thanh toán muốn sử dụng (PAYOS, WALLET, COD)"
+                    "description": "Payment provider (PAYOS, WALLET, COD)"
                   },
                   "returnUrl": {
                     "type": "string",
-                    "description": "URL chuyển hướng khi thanh toán thành công",
+                    "description": "Redirect URL on successful payment",
                     "example": "http://localhost:5173/payment/success"
                   },
                   "cancelUrl": {
                     "type": "string",
-                    "description": "URL chuyển hướng khi người dùng bấm hủy",
+                    "description": "Redirect URL when payment is canceled",
                     "example": "http://localhost:5173/payment/cancel"
                   }
                 },
@@ -11213,34 +11213,34 @@
                     "type": "integer",
                     "minimum": 50,
                     "maximum": 9007199254740991,
-                    "description": "Khối lượng gói hàng (grams)",
+                    "description": "Parcel weight (grams)",
                     "example": 500
                   },
                   "lengthCm": {
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 9007199254740991,
-                    "description": "Chiều dài gói hàng (cm)",
+                    "description": "Parcel length (cm)",
                     "example": 20
                   },
                   "widthCm": {
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 9007199254740991,
-                    "description": "Chiều rộng gói hàng (cm)",
+                    "description": "Parcel width (cm)",
                     "example": 15
                   },
                   "heightCm": {
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 9007199254740991,
-                    "description": "Chiều cao gói hàng (cm)",
+                    "description": "Parcel height (cm)",
                     "example": 10
                   },
                   "note": {
                     "type": "string",
-                    "description": "Ghi chú cho shipper GHN",
-                    "example": "Hàng dễ vỡ, xin nhẹ tay"
+                    "description": "Note for the GHN courier",
+                    "example": "Fragile, handle with care"
                   }
                 },
                 "additionalProperties": false
@@ -11300,7 +11300,7 @@
             "name": "status",
             "required": false,
             "in": "query",
-            "description": "Lọc theo trạng thái đơn hàng",
+            "description": "Filter by order status",
             "schema": {
               "type": "string",
               "enum": [
@@ -11313,43 +11313,43 @@
                 "CANCELLED",
                 "REFUNDED"
               ],
-              "description": "Lọc theo trạng thái đơn hàng"
+              "description": "Filter by order status"
             }
           },
           {
             "name": "search",
             "required": false,
             "in": "query",
-            "description": "Tìm kiếm theo mã đơn, tên hoặc SĐT người mua",
+            "description": "Search by order code, buyer name, or phone number",
             "schema": {
               "type": "string",
-              "description": "Tìm kiếm theo mã đơn, tên hoặc SĐT người mua"
+              "description": "Search by order code, buyer name, or phone number"
             }
           },
           {
             "name": "page",
             "required": false,
             "in": "query",
-            "description": "Số trang (bắt đầu từ 1)",
+            "description": "Page number (1-based)",
             "schema": {
               "default": 1,
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Số trang (bắt đầu từ 1)"
+              "description": "Page number (1-based)"
             }
           },
           {
             "name": "limit",
             "required": false,
             "in": "query",
-            "description": "Số lượng đơn mỗi trang (1 - 100)",
+            "description": "Orders per page (1 - 100)",
             "schema": {
               "default": 10,
               "type": "integer",
               "minimum": 1,
               "maximum": 100,
-              "description": "Số lượng đơn mỗi trang (1 - 100)"
+              "description": "Orders per page (1 - 100)"
             }
           }
         ],
@@ -11463,34 +11463,34 @@
                     "type": "integer",
                     "minimum": 50,
                     "maximum": 9007199254740991,
-                    "description": "Khối lượng gói hàng (grams)",
+                    "description": "Parcel weight (grams)",
                     "example": 500
                   },
                   "lengthCm": {
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 9007199254740991,
-                    "description": "Chiều dài gói hàng (cm)",
+                    "description": "Parcel length (cm)",
                     "example": 20
                   },
                   "widthCm": {
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 9007199254740991,
-                    "description": "Chiều rộng gói hàng (cm)",
+                    "description": "Parcel width (cm)",
                     "example": 15
                   },
                   "heightCm": {
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 9007199254740991,
-                    "description": "Chiều cao gói hàng (cm)",
+                    "description": "Parcel height (cm)",
                     "example": 10
                   },
                   "note": {
                     "type": "string",
-                    "description": "Ghi chú cho shipper GHN",
-                    "example": "Hàng dễ vỡ, xin nhẹ tay"
+                    "description": "Note for the GHN courier",
+                    "example": "Fragile, handle with care"
                   }
                 },
                 "additionalProperties": false
@@ -11761,19 +11761,19 @@
                   "amount": {
                     "type": "number",
                     "minimum": 10000,
-                    "description": "Số tiền nạp vào ví cá nhân (VND, tối thiểu 10.000 VNĐ)",
+                    "description": "Top-up amount for personal wallet (VND, minimum 10,000 VND)",
                     "example": 500000
                   },
                   "description": {
                     "type": "string",
-                    "description": "Ghi chú lý do nạp tiền",
-                    "example": "Nạp tiền vào ví NEXUS Pay để mua hàng"
+                    "description": "Optional deposit note",
+                    "example": "Top up NEXUS Pay wallet for shopping"
                   },
                   "provider": {
                     "default": "PAYOS",
                     "type": "string",
                     "enum": ["PAYOS", "DIRECT"],
-                    "description": "Phương thức nạp: PAYOS (tạo VietQR thanh toán) hoặc DIRECT (nạp thử nghiệm)"
+                    "description": "Deposit method: PAYOS (VietQR link) or DIRECT (test top-up)"
                   }
                 },
                 "required": ["amount"],
@@ -11843,28 +11843,28 @@
                   "amount": {
                     "type": "number",
                     "minimum": 1,
-                    "description": "Số tiền muốn rút (VND, phải lớn hơn 0)",
+                    "description": "Withdrawal amount (VND, must be greater than 0)",
                     "example": 50000
                   },
                   "bankName": {
                     "type": "string",
-                    "description": "Tên ngân hàng thụ hưởng (e.g., Vietcombank, MB Bank). Nếu để trống sẽ lấy từ Hồ sơ cá nhân.",
+                    "description": "Beneficiary bank name (e.g., Vietcombank, MB Bank). Defaults to user profile bank if omitted.",
                     "example": "Vietcombank"
                   },
                   "accountNumber": {
                     "type": "string",
-                    "description": "Số tài khoản ngân hàng thụ hưởng. Nếu để trống sẽ lấy từ Hồ sơ cá nhân.",
+                    "description": "Beneficiary bank account number. Defaults to user profile if omitted.",
                     "example": "1029384756"
                   },
                   "accountHolderName": {
                     "type": "string",
-                    "description": "Họ và tên chủ tài khoản thụ hưởng. Nếu để trống sẽ lấy từ Hồ sơ cá nhân.",
+                    "description": "Beneficiary account holder full name. Defaults to user profile if omitted.",
                     "example": "NGUYEN VAN A"
                   },
                   "note": {
                     "type": "string",
-                    "description": "Ghi chú thêm của người bán",
-                    "example": "Rút tiền doanh thu bán hàng tháng 10"
+                    "description": "Optional seller withdrawal note",
+                    "example": "October sales payout withdrawal"
                   }
                 },
                 "required": ["amount"],
@@ -11923,9 +11923,9 @@
             "name": "type",
             "required": false,
             "in": "query",
-            "description": "Lọc theo loại giao dịch ví: DEPOSIT, WITHDRAW, ESCROW_LOCK, ESCROW_PAYOUT, ESCROW_REFUND",
+            "description": "Filter by wallet transaction type: DEPOSIT, WITHDRAW, ESCROW_LOCK, ESCROW_PAYOUT, ESCROW_REFUND",
             "schema": {
-              "description": "Lọc theo loại giao dịch ví: DEPOSIT, WITHDRAW, ESCROW_LOCK, ESCROW_PAYOUT, ESCROW_REFUND",
+              "description": "Filter by wallet transaction type: DEPOSIT, WITHDRAW, ESCROW_LOCK, ESCROW_PAYOUT, ESCROW_REFUND",
               "type": "string",
               "enum": [
                 "DEPOSIT",
@@ -11946,9 +11946,9 @@
             "name": "status",
             "required": false,
             "in": "query",
-            "description": "Lọc theo trạng thái: PENDING, SUCCESS, FAILED",
+            "description": "Filter by status: PENDING, SUCCESS, FAILED",
             "schema": {
-              "description": "Lọc theo trạng thái: PENDING, SUCCESS, FAILED",
+              "description": "Filter by status: PENDING, SUCCESS, FAILED",
               "type": "string",
               "enum": ["PENDING", "SUCCESS", "FAILED"]
             }
@@ -12043,28 +12043,28 @@
                   "amount": {
                     "type": "number",
                     "minimum": 1,
-                    "description": "Số tiền muốn rút (VND, phải lớn hơn 0)",
+                    "description": "Withdrawal amount (VND, must be greater than 0)",
                     "example": 50000
                   },
                   "bankName": {
                     "type": "string",
-                    "description": "Tên ngân hàng thụ hưởng (e.g., Vietcombank, MB Bank). Nếu để trống sẽ lấy từ Hồ sơ cá nhân.",
+                    "description": "Beneficiary bank name (e.g., Vietcombank, MB Bank). Defaults to user profile bank if omitted.",
                     "example": "Vietcombank"
                   },
                   "accountNumber": {
                     "type": "string",
-                    "description": "Số tài khoản ngân hàng thụ hưởng. Nếu để trống sẽ lấy từ Hồ sơ cá nhân.",
+                    "description": "Beneficiary bank account number. Defaults to user profile if omitted.",
                     "example": "1029384756"
                   },
                   "accountHolderName": {
                     "type": "string",
-                    "description": "Họ và tên chủ tài khoản thụ hưởng. Nếu để trống sẽ lấy từ Hồ sơ cá nhân.",
+                    "description": "Beneficiary account holder full name. Defaults to user profile if omitted.",
                     "example": "NGUYEN VAN A"
                   },
                   "note": {
                     "type": "string",
-                    "description": "Ghi chú thêm của người bán",
-                    "example": "Rút tiền doanh thu bán hàng tháng 10"
+                    "description": "Optional seller withdrawal note",
+                    "example": "October sales payout withdrawal"
                   }
                 },
                 "required": ["amount"],
@@ -12123,9 +12123,9 @@
             "name": "type",
             "required": false,
             "in": "query",
-            "description": "Lọc theo loại giao dịch ví: DEPOSIT, WITHDRAW, ESCROW_LOCK, ESCROW_PAYOUT, ESCROW_REFUND",
+            "description": "Filter by wallet transaction type: DEPOSIT, WITHDRAW, ESCROW_LOCK, ESCROW_PAYOUT, ESCROW_REFUND",
             "schema": {
-              "description": "Lọc theo loại giao dịch ví: DEPOSIT, WITHDRAW, ESCROW_LOCK, ESCROW_PAYOUT, ESCROW_REFUND",
+              "description": "Filter by wallet transaction type: DEPOSIT, WITHDRAW, ESCROW_LOCK, ESCROW_PAYOUT, ESCROW_REFUND",
               "type": "string",
               "enum": [
                 "DEPOSIT",
@@ -12146,9 +12146,9 @@
             "name": "status",
             "required": false,
             "in": "query",
-            "description": "Lọc theo trạng thái: PENDING, SUCCESS, FAILED",
+            "description": "Filter by status: PENDING, SUCCESS, FAILED",
             "schema": {
-              "description": "Lọc theo trạng thái: PENDING, SUCCESS, FAILED",
+              "description": "Filter by status: PENDING, SUCCESS, FAILED",
               "type": "string",
               "enum": ["PENDING", "SUCCESS", "FAILED"]
             }
@@ -12279,7 +12279,7 @@
                   "webhookUrl": {
                     "type": "string",
                     "format": "uri",
-                    "description": "URL Webhook công khai để đăng ký và xác nhận với PayOS",
+                    "description": "Public webhook URL to register and confirm with PayOS",
                     "example": "https://xxxx.ngrok-free.app/api/v1/commerce/webhooks/payos"
                   }
                 },
@@ -12472,7 +12472,7 @@
                     "type": "string",
                     "maxLength": 2000,
                     "description": "Support staff inspection or live room support note",
-                    "example": "Đã kiểm tra sơ bộ giấy kiểm định GIA và đối chiếu ảnh thực tế."
+                    "example": "Verified GIA appraisal certificate against actual lot photos."
                   }
                 },
                 "additionalProperties": false
@@ -12564,7 +12564,7 @@
                     "type": "string",
                     "maxLength": 1000,
                     "description": "Optional resolution note sent back to the requester",
-                    "example": "Đã tiếp nhận khiếu nại và chuyển sang bước xử lý quá hạn thanh toán."
+                    "example": "Complaint accepted and escalated to payment default processing."
                   }
                 },
                 "required": ["status"],
@@ -13056,7 +13056,7 @@
                     "type": "string",
                     "maxLength": 1000,
                     "description": "Optional administrative note describing the action",
-                    "example": "Người mua không hoàn tất thanh toán phần còn lại trong thời hạn 24 giờ."
+                    "example": "Buyer failed to complete remaining payment within the 24-hour window."
                   }
                 },
                 "required": ["confirmed"],
@@ -13110,7 +13110,7 @@
                     "type": "string",
                     "maxLength": 1000,
                     "description": "Optional administrative note describing the action",
-                    "example": "Người mua không hoàn tất thanh toán phần còn lại trong thời hạn 24 giờ."
+                    "example": "Buyer failed to complete remaining payment within the 24-hour window."
                   }
                 },
                 "required": ["confirmed"],
@@ -13759,7 +13759,7 @@
                     "minLength": 1,
                     "maxLength": 2000,
                     "description": "Detailed complaint reason submitted to Admin",
-                    "example": "Người mua thắng đấu giá nhưng chưa hoàn tất thanh toán sau thời hạn quy định."
+                    "example": "Winning buyer has not completed payment after the checkout deadline."
                   },
                   "evidenceUrls": {
                     "type": "array",
@@ -13816,7 +13816,7 @@
                     "minLength": 1,
                     "maxLength": 1500,
                     "description": "Initial question or support message sent to Support Staff",
-                    "example": "Xin hỗ trợ kiểm tra điều kiện tham gia và quy trình đặt cọc 30% của lô #1."
+                    "example": "Please help verify eligibility and the 30% deposit process for lot #1."
                   }
                 },
                 "required": ["message"],
@@ -13981,7 +13981,7 @@
                     "additionalProperties": false
                   },
                   "recipientName": {
-                    "example": "Nguyễn Văn A",
+                    "example": "Jane Doe",
                     "type": "string",
                     "minLength": 1
                   },
@@ -13991,20 +13991,20 @@
                     "minLength": 1
                   },
                   "city": {
-                    "example": "TP. Hồ Chí Minh",
+                    "example": "Ho Chi Minh City",
                     "type": "string",
                     "minLength": 1
                   },
                   "district": {
-                    "example": "Quận 1",
+                    "example": "District 1",
                     "type": "string"
                   },
                   "ward": {
-                    "example": "Phường Bến Nghé",
+                    "example": "Ben Nghe Ward",
                     "type": "string"
                   },
                   "street": {
-                    "example": "123 Lê Lợi",
+                    "example": "123 Le Loi",
                     "type": "string",
                     "minLength": 1
                   },
@@ -14111,7 +14111,7 @@
                     "additionalProperties": false
                   },
                   "recipientName": {
-                    "example": "Nguyễn Văn A",
+                    "example": "Jane Doe",
                     "type": "string",
                     "minLength": 1
                   },
@@ -14121,20 +14121,20 @@
                     "minLength": 1
                   },
                   "city": {
-                    "example": "TP. Hồ Chí Minh",
+                    "example": "Ho Chi Minh City",
                     "type": "string",
                     "minLength": 1
                   },
                   "district": {
-                    "example": "Quận 1",
+                    "example": "District 1",
                     "type": "string"
                   },
                   "ward": {
-                    "example": "Phường Bến Nghé",
+                    "example": "Ben Nghe Ward",
                     "type": "string"
                   },
                   "street": {
-                    "example": "123 Lê Lợi",
+                    "example": "123 Le Loi",
                     "type": "string",
                     "minLength": 1
                   },
@@ -14257,36 +14257,36 @@
                 "properties": {
                   "participantId": {
                     "type": "string",
-                    "description": "ID của người dùng muốn trò chuyện cùng (Seller, Buyer hoặc Staff)"
+                    "description": "Target user ID to chat with (Seller, Buyer, or Staff)"
                   },
                   "targetUserId": {
                     "type": "string",
-                    "description": "ID người nhận (alias tương đương participantId, tương thích format cũ)"
+                    "description": "Target user ID (legacy alias for participantId)"
                   },
                   "type": {
                     "default": "BUYER_SELLER",
                     "type": "string",
                     "enum": ["BUYER_SELLER", "STAFF_SELLER", "STAFF_BUYER"],
-                    "description": "Loại cuộc trò chuyện: BUYER_SELLER, STAFF_SELLER, STAFF_BUYER"
+                    "description": "Conversation type: BUYER_SELLER, STAFF_SELLER, STAFF_BUYER"
                   },
                   "title": {
                     "type": "string",
                     "maxLength": 200,
-                    "description": "Tiêu đề cuộc trò chuyện / chủ đề trao đổi"
+                    "description": "Conversation title or topic"
                   },
                   "contextId": {
                     "type": "string",
-                    "description": "ID ngữ cảnh liên quan (mã đơn hàng, mã sản phẩm, mã khiếu nại...)"
+                    "description": "Related context ID (order ID, product ID, dispute ID...)"
                   },
                   "contextType": {
                     "type": "string",
                     "enum": ["GENERAL", "ORDER", "PRODUCT", "AUCTION", "DISPUTE", "TICKET"],
-                    "description": "Loại ngữ cảnh: GENERAL, ORDER, PRODUCT, AUCTION, DISPUTE, TICKET"
+                    "description": "Context type: GENERAL, ORDER, PRODUCT, AUCTION, DISPUTE, TICKET"
                   },
                   "initialMessage": {
                     "type": "string",
                     "maxLength": 1000,
-                    "description": "Nội dung tin nhắn đầu tiên gửi kèm khi khởi tạo cuộc trò chuyện"
+                    "description": "Initial message sent when creating the conversation"
                   }
                 },
                 "additionalProperties": false
@@ -14321,46 +14321,46 @@
             "name": "page",
             "required": false,
             "in": "query",
-            "description": "Trang hiện tại (bắt đầu từ 1)",
+            "description": "Current page (1-based)",
             "schema": {
               "default": 1,
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Trang hiện tại (bắt đầu từ 1)"
+              "description": "Current page (1-based)"
             }
           },
           {
             "name": "limit",
             "required": false,
             "in": "query",
-            "description": "Số lượng mục trên một trang",
+            "description": "Items per page",
             "schema": {
               "default": 20,
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Số lượng mục trên một trang"
+              "description": "Items per page"
             }
           },
           {
             "name": "type",
             "required": false,
             "in": "query",
-            "description": "Lọc theo loại cuộc trò chuyện: BUYER_SELLER, STAFF_SELLER, STAFF_BUYER",
+            "description": "Filter by conversation type: BUYER_SELLER, STAFF_SELLER, STAFF_BUYER",
             "schema": {
               "type": "string",
-              "description": "Lọc theo loại cuộc trò chuyện: BUYER_SELLER, STAFF_SELLER, STAFF_BUYER"
+              "description": "Filter by conversation type: BUYER_SELLER, STAFF_SELLER, STAFF_BUYER"
             }
           },
           {
             "name": "search",
             "required": false,
             "in": "query",
-            "description": "Tìm kiếm theo tên người tham gia hoặc tiêu đề hội thoại",
+            "description": "Search by participant name or conversation title",
             "schema": {
               "type": "string",
-              "description": "Tìm kiếm theo tên người tham gia hoặc tiêu đề hội thoại"
+              "description": "Search by participant name or conversation title"
             }
           }
         ],
@@ -14393,26 +14393,26 @@
                   "subject": {
                     "type": "string",
                     "maxLength": 200,
-                    "description": "Tiêu đề tóm tắt yêu cầu hỗ trợ",
-                    "example": "Khiếu nại đơn hàng không nhận được"
+                    "description": "Short summary subject for the support request",
+                    "example": "Order not received dispute"
                   },
                   "message": {
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 2000,
-                    "description": "Nội dung chi tiết yêu cầu hỗ trợ gửi đến nhân viên CSKH",
-                    "example": "Tôi đã thanh toán đơn hàng #ORD-123 nhưng người bán không gửi hàng theo hẹn."
+                    "description": "Detailed support request message sent to Support Staff",
+                    "example": "I paid for order #ORD-123 but the seller has not shipped it on time."
                   },
                   "contextId": {
                     "type": "string",
-                    "description": "Mã định danh ngữ cảnh liên quan (mã tranh chấp, mã đơn hàng)",
+                    "description": "Related context identifier (dispute ID, order ID)",
                     "example": "dispute-uuid-456"
                   },
                   "contextType": {
                     "default": "GENERAL",
                     "type": "string",
                     "enum": ["GENERAL", "ORDER", "PRODUCT", "AUCTION", "DISPUTE", "TICKET"],
-                    "description": "Loại ngữ cảnh: DISPUTE (Tranh chấp), ORDER (Đơn hàng), GENERAL (Hỗ trợ chung)",
+                    "description": "Context type: DISPUTE, ORDER, or GENERAL",
                     "example": "DISPUTE"
                   },
                   "attachments": {
@@ -14420,7 +14420,7 @@
                     "items": {
                       "type": "string"
                     },
-                    "description": "Danh sách URL hình ảnh / bằng chứng đính kèm",
+                    "description": "List of evidence image or document URLs",
                     "example": ["https://res.cloudinary.com/nexus/evidence1.jpg"]
                   }
                 },
@@ -14458,26 +14458,26 @@
                   "subject": {
                     "type": "string",
                     "maxLength": 200,
-                    "description": "Tiêu đề tóm tắt yêu cầu hỗ trợ",
-                    "example": "Khiếu nại đơn hàng không nhận được"
+                    "description": "Short summary subject for the support request",
+                    "example": "Order not received dispute"
                   },
                   "message": {
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 2000,
-                    "description": "Nội dung chi tiết yêu cầu hỗ trợ gửi đến nhân viên CSKH",
-                    "example": "Tôi đã thanh toán đơn hàng #ORD-123 nhưng người bán không gửi hàng theo hẹn."
+                    "description": "Detailed support request message sent to Support Staff",
+                    "example": "I paid for order #ORD-123 but the seller has not shipped it on time."
                   },
                   "contextId": {
                     "type": "string",
-                    "description": "Mã định danh ngữ cảnh liên quan (mã tranh chấp, mã đơn hàng)",
+                    "description": "Related context identifier (dispute ID, order ID)",
                     "example": "dispute-uuid-456"
                   },
                   "contextType": {
                     "default": "GENERAL",
                     "type": "string",
                     "enum": ["GENERAL", "ORDER", "PRODUCT", "AUCTION", "DISPUTE", "TICKET"],
-                    "description": "Loại ngữ cảnh: DISPUTE (Tranh chấp), ORDER (Đơn hàng), GENERAL (Hỗ trợ chung)",
+                    "description": "Context type: DISPUTE, ORDER, or GENERAL",
                     "example": "DISPUTE"
                   },
                   "attachments": {
@@ -14485,7 +14485,7 @@
                     "items": {
                       "type": "string"
                     },
-                    "description": "Danh sách URL hình ảnh / bằng chứng đính kèm",
+                    "description": "List of evidence image or document URLs",
                     "example": ["https://res.cloudinary.com/nexus/evidence1.jpg"]
                   }
                 },
@@ -14549,36 +14549,36 @@
             "name": "page",
             "required": false,
             "in": "query",
-            "description": "Trang hiện tại (bắt đầu từ 1)",
+            "description": "Current page (1-based)",
             "schema": {
               "default": 1,
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Trang hiện tại (bắt đầu từ 1)"
+              "description": "Current page (1-based)"
             }
           },
           {
             "name": "limit",
             "required": false,
             "in": "query",
-            "description": "Số lượng yêu cầu mỗi trang",
+            "description": "Requests per page",
             "schema": {
               "default": 20,
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Số lượng yêu cầu mỗi trang"
+              "description": "Requests per page"
             }
           },
           {
             "name": "contextType",
             "required": false,
             "in": "query",
-            "description": "Lọc theo loại ngữ cảnh: DISPUTE, ORDER, GENERAL",
+            "description": "Filter by context type: DISPUTE, ORDER, GENERAL",
             "schema": {
               "type": "string",
-              "description": "Lọc theo loại ngữ cảnh: DISPUTE, ORDER, GENERAL"
+              "description": "Filter by context type: DISPUTE, ORDER, GENERAL"
             }
           }
         ],
@@ -14654,14 +14654,14 @@
                   "status": {
                     "type": "string",
                     "enum": ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"],
-                    "description": "Trạng thái mới của cuộc trò chuyện / ticket hỗ trợ",
+                    "description": "New status of the support conversation or ticket",
                     "example": "RESOLVED"
                   },
                   "resolutionNotes": {
                     "type": "string",
                     "maxLength": 1000,
-                    "description": "Ghi chú giải quyết hoặc lý do đóng cuộc trò chuyện",
-                    "example": "Đã hoàn tiền cho người mua thành công."
+                    "description": "Resolution notes or reason for closing the conversation",
+                    "example": "Refunded the buyer successfully."
                   }
                 },
                 "required": ["status"],
@@ -14751,23 +14751,23 @@
             "name": "limit",
             "required": false,
             "in": "query",
-            "description": "Số lượng tin nhắn cần lấy",
+            "description": "Number of messages to fetch",
             "schema": {
               "default": 50,
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Số lượng tin nhắn cần lấy"
+              "description": "Number of messages to fetch"
             }
           },
           {
             "name": "before",
             "required": false,
             "in": "query",
-            "description": "Lấy tin nhắn trước mốc thời gian này (ISO string) để phân trang ngược",
+            "description": "Fetch messages before this ISO timestamp for cursor pagination",
             "schema": {
               "type": "string",
-              "description": "Lấy tin nhắn trước mốc thời gian này (ISO string) để phân trang ngược"
+              "description": "Fetch messages before this ISO timestamp for cursor pagination"
             }
           }
         ],
@@ -14808,24 +14808,24 @@
                 "properties": {
                   "conversationId": {
                     "type": "string",
-                    "description": "ID của cuộc trò chuyện (tùy chọn khi gửi qua endpoint có param :id)"
+                    "description": "Conversation ID (optional when passed via :id route parameter)"
                   },
                   "content": {
                     "type": "string",
                     "maxLength": 4000,
-                    "description": "Nội dung tin nhắn văn bản"
+                    "description": "Message text content"
                   },
                   "body": {
                     "type": "string",
                     "maxLength": 4000,
-                    "description": "Nội dung văn bản (alias tương đương content)"
+                    "description": "Message text content (alias for content)"
                   },
                   "attachments": {
                     "type": "array",
                     "items": {
                       "type": "string"
                     },
-                    "description": "Danh sách URL hình ảnh / tài liệu đính kèm (URL từ Cloudinary)"
+                    "description": "List of attachment URLs (e.g., Cloudinary URLs)"
                   }
                 },
                 "additionalProperties": false
@@ -14860,24 +14860,24 @@
                 "properties": {
                   "conversationId": {
                     "type": "string",
-                    "description": "ID của cuộc trò chuyện (tùy chọn khi gửi qua endpoint có param :id)"
+                    "description": "Conversation ID (optional when passed via :id route parameter)"
                   },
                   "content": {
                     "type": "string",
                     "maxLength": 4000,
-                    "description": "Nội dung tin nhắn văn bản"
+                    "description": "Message text content"
                   },
                   "body": {
                     "type": "string",
                     "maxLength": 4000,
-                    "description": "Nội dung văn bản (alias tương đương content)"
+                    "description": "Message text content (alias for content)"
                   },
                   "attachments": {
                     "type": "array",
                     "items": {
                       "type": "string"
                     },
-                    "description": "Danh sách URL hình ảnh / tài liệu đính kèm (URL từ Cloudinary)"
+                    "description": "List of attachment URLs (e.g., Cloudinary URLs)"
                   }
                 },
                 "additionalProperties": false
@@ -14997,32 +14997,32 @@
                   "name": {
                     "type": "string",
                     "maxLength": 100,
-                    "description": "Tên cấu hình tin nhắn tự động",
-                    "example": "Tin nhắn chào mừng"
+                    "description": "Auto-reply template name",
+                    "example": "Welcome greeting"
                   },
                   "triggerType": {
                     "default": "WELCOME",
                     "type": "string",
                     "enum": ["WELCOME", "OFFLINE", "KEYWORD", "DEFAULT"],
-                    "description": "Loại kích hoạt: WELCOME (lần đầu chat), OFFLINE (ngoài giờ), KEYWORD (từ khóa), DEFAULT"
+                    "description": "Trigger type: WELCOME (first message), OFFLINE (after hours), KEYWORD, DEFAULT"
                   },
                   "keyword": {
                     "type": "string",
                     "maxLength": 100,
-                    "description": "Từ khóa kích hoạt (nếu triggerType là KEYWORD)",
-                    "example": "bảo hành"
+                    "description": "Trigger keyword (when triggerType is KEYWORD)",
+                    "example": "warranty"
                   },
                   "content": {
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 1000,
-                    "description": "Nội dung tin nhắn tự động gửi đến khách hàng",
-                    "example": "Chào bạn! Cảm ơn bạn đã nhắn tin cho shop. Shop sẽ phản hồi trong giây lát."
+                    "description": "Auto-reply message content sent to customers",
+                    "example": "Hello! Thank you for messaging our shop. We will reply shortly."
                   },
                   "isActive": {
                     "default": true,
                     "type": "boolean",
-                    "description": "Trạng thái kích hoạt (mặc định true)"
+                    "description": "Active state (defaults to true)"
                   }
                 },
                 "required": ["content"],
@@ -15074,26 +15074,26 @@
                   "name": {
                     "type": "string",
                     "maxLength": 100,
-                    "description": "Tên cấu hình tin nhắn tự động"
+                    "description": "Auto-reply template name"
                   },
                   "triggerType": {
                     "type": "string",
                     "enum": ["WELCOME", "OFFLINE", "KEYWORD", "DEFAULT"],
-                    "description": "Loại kích hoạt: WELCOME, OFFLINE, KEYWORD, DEFAULT"
+                    "description": "Trigger type: WELCOME, OFFLINE, KEYWORD, DEFAULT"
                   },
                   "keyword": {
                     "type": "string",
                     "maxLength": 100,
-                    "description": "Từ khóa kích hoạt"
+                    "description": "Trigger keyword"
                   },
                   "content": {
                     "type": "string",
                     "maxLength": 1000,
-                    "description": "Nội dung tin nhắn tự động"
+                    "description": "Auto-reply message content"
                   },
                   "isActive": {
                     "type": "boolean",
-                    "description": "Trạng thái kích hoạt"
+                    "description": "Active state"
                   }
                 },
                 "additionalProperties": false
@@ -15180,58 +15180,58 @@
             "name": "page",
             "required": false,
             "in": "query",
-            "description": "Trang hiện tại (bắt đầu từ 1)",
+            "description": "Current page (1-based)",
             "schema": {
               "default": 1,
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Trang hiện tại (bắt đầu từ 1)"
+              "description": "Current page (1-based)"
             }
           },
           {
             "name": "limit",
             "required": false,
             "in": "query",
-            "description": "Số lượng mục trên một trang",
+            "description": "Items per page",
             "schema": {
               "default": 20,
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Số lượng mục trên một trang"
+              "description": "Items per page"
             }
           },
           {
             "name": "scope",
             "required": false,
             "in": "query",
-            "description": "Phạm vi: SYSTEM (hệ thống/staff) hoặc SHOP (của seller)",
+            "description": "Scope: SYSTEM (platform/staff) or SHOP (seller)",
             "schema": {
               "type": "string",
               "enum": ["SHOP", "SYSTEM"],
-              "description": "Phạm vi: SYSTEM (hệ thống/staff) hoặc SHOP (của seller)"
+              "description": "Scope: SYSTEM (platform/staff) or SHOP (seller)"
             }
           },
           {
             "name": "status",
             "required": false,
             "in": "query",
-            "description": "Trạng thái: ACTIVE hoặc CANCELLED_BY_ADMIN",
+            "description": "Status: ACTIVE or CANCELLED_BY_ADMIN",
             "schema": {
               "type": "string",
               "enum": ["ACTIVE", "CANCELLED_BY_ADMIN"],
-              "description": "Trạng thái: ACTIVE hoặc CANCELLED_BY_ADMIN"
+              "description": "Status: ACTIVE or CANCELLED_BY_ADMIN"
             }
           },
           {
             "name": "shopId",
             "required": false,
             "in": "query",
-            "description": "ID gian hàng / Seller cụ thể (dành cho Admin lọc)",
+            "description": "Specific shop or seller ID filter (Admin)",
             "schema": {
               "type": "string",
-              "description": "ID gian hàng / Seller cụ thể (dành cho Admin lọc)"
+              "description": "Specific shop or seller ID filter (Admin)"
             }
           }
         ],
@@ -15264,32 +15264,32 @@
                   "name": {
                     "type": "string",
                     "maxLength": 100,
-                    "description": "Tên cấu hình tin nhắn tự động",
-                    "example": "Tin nhắn chào mừng"
+                    "description": "Auto-reply template name",
+                    "example": "Welcome greeting"
                   },
                   "triggerType": {
                     "default": "WELCOME",
                     "type": "string",
                     "enum": ["WELCOME", "OFFLINE", "KEYWORD", "DEFAULT"],
-                    "description": "Loại kích hoạt: WELCOME (lần đầu chat), OFFLINE (ngoài giờ), KEYWORD (từ khóa), DEFAULT"
+                    "description": "Trigger type: WELCOME (first message), OFFLINE (after hours), KEYWORD, DEFAULT"
                   },
                   "keyword": {
                     "type": "string",
                     "maxLength": 100,
-                    "description": "Từ khóa kích hoạt (nếu triggerType là KEYWORD)",
-                    "example": "bảo hành"
+                    "description": "Trigger keyword (when triggerType is KEYWORD)",
+                    "example": "warranty"
                   },
                   "content": {
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 1000,
-                    "description": "Nội dung tin nhắn tự động gửi đến khách hàng",
-                    "example": "Chào bạn! Cảm ơn bạn đã nhắn tin cho shop. Shop sẽ phản hồi trong giây lát."
+                    "description": "Auto-reply message content sent to customers",
+                    "example": "Hello! Thank you for messaging our shop. We will reply shortly."
                   },
                   "isActive": {
                     "default": true,
                     "type": "boolean",
-                    "description": "Trạng thái kích hoạt (mặc định true)"
+                    "description": "Active state (defaults to true)"
                   }
                 },
                 "required": ["content"],
@@ -15339,8 +15339,8 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 500,
-                    "description": "Lý do Admin hủy/khóa tin nhắn tự động của Seller",
-                    "example": "Nội dung chứa thông tin sai lệch hoặc vi phạm chính sách của sàn."
+                    "description": "Reason for Admin canceling or locking the seller auto-reply",
+                    "example": "Content contains misleading claims or violates platform policy."
                   }
                 },
                 "required": ["cancelReason"],
@@ -15411,23 +15411,23 @@
             "name": "limit",
             "required": false,
             "in": "query",
-            "description": "Số lượng tin nhắn cần lấy",
+            "description": "Number of messages to fetch",
             "schema": {
               "default": 50,
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
-              "description": "Số lượng tin nhắn cần lấy"
+              "description": "Number of messages to fetch"
             }
           },
           {
             "name": "before",
             "required": false,
             "in": "query",
-            "description": "Lấy tin nhắn trước mốc thời gian này (ISO string) để phân trang ngược",
+            "description": "Fetch messages before this ISO timestamp for cursor pagination",
             "schema": {
               "type": "string",
-              "description": "Lấy tin nhắn trước mốc thời gian này (ISO string) để phân trang ngược"
+              "description": "Fetch messages before this ISO timestamp for cursor pagination"
             }
           }
         ],
@@ -15460,7 +15460,7 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 2000,
-                    "example": "Tôi muốn hủy đơn hàng đã được shop xác nhận"
+                    "example": "I want to cancel an order already confirmed by the shop"
                   },
                   "history": {
                     "maxItems": 12,
@@ -15481,7 +15481,7 @@
                       "required": ["role", "content"],
                       "additionalProperties": false
                     },
-                    "description": "Tối đa 12 tin gần nhất, không gồm tin hiện tại; không gửi dữ liệu đơn hàng hoặc bí mật."
+                    "description": "Up to 12 recent messages excluding the current one; never include order data or secrets."
                   }
                 },
                 "required": ["message"],
@@ -15533,7 +15533,7 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 2000,
-                    "example": "Tôi muốn hủy đơn hàng đã được shop xác nhận"
+                    "example": "I want to cancel an order already confirmed by the shop"
                   },
                   "history": {
                     "maxItems": 12,
@@ -15554,12 +15554,12 @@
                       "required": ["role", "content"],
                       "additionalProperties": false
                     },
-                    "description": "Tối đa 12 tin gần nhất, không gồm tin hiện tại; không gửi dữ liệu đơn hàng hoặc bí mật."
+                    "description": "Up to 12 recent messages excluding the current one; never include order data or secrets."
                   },
                   "intent": {
                     "type": "string",
                     "enum": ["PURCHASES", "SALES", "CART"],
-                    "description": "PURCHASES: lịch sử đặt hàng cá nhân cho mọi role; SALES: đơn bán; CART: giỏ cá nhân. Có thể nhận diện từ message nếu bỏ trống."
+                    "description": "PURCHASES: personal order history for any role; SALES: seller orders; CART: personal cart. Inferred from message if omitted."
                   },
                   "status": {
                     "type": "string",
@@ -15588,7 +15588,7 @@
                     "type": "string",
                     "format": "uuid",
                     "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-                    "description": "Mã đơn NEXUS cần tra cứu; không phải mã vận đơn GHN"
+                    "description": "NEXUS order UUID to query (not a GHN waybill code)"
                   }
                 },
                 "required": ["message"],

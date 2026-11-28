@@ -11,7 +11,7 @@ const auctionSupportChatFields = {
     .max(1500)
     .describe('Initial question or support message sent to Support Staff')
     .meta({
-      example: 'Xin hỗ trợ kiểm tra điều kiện tham gia và quy trình đặt cọc 30% của lô #1.',
+      example: 'Please help verify eligibility and the 30% deposit process for lot #1.',
     }),
 };
 

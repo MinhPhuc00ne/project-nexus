@@ -121,16 +121,16 @@ const activateStaffFields = {
     .string()
     .trim()
     .min(1)
-    .describe('Mã token kích hoạt tài khoản nhận qua email cá nhân')
+    .describe('Account activation token received via personal email')
     .meta({ example: 'a1b2c3d4e5f6...' }),
   fullName: z
     .string()
     .trim()
     .min(1)
-    .describe('Xác nhận Họ và tên nhân viên')
-    .meta({ example: 'Nguyễn Quang Huy' }),
+    .describe('Confirm staff full name')
+    .meta({ example: 'Huy Nguyen' }),
   phoneNumber: nullAsAbsent(
-    z.string().describe('Xác nhận Số điện thoại nhân viên').meta({ example: '0912345678' }),
+    z.string().describe('Confirm staff phone number').meta({ example: '0912345678' }),
   ),
   newPassword: z
     .string()
@@ -139,14 +139,14 @@ const activateStaffFields = {
     .min(8)
     .regex(/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).+$/)
     .describe(
-      'Mật khẩu mới (tối thiểu 8 ký tự, có ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt)',
+      'New password (min 8 chars, at least 1 uppercase, 1 lowercase, 1 digit, and 1 special character)',
     )
     .meta({ example: 'Staff@123456' }),
   confirmPassword: z
     .string()
     .trim()
     .min(1)
-    .describe('Xác nhận lại mật khẩu mới')
+    .describe('Confirm new password')
     .meta({ example: 'Staff@123456' }),
 };
 
@@ -157,7 +157,7 @@ export type ActivateStaffInput = z.infer<typeof ActivateStaffSchema>;
 const staffForgotPasswordFields = {
   email: z
     .email()
-    .describe('Tài khoản công tác @staff.com; OTP gửi về email cá nhân đã liên kết')
+    .describe('Assigned @staff.com account; OTP is sent to the linked personal email')
     .meta({ example: 'HuyNQ@staff.com' }),
 };
 
@@ -168,21 +168,21 @@ export type StaffForgotPasswordInput = z.infer<typeof StaffForgotPasswordSchema>
 const staffResetPasswordFields = {
   email: z
     .email()
-    .describe('Tài khoản công tác @staff.com dùng khi yêu cầu OTP')
+    .describe('Assigned @staff.com account used when requesting OTP')
     .meta({ example: 'HuyNQ@staff.com' }),
   otp: z
     .string()
     .trim()
     .min(1)
     .regex(/^\d{6}$/)
-    .describe('Mã OTP 6 số nhận qua email cá nhân')
+    .describe('6-digit OTP received via personal email')
     .meta({ example: '123456' }),
   newPassword: z
     .string()
     .trim()
     .min(1)
     .min(6)
-    .describe('Mật khẩu mới')
+    .describe('New password')
     .meta({ example: 'NewStaffPassword123!' }),
 };
 

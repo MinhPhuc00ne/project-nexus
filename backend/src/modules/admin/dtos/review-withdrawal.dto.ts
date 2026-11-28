@@ -12,20 +12,20 @@ const reviewWithdrawalFields = {
   status: z
     .enum(REVIEWABLE_WITHDRAWAL_STATUSES)
     .describe(
-      'Trạng thái xét duyệt: APPROVED (chấp thuận), REJECTED (từ chối hoàn tiền ví), COMPLETED (đã chuyển khoản thành công)',
+      'Review status: APPROVED, REJECTED (refunds wallet), or COMPLETED (bank transfer completed)',
     )
     .meta({ example: WithdrawalStatus.COMPLETED }),
   rejectionReason: nullAsAbsent(
     z
       .string()
-      .describe('Lý do từ chối (bắt buộc nếu status = REJECTED)')
-      .meta({ example: 'Thông tin số tài khoản không đúng với tên chủ tài khoản thụ hưởng' }),
+      .describe('Rejection reason (required when status = REJECTED)')
+      .meta({ example: 'Bank account number does not match the beneficiary account name' }),
   ),
   adminNote: nullAsAbsent(
     z
       .string()
-      .describe('Ghi chú của Quản trị viên')
-      .meta({ example: 'Đã chuyển khoản qua Vietcombank mã GD: VCB12345678' }),
+      .describe('Administrator note')
+      .meta({ example: 'Transferred via Vietcombank, ref: VCB12345678' }),
   ),
 };
 

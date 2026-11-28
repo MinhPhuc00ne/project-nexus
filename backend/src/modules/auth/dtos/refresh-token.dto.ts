@@ -5,7 +5,7 @@ const refreshTokenFields = {
     .string()
     .trim()
     .min(1)
-    .describe('Refresh Token nhận được khi đăng nhập')
+    .describe('Refresh token issued upon sign-in')
     .meta({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' }),
 };
 

@@ -2,12 +2,12 @@ import { z } from 'zod';
 import { nullAsAbsent } from '../../../core/validation/query-schemas';
 
 const productOptionFields = {
-  name: z.string().min(1).max(40).meta({ example: 'Màu sắc' }),
+  name: z.string().min(1).max(40).meta({ example: 'Color' }),
   values: z
     .array(z.string().min(1).max(80))
     .min(1)
     .max(50)
-    .meta({ example: ['Đen', 'Trắng'] }),
+    .meta({ example: ['Black', 'White'] }),
 };
 
 export const ProductOptionSchema = z.object(productOptionFields).strict();
@@ -20,7 +20,7 @@ const updateProductSaleFields = {
       .number()
       .min(1000)
       .nullable()
-      .describe('Giá sale; null để dừng sale')
+      .describe('Sale price; pass null to stop sale')
       .meta({ example: 150000 }),
   ),
   saleStartsAt: z.iso.datetime().nullable().optional(),

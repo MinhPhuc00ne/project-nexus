@@ -6,7 +6,7 @@ const exchangeOAuthCodeFields = {
     .trim()
     .min(1)
     .max(256)
-    .describe('Mã opaque dùng một lần nhận được từ redirect của Google callback')
+    .describe('Single-use opaque code received from Google callback redirect')
     .meta({ example: 'q1w2e3r4t5y6u7i8o9p0asdfghjklzxcvbnm1234567890ABCDEF' }),
 };
 

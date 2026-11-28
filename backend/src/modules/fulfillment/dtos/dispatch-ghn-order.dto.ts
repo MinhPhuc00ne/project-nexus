@@ -11,19 +11,19 @@ import { nullAsAbsent } from '../../../core/validation/query-schemas';
  */
 const dispatchGhnOrderFields = {
   weightGrams: nullAsAbsent(
-    z.coerce.number().int().min(50).describe('Khối lượng gói hàng (grams)').meta({ example: 500 }),
+    z.coerce.number().int().min(50).describe('Parcel weight (grams)').meta({ example: 500 }),
   ),
   lengthCm: nullAsAbsent(
-    z.coerce.number().int().min(1).describe('Chiều dài gói hàng (cm)').meta({ example: 20 }),
+    z.coerce.number().int().min(1).describe('Parcel length (cm)').meta({ example: 20 }),
   ),
   widthCm: nullAsAbsent(
-    z.coerce.number().int().min(1).describe('Chiều rộng gói hàng (cm)').meta({ example: 15 }),
+    z.coerce.number().int().min(1).describe('Parcel width (cm)').meta({ example: 15 }),
   ),
   heightCm: nullAsAbsent(
-    z.coerce.number().int().min(1).describe('Chiều cao gói hàng (cm)').meta({ example: 10 }),
+    z.coerce.number().int().min(1).describe('Parcel height (cm)').meta({ example: 10 }),
   ),
   note: nullAsAbsent(
-    z.string().describe('Ghi chú cho shipper GHN').meta({ example: 'Hàng dễ vỡ, xin nhẹ tay' }),
+    z.string().describe('Note for the GHN courier').meta({ example: 'Fragile, handle with care' }),
   ),
 };
 

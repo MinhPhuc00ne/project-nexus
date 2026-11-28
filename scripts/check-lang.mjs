@@ -16,13 +16,15 @@ function walk(dir) {
   return out;
 }
 
-const backendControllers = walk(path.join(ROOT, 'backend/src/modules')).filter((file) =>
-  file.replace(/\\/g, '/').includes('/controllers/'),
-);
+const backendApiSurfaces = walk(path.join(ROOT, 'backend/src/modules')).filter((file) => {
+  const normalized = file.replace(/\\/g, '/');
+  return normalized.includes('/controllers/') || normalized.includes('/dtos/');
+});
 
 const strictTargets = [
   ...walk(path.join(ROOT, 'packages/contracts/src')),
-  ...backendControllers,
+  ...backendApiSurfaces,
+  path.join(ROOT, 'docs/static/openapi/nexus-openapi.json'),
   path.join(ROOT, 'backend/prisma/seeds/system.ts'),
   path.join(ROOT, 'backend/prisma/seeds/admin-create.ts'),
   path.join(ROOT, 'frontend/index.html'),

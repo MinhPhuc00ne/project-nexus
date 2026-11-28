@@ -14,33 +14,33 @@ const requestSupportFields = {
     z
       .string()
       .max(200)
-      .describe('Tiêu đề tóm tắt yêu cầu hỗ trợ')
-      .meta({ example: 'Khiếu nại đơn hàng không nhận được' }),
+      .describe('Short summary subject for the support request')
+      .meta({ example: 'Order not received dispute' }),
   ),
   message: z
     .string()
     .trim()
     .min(1)
     .max(2000)
-    .describe('Nội dung chi tiết yêu cầu hỗ trợ gửi đến nhân viên CSKH')
+    .describe('Detailed support request message sent to Support Staff')
     .meta({
-      example: 'Tôi đã thanh toán đơn hàng #ORD-123 nhưng người bán không gửi hàng theo hẹn.',
+      example: 'I paid for order #ORD-123 but the seller has not shipped it on time.',
     }),
   contextId: nullAsAbsent(
     z
       .string()
-      .describe('Mã định danh ngữ cảnh liên quan (mã tranh chấp, mã đơn hàng)')
+      .describe('Related context identifier (dispute ID, order ID)')
       .meta({ example: 'dispute-uuid-456' }),
   ),
   contextType: z
     .enum(ChatContextType)
-    .describe('Loại ngữ cảnh: DISPUTE (Tranh chấp), ORDER (Đơn hàng), GENERAL (Hỗ trợ chung)')
+    .describe('Context type: DISPUTE, ORDER, or GENERAL')
     .meta({ example: ChatContextType.DISPUTE })
     .default(ChatContextType.GENERAL),
   attachments: nullAsAbsent(
     z
       .array(z.string())
-      .describe('Danh sách URL hình ảnh / bằng chứng đính kèm')
+      .describe('List of evidence image or document URLs')
       .meta({ example: ['https://res.cloudinary.com/nexus/evidence1.jpg'] }),
   ),
 };
@@ -52,14 +52,14 @@ export type RequestSupportInput = z.infer<typeof RequestSupportSchema>;
 const updateConversationStatusFields = {
   status: z
     .enum(TicketLifecycleStatus)
-    .describe('Trạng thái mới của cuộc trò chuyện / ticket hỗ trợ')
+    .describe('New status of the support conversation or ticket')
     .meta({ example: TicketLifecycleStatus.RESOLVED }),
   resolutionNotes: nullAsAbsent(
     z
       .string()
       .max(1000)
-      .describe('Ghi chú giải quyết hoặc lý do đóng cuộc trò chuyện')
-      .meta({ example: 'Đã hoàn tiền cho người mua thành công.' }),
+      .describe('Resolution notes or reason for closing the conversation')
+      .meta({ example: 'Refunded the buyer successfully.' }),
   ),
 };
 
@@ -68,9 +68,9 @@ export const UpdateConversationStatusSchema = z.object(updateConversationStatusF
 export type UpdateConversationStatusInput = z.infer<typeof UpdateConversationStatusSchema>;
 
 const queryQueueFields = {
-  page: z.coerce.number().int().min(1).describe('Trang hiện tại (bắt đầu từ 1)').default(1),
-  limit: z.coerce.number().int().min(1).describe('Số lượng yêu cầu mỗi trang').default(20),
-  contextType: nullAsAbsent(z.string().describe('Lọc theo loại ngữ cảnh: DISPUTE, ORDER, GENERAL')),
+  page: z.coerce.number().int().min(1).describe('Current page (1-based)').default(1),
+  limit: z.coerce.number().int().min(1).describe('Requests per page').default(20),
+  contextType: nullAsAbsent(z.string().describe('Filter by context type: DISPUTE, ORDER, GENERAL')),
 };
 
 export const QueryQueueSchema = z.object(queryQueueFields).strict();

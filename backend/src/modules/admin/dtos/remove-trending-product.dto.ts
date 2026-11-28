@@ -7,8 +7,8 @@ const removeTrendingProductFields = {
       .string()
       .trim()
       .max(500)
-      .describe('Lý do Admin gỡ sản phẩm khỏi danh sách Xu hướng (gửi thông báo tới Seller)')
-      .meta({ example: 'Sản phẩm không còn phù hợp hiển thị tại mục Xu hướng' }),
+      .describe('Reason for removing the product from Trending (notifies the Seller)')
+      .meta({ example: 'Product is no longer eligible for the Trending section' }),
   ),
 };
 

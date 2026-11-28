@@ -17,12 +17,12 @@ export const QueryFinanceSchema = z
       .enum(WalletTransactionType)
       .optional()
       .describe(
-        'Lọc theo loại giao dịch ví: DEPOSIT, WITHDRAW, ESCROW_LOCK, ESCROW_PAYOUT, ESCROW_REFUND',
+        'Filter by wallet transaction type: DEPOSIT, WITHDRAW, ESCROW_LOCK, ESCROW_PAYOUT, ESCROW_REFUND',
       ),
     status: z
       .enum(WalletTransactionStatus)
       .optional()
-      .describe('Lọc theo trạng thái: PENDING, SUCCESS, FAILED'),
+      .describe('Filter by status: PENDING, SUCCESS, FAILED'),
   })
   .strict();
 
