@@ -43,7 +43,7 @@ export function StoreIdentity() {
         data-seller="store-emblem"
       >
         {shopAvatar ? (
-          <img src={shopAvatar} alt="Logo gian hàng" />
+          <img src={shopAvatar} alt={t('dashboard.identity.logoAlt')} />
         ) : (
           <ShopOutlined className="text-[29px]" aria-hidden="true" />
         )}
