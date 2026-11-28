@@ -30,7 +30,7 @@ All constants, thresholds, and operational invariants below are verified directl
 
 ## 3. Escrow, Platform Fee and `NEXUS Pay` Wallet (`order-escrow.service.ts`, `seller-finance.service.ts`)
 
-- Default Platform Fee: `PLATFORM_FEE_PERCENTAGE = 7.0%`, calculated strictly on `subtotal` (item value), excluding `shippingFee`.
+- Default Platform Fee: `7.0%` (`DEFAULT_PLATFORM_SETTINGS.platformFeePercentage` in `PlatformSettingsService`), persisted in PostgreSQL (`system_settings`) and editable at runtime through Admin settings, calculated strictly on `subtotal` (item value), excluding `shippingFee`.
 - Escrow Lifecycle: Funds enter `EscrowRecord` (`HELD`) upon confirmed payment (`PAYOS` or `WALLET`). Funds are `DISBURSED` to the Seller wallet only after Buyer delivery confirmation or expiration of the 3-day inspection window without disputes.
 - Withdrawals (`WithdrawalRequest`):
   - Users may have at most 3 concurrent `PENDING` withdrawal requests.
@@ -42,7 +42,7 @@ All constants, thresholds, and operational invariants below are verified directl
 - Bidding RBAC:
   - A `SELLER` account with `isSellerActive = true` is read-only in auction rooms and cannot place bids (Server returns `403 Forbidden`). They must switch to Buyer mode first.
   - Lot owners cannot bid on their own items.
-- Anti-Sniping: A valid bid placed within the final `2 minutes` (`AUCTION_ANTI_SNIPING_TRIGGER_MINUTES = 2`) automatically extends the lot deadline and broadcasts `auction:time_extended`.
+- Anti-Sniping: A valid bid placed within the final `2 minutes` (`DEFAULT_PLATFORM_SETTINGS.antiSnipingTriggerMinutes = 2`, extending by `antiSnipingExtendMinutes = 5`, managed at runtime in `system_settings` via `PlatformSettingsService` and Admin settings) automatically extends the lot deadline and broadcasts `auction:time_extended`.
 - Awards and Second Chance (`AuctionAward`):
   - `PRIMARY_WINNER` receives an exclusive checkout window.
   - On `DECLINED`, `BUYER_WITHDRAWN`, or `PAYMENT_DEFAULT`, the system processes deposit forfeiture and compensation (`AUCTION_DEPOSIT_FORFEIT` and `AUCTION_DEPOSIT_COMPENSATION`) and can offer `SECOND_CHANCE` to the runner-up bidder.

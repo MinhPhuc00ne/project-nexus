@@ -27,11 +27,11 @@ title: Code Standards, Naming and Sonar Quality
 | WebSocket Events            | `domain:action`                 | `auction:bid:placed`, `notification:unread_count`      |
 | Boolean Variables           | `is` / `has` / `can` / `should` | `isSellerActive`, `isShopSuspended`, `hasPriceChanged` |
 
-## 3. 3-Tier Quality Control (Zero-Server Sonar)
+## 3. Automated Quality Gate (Zero-Server ESLint SonarJS)
 
-1. Tier 1 (IDE Realtime): `.vscode/extensions.json` and `.vscode/settings.json` recommend `SonarSource.sonarlint-vscode` for live editor feedback.
-2. Tier 2 (Lint, Format and Git Hooks):
-   - `eslint.config.mjs` integrates `eslint-plugin-sonarjs` + `typescript-eslint`.
-   - Husky `pre-commit` runs `lint-staged` (ESLint `--fix` + Prettier `--write`).
+1. Tier 1 (Editor Formatting Baseline): `.editorconfig` and `.prettierrc.json` define consistent indentation, line endings, and formatting across editors without committing IDE-specific `.vscode/` directories.
+2. Tier 2 (Lint, Format, and Git Hooks):
+   - `eslint.config.mjs` integrates `eslint-plugin-sonarjs` and `typescript-eslint`.
+   - Husky `pre-commit` runs `lint-staged` (batched `eslint --cache --fix` and `prettier --cache --write`).
    - Husky `commit-msg` runs `@commitlint/cli` enforcing Conventional Commits (`<type>(<scope>): <subject>`, max 100 chars, spell out "and" instead of `&`).
-3. Tier 3 (Online Dashboard Ready): `sonar-project.properties` and `infra/templates/sonarcloud.yml.example` consume `backend/coverage/lcov.info` and `frontend/coverage/lcov.info`.
+3. Tier 3 (Coverage and CI Verification): `npm run test:coverage` emits `backend/coverage/lcov.info` and `frontend/coverage/lcov.info` alongside `npm run verify` in GitHub Actions CI.
