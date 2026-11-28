@@ -51,7 +51,7 @@ export default function BuyerOrdersPage() {
         setRealOrders(data);
       }
     } catch (err) {
-      console.warn('Lỗi tải đơn hàng thật từ API:', err);
+      console.warn('Failed to load orders from API:', err);
     } finally {
       setLoading(false);
     }
@@ -87,7 +87,7 @@ export default function BuyerOrdersPage() {
         window.open(paymentInfo.checkoutUrl, '_blank');
       }
     } catch (err) {
-      console.error('Lỗi khởi tạo cổng PayOS:', err);
+      console.error('Failed to initialize PayOS payment:', err);
       toast.error(err instanceof Error ? err.message : t('ordersPage.paymentLinkError'));
     } finally {
       setPayingOrderId(null);
@@ -106,7 +106,7 @@ export default function BuyerOrdersPage() {
       toast.success(t('ordersPage.confirmDeliverySuccess'));
       await fetchOrders();
     } catch (err: unknown) {
-      console.error('Lỗi xác nhận nhận hàng:', err);
+      console.error('Failed to confirm delivery:', err);
       toast.error(err instanceof Error ? err.message : t('ordersPage.confirmDeliveryError'));
     } finally {
       setConfirmingOrderId(null);

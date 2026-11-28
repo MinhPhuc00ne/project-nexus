@@ -69,11 +69,11 @@ export class MailService {
       const accepted = result.accepted.some(
         (address) => address.toLowerCase() === options.to.toLowerCase(),
       );
-      if (!accepted) this.logger.warn('SMTP chưa chấp nhận người nhận email.');
+      if (!accepted) this.logger.warn('SMTP server did not accept the email recipient.');
       return accepted;
     } catch {
       // SMTP errors can contain server responses or message data; never log credentials or content.
-      this.logger.error('Gửi email qua SMTP thất bại.');
+      this.logger.error('Failed to send email via SMTP.');
       return false;
     }
   }

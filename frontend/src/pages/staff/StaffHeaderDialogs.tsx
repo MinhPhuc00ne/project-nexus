@@ -223,7 +223,7 @@ export default function StaffHeaderDialogs({
                   )}
                 </div>
 
-                {/* Form Input: Họ tên */}
+                {/* Form Input: Full Name */}
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-slate-700">
                     {t('header.fullNameLabel')} <span className="text-red-500">*</span>
@@ -245,7 +245,7 @@ export default function StaffHeaderDialogs({
                   </div>
                 </div>
 
-                {/* Form Input: Số điện thoại */}
+                {/* Form Input: Phone Number */}
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-slate-700">
                     {t('header.phoneLabel')}
@@ -313,7 +313,7 @@ export default function StaffHeaderDialogs({
           </div>,
           document.body,
         )}
-      {/* Modal Đổi Mật Khẩu Staff */}
+      {/* Change Staff Password Modal */}
       {isPasswordEditorOpen &&
         createPortal(
           <div

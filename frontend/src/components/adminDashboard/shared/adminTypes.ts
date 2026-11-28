@@ -47,7 +47,7 @@ export interface AdminActions {
   notify: (message: string) => void;
 }
 
-// Props chung: data dùng để đọc/hiển thị, actions dùng để báo thao tác về trang cha.
+// Shared props: data for reading/displaying, actions for reporting actions to the parent page.
 export interface AdminTabProps {
   pendingRefundCount?: number;
   data: AdminData;

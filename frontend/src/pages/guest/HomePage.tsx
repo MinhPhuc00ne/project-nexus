@@ -65,7 +65,7 @@ function HomePage() {
         if (isMounted) setIsLoadingBanners(false);
       });
 
-    // Gọi API đề xuất sản phẩm cá nhân hóa theo giỏ hàng & lịch sử mua hàng của Buyer
+    // Fetch personalized product recommendations based on buyer cart & purchase history
     setIsLoadingRecs(true);
     void getRecommendationsApi(12)
       .then((res) => {
@@ -84,8 +84,8 @@ function HomePage() {
         if (isMounted) setIsLoadingRecs(false);
       });
 
-    // Ưu tiên tải các phiên đấu giá đang diễn ra (ACTIVE).
-    // Nếu chưa có phiên ACTIVE nào, tải các phiên đã lên lịch (SCHEDULED) để người mua theo dõi lịch khởi tranh.
+    // Prioritize loading currently ACTIVE auction sessions.
+    // If no ACTIVE sessions exist, load SCHEDULED sessions so buyers can track upcoming auctions.
     void (async () => {
       try {
         const res = await getAuctionsApi({ limit: 4, status: AuctionStatus.ACTIVE });
@@ -98,11 +98,11 @@ function HomePage() {
           setLiveAuctions(schedRes.items);
         }
       } catch (err: unknown) {
-        console.warn('Không thể tải danh sách phiên đấu giá từ API:', err);
+        console.warn('Unable to load auction list from API:', err);
       }
     })();
 
-    // Lấy danh sách sản phẩm Xu hướng từ API
+    // Fetch trending products from API
     setIsLoadingTrending(true);
     void getTrendingProducts(HOME_TRENDING_LIMIT)
       .then((res) => {
@@ -111,7 +111,7 @@ function HomePage() {
         }
       })
       .catch((err) => {
-        console.warn('Không thể tải sản phẩm xu hướng:', err);
+        console.warn('Unable to load trending products:', err);
       })
       .finally(() => {
         if (isMounted) setIsLoadingTrending(false);
@@ -261,10 +261,10 @@ function HomePage() {
 
       <HomeLiveAuction auctions={liveAuctions} />
 
-      {/* SẢN PHẨM XU HƯỚNG BÁN CHẠY (TRENDING PRODUCTS) */}
+      {/* BEST-SELLING TRENDING PRODUCTS */}
       <HomeTrendingSection products={trendingProducts} isLoading={isLoadingTrending} />
 
-      {/* TÍNH NĂNG ĐỀ XUẤT SẢN PHẨM CÁ NHÂN HÓA (AI RECOMMENDATIONS) */}
+      {/* PERSONALIZED AI PRODUCT RECOMMENDATIONS */}
       <HomeRecommendationsSection
         products={recommendations}
         isPersonalized={isPersonalized}

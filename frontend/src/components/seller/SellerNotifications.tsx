@@ -37,7 +37,9 @@ export default function SellerNotifications({
     const resolvedUrl = sellerAuctionPath ? `/seller/auctions/${sellerAuctionPath[1]}` : targetUrl;
     const notificationText = `${title ?? ''} ${content ?? ''}`.toLocaleLowerCase('vi-VN');
     const isReviewNotification =
-      type?.toUpperCase().includes('REVIEW') || notificationText.includes('đánh giá');
+      type?.toUpperCase().includes('REVIEW') ||
+      notificationText.includes('đánh giá') ||
+      notificationText.includes('review');
     const isTrendingNotification =
       notificationText.includes('xu hướng') || notificationText.includes('trending');
 
@@ -189,7 +191,8 @@ export default function SellerNotifications({
                               isTrendingItem ||
                               `${item.title} ${item.content}`
                                 .toLocaleLowerCase('vi-VN')
-                                .includes('đánh giá')) && (
+                                .includes('đánh giá') ||
+                              `${item.title} ${item.content}`.toLowerCase().includes('review')) && (
                               <button
                                 type="button"
                                 onClick={() =>

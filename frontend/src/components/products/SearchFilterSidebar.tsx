@@ -230,7 +230,7 @@ export default function SearchFilterSidebar({
       const q = citySearch.trim().toLowerCase();
       return ALL_CITIES.filter((c) => c.toLowerCase().includes(q));
     }
-    // Thu gọn: hiển thị 5 tỉnh/thành phổ biến nhất, nếu đang chọn tỉnh khác thì ghim lên đầu
+    // Collapsed: show top 5 popular provinces/cities, pinning selected province if outside top 5
     if (filters.city && !POPULAR_CITIES.includes(filters.city)) {
       return [filters.city, ...POPULAR_CITIES];
     }
@@ -258,7 +258,7 @@ export default function SearchFilterSidebar({
         )}
       </div>
 
-      {/* Accordion 1: Theo Danh Mục */}
+      {/* Accordion 1: By Category */}
       <div className="border-b border-slate-100 pb-4">
         <button
           type="button"
@@ -321,7 +321,7 @@ export default function SearchFilterSidebar({
         )}
       </div>
 
-      {/* Accordion 2: Nơi Bán */}
+      {/* Accordion 2: Location */}
       <div className="border-b border-slate-100 pb-4">
         <button
           type="button"
@@ -420,7 +420,7 @@ export default function SearchFilterSidebar({
         )}
       </div>
 
-      {/* Accordion 3: Khoảng Giá */}
+      {/* Accordion 3: Price Range */}
       <div className="border-b border-slate-100 pb-4">
         <button
           type="button"
@@ -504,7 +504,7 @@ export default function SearchFilterSidebar({
         )}
       </div>
 
-      {/* Accordion 4: Đánh Giá */}
+      {/* Accordion 4: Rating */}
       <div className="border-b border-slate-100 pb-4">
         <button
           type="button"
@@ -561,7 +561,7 @@ export default function SearchFilterSidebar({
         )}
       </div>
 
-      {/* Accordion 5: Tình Trạng Hàng */}
+      {/* Accordion 5: Condition */}
       <div>
         <button
           type="button"

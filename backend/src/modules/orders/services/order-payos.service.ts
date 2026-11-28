@@ -93,7 +93,7 @@ export class OrderPayosService {
       await this.trendingService.syncTopTrendingNotifications();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
-      this.logger.warn(`Đồng bộ thông báo Xu hướng thất bại: ${message}`);
+      this.logger.warn(`Failed to sync trending notifications: ${message}`);
     }
   }
 
@@ -118,21 +118,21 @@ export class OrderPayosService {
     });
 
     if (!order) {
-      throw new NotFoundException('Không tìm thấy đơn hàng tương ứng');
+      throw new NotFoundException('Order not found');
     }
 
     if (order.isAuction)
       throw new BadRequestException(
-        'Đơn đấu giá phải thanh toán qua quyền mua, để sử dụng đúng tiền cọc.',
+        'Auction orders must be paid through claim checkout to apply the deposit correctly.',
       );
 
     if (order.buyerId !== buyerId) {
-      throw new ForbiddenException('Bạn không có quyền thanh toán cho đơn hàng này');
+      throw new ForbiddenException('You do not have permission to pay for this order');
     }
 
     if (order.status !== OrderStatus.PENDING_PAYMENT) {
       throw new BadRequestException(
-        `Đơn hàng hiện không ở trạng thái chờ thanh toán (Trạng thái hiện tại: ${order.status})`,
+        `Order is not awaiting payment (Current status: ${order.status})`,
       );
     }
 
@@ -142,7 +142,7 @@ export class OrderPayosService {
 
     const amount = Math.round(Number(order.totalAmount));
     if (amount <= 0) {
-      throw new BadRequestException('Số tiền thanh toán phải lớn hơn 0 đồng');
+      throw new BadRequestException('Payment amount must be greater than 0 VND');
     }
 
     const description = `Nexus DH${orderCode}`.slice(0, 25);
@@ -158,7 +158,7 @@ export class OrderPayosService {
       dto?.cancelUrl || `${frontendUrl}/payment/cancel?orderId=${order.id}&orderCode=${orderCode}`;
 
     const items = order.items.map((item) => ({
-      name: (item.product?.title ?? item.titleSnapshot ?? 'Sản phẩm đấu giá').slice(0, 50),
+      name: (item.product?.title ?? item.titleSnapshot ?? 'Auction item').slice(0, 50),
       quantity: item.quantity,
       price: Math.round(Number(item.unitPrice)),
     }));
@@ -226,7 +226,7 @@ export class OrderPayosService {
     dto?: PayOrderInput,
   ): Promise<PayosGroupPaymentResponse> {
     if (orderIds.length < 2)
-      throw new BadRequestException('Nhóm thanh toán cần ít nhất hai đơn hàng.');
+      throw new BadRequestException('A payment group requires at least two orders.');
 
     const orders = await this.prisma.order.findMany({
       where: { id: { in: orderIds } },
@@ -238,25 +238,25 @@ export class OrderPayosService {
     });
 
     if (orders.length !== orderIds.length)
-      throw new NotFoundException('Không tìm thấy đủ các đơn hàng của nhóm thanh toán.');
+      throw new NotFoundException('Could not find all orders in the payment group.');
 
     for (const order of orders) {
       if (order.buyerId !== buyerId)
-        throw new ForbiddenException('Bạn không có quyền thanh toán cho đơn hàng này');
+        throw new ForbiddenException('You do not have permission to pay for this order');
       if (order.isAuction)
         throw new BadRequestException(
-          'Đơn đấu giá phải thanh toán qua quyền mua, để sử dụng đúng tiền cọc.',
+          'Auction orders must be paid through claim checkout to apply the deposit correctly.',
         );
       if (order.status !== OrderStatus.PENDING_PAYMENT)
         throw new BadRequestException(
-          `Đơn hàng ${order.id.slice(0, 8).toUpperCase()} không ở trạng thái chờ thanh toán (${order.status})`,
+          `Order ${order.id.slice(0, 8).toUpperCase()} is not awaiting payment (${order.status})`,
         );
       if (order.paymentGroupId)
-        throw new BadRequestException('Đơn hàng đã thuộc một nhóm thanh toán khác.');
+        throw new BadRequestException('Order already belongs to another payment group.');
     }
 
     const amount = orders.reduce((sum, order) => sum + Math.round(Number(order.totalAmount)), 0);
-    if (amount <= 0) throw new BadRequestException('Số tiền thanh toán phải lớn hơn 0 đồng');
+    if (amount <= 0) throw new BadRequestException('Payment amount must be greater than 0 VND');
 
     const orderCode = await this.orderCodes.next();
     const description = `Nexus GH${orderCode}`.slice(0, 25);
@@ -277,7 +277,7 @@ export class OrderPayosService {
 
     const items = orders.flatMap((order) =>
       order.items.map((item) => ({
-        name: (item.product?.title ?? item.titleSnapshot ?? 'Sản phẩm').slice(0, 50),
+        name: (item.product?.title ?? item.titleSnapshot ?? 'Product').slice(0, 50),
         quantity: item.quantity,
         price: Math.round(Number(item.unitPrice)),
       })),
@@ -328,7 +328,7 @@ export class OrderPayosService {
       });
       if (joined.count !== orderIds.length)
         throw new BadRequestException(
-          'Một trong các đơn hàng đã thay đổi trạng thái; vui lòng thanh toán lại.',
+          'One of the orders changed status; please retry checkout payment.',
         );
 
       return created;
@@ -370,18 +370,18 @@ export class OrderPayosService {
     });
 
     if (!order) {
-      throw new NotFoundException('Không tìm thấy đơn hàng tương ứng');
+      throw new NotFoundException('Order not found');
     }
 
     if (order.buyerId !== userId && order.sellerId !== userId) {
-      throw new ForbiddenException('Bạn không có quyền xem thông tin đơn hàng này');
+      throw new ForbiddenException('You do not have permission to view this order');
     }
 
     if (order.status !== OrderStatus.PENDING_PAYMENT) {
       return {
         paid: order.status !== OrderStatus.CANCELLED,
         status: order.status,
-        message: 'Đơn hàng đã được thanh toán hoặc đang xử lý.',
+        message: 'Order has already been paid or is currently being processed.',
       };
     }
 
@@ -406,12 +406,12 @@ export class OrderPayosService {
           return {
             paid: true,
             status: OrderStatus.PAID,
-            message: 'Nhóm đơn hàng đã được thanh toán và ghi nhận.',
+            message: 'Order group payment has been recorded.',
           };
         }
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
-        this.logger.warn(`Không kiểm tra được trạng thái nhóm thanh toán PayOS: ${message}`);
+        this.logger.warn(`Unable to check PayOS payment group status: ${message}`);
       }
 
       return { paid: false, status: order.status };
@@ -475,15 +475,13 @@ export class OrderPayosService {
           await this.escrow.hold(tx, updatedOrder);
         });
 
-        this.logger.log(
-          `Đồng bộ trực tiếp: Đơn ${order.id} đã thanh toán PayOS; tiền được giữ ký quỹ.`,
-        );
+        this.logger.log(`Direct sync: Order ${order.id} paid via PayOS; funds held in escrow.`);
         void this.syncTrendingSafely();
 
         return {
           paid: true,
           status: OrderStatus.PAID,
-          message: 'Thanh toán thành công qua PayOS VietQR.',
+          message: 'Payment completed via PayOS VietQR.',
         };
       }
 
@@ -494,7 +492,7 @@ export class OrderPayosService {
       };
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
-      this.logger.warn(`Truy vấn trạng thái PayOS cho đơn ${order.id} thất bại: ${message}`);
+      this.logger.warn(`Failed to query PayOS status for order ${order.id}: ${message}`);
       return {
         paid: false,
         status: order.status,

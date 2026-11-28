@@ -365,7 +365,7 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
         />
       </Panel>
 
-      {/* Modal thiết lập nhanh chương trình Sale cho sản phẩm */}
+      {/* Quick sale configuration modal for product */}
       <Popup
         isOpen={Boolean(saleModalProduct)}
         onClose={() => setSaleModalProduct(null)}
@@ -457,11 +457,11 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
                     className="mt-1.5 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-600"
                   >
                     <option value="FLASH SALE">{t('products.saleModal.badges.FLASH_SALE')}</option>
-                    <option value="GIẢM SỐC">{t('products.saleModal.badges.HOT_DEAL')}</option>
-                    <option value="ƯU ĐÃI ĐẶC BIỆT">
+                    <option value="HOT DEAL">{t('products.saleModal.badges.HOT_DEAL')}</option>
+                    <option value="SPECIAL OFFER">
                       {t('products.saleModal.badges.SPECIAL_OFFER')}
                     </option>
-                    <option value="XẢ KHO">{t('products.saleModal.badges.CLEARANCE')}</option>
+                    <option value="CLEARANCE">{t('products.saleModal.badges.CLEARANCE')}</option>
                   </select>
                 </label>
               </div>

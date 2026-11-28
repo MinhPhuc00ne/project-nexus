@@ -60,13 +60,13 @@ export class OAuthCodeService {
     }
 
     if (!raw) {
-      throw new UnauthorizedException('Mã đăng nhập không hợp lệ hoặc đã hết hạn.');
+      throw new UnauthorizedException('Sign-in code is invalid or has expired.');
     }
 
     try {
       return JSON.parse(raw) as OAuthHandoff;
     } catch {
-      throw new UnauthorizedException('Mã đăng nhập không hợp lệ hoặc đã hết hạn.');
+      throw new UnauthorizedException('Sign-in code is invalid or has expired.');
     }
   }
 }

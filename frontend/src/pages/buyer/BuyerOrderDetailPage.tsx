@@ -148,7 +148,7 @@ export default function BuyerOrderDetailPage() {
       toast.success(t('ordersPage.confirmDeliverySuccess'));
       await fetchOrderDetail();
     } catch (err: unknown) {
-      console.error('Lỗi xác nhận nhận hàng:', err);
+      console.error('Failed to confirm delivery:', err);
       toast.error(err instanceof Error ? err.message : t('orderDetailPage.confirmDeliveryError'));
     } finally {
       setIsConfirming(false);

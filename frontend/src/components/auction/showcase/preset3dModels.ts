@@ -25,15 +25,15 @@ export interface Preset3DModelMeta {
 }
 
 /**
- * 10 mô hình 3D dựng sẵn cho phòng triển lãm đấu giá:
- * 1. Đồng hồ, 2. Bức Tranh, 3. Xe, 4. Nhẫn (Kim cương), 5. Biệt Thự,
- * 6. Laptop, 7. Nhẫn (Hoàng gia / Đá quý), 8. Bàn phím, 9. Điện thoại, 10. Tai nghe.
+ * 10 preset 3D models for the auction showcase gallery (+ diamond):
+ * 1. Watch, 2. Painting, 3. Car, 4. Diamond Ring, 5. Villa,
+ * 6. Laptop, 7. Royal Ring, 8. Keyboard, 9. Smartphone, 10. Headphones.
  */
 export const PRESET_3D_MODELS: Preset3DModelMeta[] = [
   {
     key: 'preset_watch',
     index: 1,
-    label: 'Đồng hồ',
+    label: 'Watch',
     englishLabel: 'LUXURY TIMEPIECE 3D',
     accentColor: '#f59e0b',
     secondaryColor: '#38bdf8',
@@ -52,7 +52,7 @@ export const PRESET_3D_MODELS: Preset3DModelMeta[] = [
   {
     key: 'preset_painting',
     index: 2,
-    label: 'Bức Tranh',
+    label: 'Painting',
     englishLabel: 'MASTERPIECE CANVAS 3D',
     accentColor: '#eab308',
     secondaryColor: '#f97316',
@@ -69,7 +69,7 @@ export const PRESET_3D_MODELS: Preset3DModelMeta[] = [
   {
     key: 'preset_car',
     index: 3,
-    label: 'Xe',
+    label: 'Vehicle',
     englishLabel: 'COLLECTOR VEHICLE 3D',
     accentColor: '#ef4444',
     secondaryColor: '#fbbf24',
@@ -89,7 +89,7 @@ export const PRESET_3D_MODELS: Preset3DModelMeta[] = [
   {
     key: 'preset_diamond_ring',
     index: 4,
-    label: 'Nhẫn Kim Cương',
+    label: 'Diamond Ring',
     englishLabel: 'SOLITAIRE DIAMOND RING 3D',
     accentColor: '#38bdf8',
     secondaryColor: '#e0f2fe',
@@ -98,7 +98,7 @@ export const PRESET_3D_MODELS: Preset3DModelMeta[] = [
   {
     key: 'preset_villa',
     index: 5,
-    label: 'Biệt Thự',
+    label: 'Villa',
     englishLabel: 'LUXURY VILLA ESTATE 3D',
     accentColor: '#10b981',
     secondaryColor: '#fbbf24',
@@ -117,7 +117,7 @@ export const PRESET_3D_MODELS: Preset3DModelMeta[] = [
   {
     key: 'preset_royal_ring',
     index: 7,
-    label: 'Nhẫn Hoàng Gia',
+    label: 'Royal Ring',
     englishLabel: 'ROYAL GEMSTONE RING 3D',
     accentColor: '#a855f7',
     secondaryColor: '#fbbf24',
@@ -126,7 +126,7 @@ export const PRESET_3D_MODELS: Preset3DModelMeta[] = [
   {
     key: 'preset_keyboard',
     index: 8,
-    label: 'Bàn phím',
+    label: 'Keyboard',
     englishLabel: 'CUSTOM MECHANICAL KEYBOARD 3D',
     accentColor: '#06b6d4',
     secondaryColor: '#ec4899',
@@ -136,7 +136,7 @@ export const PRESET_3D_MODELS: Preset3DModelMeta[] = [
   {
     key: 'preset_phone',
     index: 9,
-    label: 'Điện thoại',
+    label: 'Smartphone',
     englishLabel: 'FLAGSHIP SMARTPHONE 3D',
     accentColor: '#818cf8',
     secondaryColor: '#22d3ee',
@@ -146,7 +146,7 @@ export const PRESET_3D_MODELS: Preset3DModelMeta[] = [
   {
     key: 'preset_headphone',
     index: 10,
-    label: 'Tai nghe',
+    label: 'Headphones',
     englishLabel: 'STUDIO HI-FI HEADPHONE 3D',
     accentColor: '#f43f5e',
     secondaryColor: '#fbbf24',
@@ -156,7 +156,7 @@ export const PRESET_3D_MODELS: Preset3DModelMeta[] = [
   {
     key: 'preset_diamond',
     index: 11,
-    label: 'Kim cương',
+    label: 'Diamond',
     englishLabel: 'BRILLIANT-CUT DIAMOND 3D',
     accentColor: '#38bdf8',
     secondaryColor: '#f0f9ff',
@@ -177,9 +177,9 @@ export type ShowcaseVisualResolution =
     };
 
 /**
- * Xác định sản phẩm của Seller có nằm trong 10 model 3D dựng sẵn hay không.
- * Nếu thuộc 10 model -> dùng model 3D tương ứng.
- * Nếu không thuộc -> tự động dựng Khung Tranh 3D đóng gói các hình ảnh của Seller.
+ * Determines whether a seller product matches one of the preset 3D models.
+ * If matched -> uses the corresponding 3D model.
+ * If not matched -> builds a 3D gallery frame showcasing the seller's product images.
  */
 export function resolveShowcaseItemVisual(
   item: Pick<AuctionConsignmentItem, 'title' | 'threeModelKey' | 'images'>,

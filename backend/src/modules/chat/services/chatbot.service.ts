@@ -55,14 +55,18 @@ export class ChatbotService {
     if (matchChatbotTopic(dto.message) === 'SECURITY') return this.answer(dto.message, true);
     const orderId = dto.orderId ?? messageOrderId(dto.message);
     if (orderId && (dto.intent || dto.status || dto.page || dto.limit))
-      throw new BadRequestException('Tra cứu một đơn không kết hợp truy vấn danh sách hoặc giỏ.');
+      throw new BadRequestException(
+        'Single-order lookup cannot be combined with list or cart filters.',
+      );
     if (orderId) return this.commerce.order(userId, orderId, dto.message);
     const navResult = await this.commerce.navigate?.(dto.message, true);
     if (navResult) return navResult;
     const result = await this.commerce.answer(userId, dto);
     if (result) return result;
     if (dto.status || dto.page || dto.limit)
-      throw new BadRequestException('Hãy chọn truy vấn đơn mua, đơn bán hoặc giỏ hàng.');
+      throw new BadRequestException(
+        'Please choose a purchase orders, sales orders, or shopping cart query.',
+      );
     const accountResult = await this.commerce.accountStatus?.(
       userId,
       dto.message,
@@ -87,7 +91,7 @@ export class ChatbotService {
     const guestIntent = commerceIntent(dto.message);
     if (guestIntent || messageOrderId(dto.message) || isCommerceFollowUp(dto.message))
       return {
-        reply: 'Vui lòng đăng nhập để tra cứu đơn hàng hoặc giỏ hàng của bạn.',
+        reply: 'Please sign in to look up your orders or shopping cart.',
         engine: 'FAQ',
         topic: guestIntent === 'CART' ? 'CART' : 'ORDER',
         sources: [],
@@ -96,7 +100,7 @@ export class ChatbotService {
     if (accountStatusIntent(dto.message, dto.history ?? []))
       return {
         reply:
-          'Vui lòng đăng nhập để kiểm tra điểm uy tín, số dư ví và điều kiện tài khoản của bạn.',
+          'Please sign in to check your reputation score, wallet balance, and account eligibility.',
         engine: 'FAQ',
         topic: 'AUCTION',
         sources: [],
@@ -112,11 +116,11 @@ export class ChatbotService {
     const response = await this.answer(dto.message, false, dto.history ?? []);
     if (response.topic === 'WELCOME' && response.engine === 'FAQ') {
       response.reply =
-        'Xin chào! Mình là trợ lý tự động NEXUS. Bạn có thể hỏi chính sách thanh toán, giao hàng, hủy/trả hàng và hoàn tiền. Vui lòng đăng nhập nếu cần tra cứu đơn hoặc liên hệ nhân viên.';
+        'Hello! I am the NEXUS automated assistant. You can ask about payment, shipping, cancellation/return, and refund policies. Please sign in to look up orders or contact support staff.';
     }
     if (response.topic === 'ORDER') {
       response.reply =
-        'Vui lòng đăng nhập để tra cứu đơn hàng của bạn. Khách chưa đăng nhập chỉ có thể hỏi chính sách chung của NEXUS.';
+        'Please sign in to look up your orders. Guests can only ask about general NEXUS policies.';
     }
     response.actions = response.actions.length > 0 ? [{ type: 'LOGIN' }] : [];
     return response;
@@ -156,7 +160,7 @@ export class ChatbotService {
   ): Promise<ChatbotReply | null> {
     const safeHistory = history.map((turn) =>
       matchChatbotTopic(turn.content) === 'SECURITY'
-        ? { ...turn, content: '[Nội dung bảo mật đã được ẩn.]' }
+        ? { ...turn, content: '[Sensitive content hidden.]' }
         : turn,
     );
     const generated = await this.ai.answer(message, safeHistory, authenticated);
@@ -183,7 +187,7 @@ export class ChatbotService {
     ) {
       return {
         reply:
-          'Xin chào! Mình là trợ lý tự động NEXUS. Mình có thể hướng dẫn thanh toán, giao hàng, hủy/trả hàng, hoàn tiền và tra cứu đơn của bạn.',
+          'Hello! I am the NEXUS automated assistant. I can guide you on payments, shipping, cancellations/returns, refunds, and order lookups.',
         engine: 'FAQ',
         topic: 'WELCOME',
         sources: [],
@@ -194,7 +198,7 @@ export class ChatbotService {
     if (!entry) {
       return {
         reply:
-          'Mình chưa có thông tin đủ chắc chắn cho câu hỏi này. Bạn có thể chọn một chủ đề hỗ trợ hoặc gửi yêu cầu tới nhân viên CSKH.',
+          'I do not have enough verified information for that question yet. You can choose a support topic or submit a request to Customer Support Staff.',
         engine: 'FAQ',
         topic: 'UNKNOWN',
         sources: [],
@@ -219,28 +223,28 @@ export class ChatbotService {
     if (topic === 'WELCOME') return [];
     if (topic === 'ORDER')
       return [
-        { type: 'NAVIGATE', path: '/buyer/orders', label: 'Mở đơn hàng của tôi' },
+        { type: 'NAVIGATE', path: '/buyer/orders', label: 'Open my orders' },
         { type: 'REQUEST_SUPPORT', endpoint: '/api/v1/chat/request-support' },
       ];
     if (topic === 'AUCTION')
       return [
-        { type: 'NAVIGATE', path: '/auction', label: 'Mở trang Đấu giá' },
-        { type: 'NAVIGATE', path: '/buyer/bids', label: 'Đấu giá của tôi' },
+        { type: 'NAVIGATE', path: '/auction', label: 'Open Auctions' },
+        { type: 'NAVIGATE', path: '/buyer/bids', label: 'My Auctions' },
         { type: 'REQUEST_SUPPORT', endpoint: '/api/v1/chat/request-support' },
       ];
     if (topic === 'WALLET')
       return [
-        { type: 'NAVIGATE', path: '/buyer/wallet', label: 'Mở Ví NEXUS Pay' },
+        { type: 'NAVIGATE', path: '/buyer/wallet', label: 'Open NEXUS Pay Wallet' },
         { type: 'REQUEST_SUPPORT', endpoint: '/api/v1/chat/request-support' },
       ];
     if (topic === 'REPUTATION')
       return [
-        { type: 'NAVIGATE', path: '/buyer/reputation', label: 'Xem Điểm uy tín' },
+        { type: 'NAVIGATE', path: '/buyer/reputation', label: 'View Reputation Score' },
         { type: 'REQUEST_SUPPORT', endpoint: '/api/v1/chat/request-support' },
       ];
     if (topic === 'CART')
       return [
-        { type: 'NAVIGATE', path: '/cart', label: 'Mở giỏ hàng' },
+        { type: 'NAVIGATE', path: '/cart', label: 'Open cart' },
         { type: 'REQUEST_SUPPORT', endpoint: '/api/v1/chat/request-support' },
       ];
     return [{ type: 'REQUEST_SUPPORT', endpoint: '/api/v1/chat/request-support' }];

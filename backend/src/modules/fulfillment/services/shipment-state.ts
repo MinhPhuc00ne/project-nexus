@@ -70,5 +70,5 @@ export function mapGhnStatus(status: string): {
     return { shipment: ShipmentStatus.FAILED, terminal: false };
   if (['cancel', 'cancelled', 'exception', 'lost', 'damage', 'scrap', 'huy', 'da_huy'].includes(s))
     return { shipment: ShipmentStatus.FAILED, terminal: true };
-  throw new BadGatewayException(`GHN trả trạng thái chưa được hỗ trợ: ${status}`);
+  throw new BadGatewayException(`GHN returned an unsupported status: ${status}`);
 }

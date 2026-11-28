@@ -76,7 +76,7 @@ export class AdminAnalyticsService {
         totalNormalFee += fee;
         if (record.order?.items) {
           for (const item of record.order.items) {
-            const catName = item.product?.category?.name || 'Khác';
+            const catName = item.product?.category?.name || 'Other';
             const catFee = fee / Math.max(1, record.order.items.length);
             categoryRevenueMap.set(catName, (categoryRevenueMap.get(catName) || 0) + catFee);
           }
@@ -90,12 +90,12 @@ export class AdminAnalyticsService {
 
     const formatShortAmount = (amount: number): string => {
       if (amount >= 1_000_000_000) {
-        return `${(amount / 1_000_000_000).toFixed(2)} tỷ`;
+        return `${(amount / 1_000_000_000).toFixed(2)}B ₫`;
       }
       if (amount >= 1_000_000) {
         return `${(amount / 1_000_000).toFixed(1)}M ₫`;
       }
-      return `${amount.toLocaleString('vi-VN')} ₫`;
+      return `${amount.toLocaleString('en-US')} ₫`;
     };
 
     const revenueComposition = {
@@ -104,7 +104,7 @@ export class AdminAnalyticsService {
       primaryPercentage: Number(normalPercent.toFixed(1)),
       items: [
         {
-          name: 'Đơn thường TMĐT (7%)',
+          name: 'Standard E-Commerce (7%)',
           description: 'NEXUS Verified Sellers',
           amount: formatShortAmount(totalNormalFee),
           rawAmount: totalNormalFee,
@@ -112,7 +112,7 @@ export class AdminAnalyticsService {
           color: 'bg-primary',
         },
         {
-          name: 'Đấu giá độc bản (16%)',
+          name: 'Exclusive Auction (16%)',
           description: 'WebGL Interactive Room',
           amount: formatShortAmount(totalAuctionFee),
           rawAmount: totalAuctionFee,
@@ -127,10 +127,10 @@ export class AdminAnalyticsService {
       })),
     };
 
-    // Calculate 4 revenue periods: 7 ngày, 30 ngày, Tháng này, Năm nay
-    const dayNames = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+    // Calculate 4 revenue periods: 7 days, 30 days, This month, This year
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-    // Period 1: 7 ngày
+    // Period 1: 7 days
     const last7DaysLabels: string[] = [];
     const last7DaysAuction: number[] = [0, 0, 0, 0, 0, 0, 0];
     const last7DaysNormal: number[] = [0, 0, 0, 0, 0, 0, 0];
@@ -138,7 +138,7 @@ export class AdminAnalyticsService {
     for (let i = 6; i >= 0; i--) {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
-      last7DaysLabels.push(i === 0 ? 'Hôm nay' : dayNames[d.getDay()]);
+      last7DaysLabels.push(i === 0 ? 'Today' : dayNames[d.getDay()]);
     }
 
     const sevenDaysAgo = new Date(now);
@@ -166,16 +166,8 @@ export class AdminAnalyticsService {
       }
     }
 
-    // Period 2: 30 ngày (divided into 7 points)
-    const last30Labels = [
-      'Ngày 1',
-      'Ngày 5',
-      'Ngày 10',
-      'Ngày 15',
-      'Ngày 20',
-      'Ngày 25',
-      'Ngày 30',
-    ];
+    // Period 2: 30 days (divided into 7 points)
+    const last30Labels = ['Day 1', 'Day 5', 'Day 10', 'Day 15', 'Day 20', 'Day 25', 'Day 30'];
     const last30Auction: number[] = [0, 0, 0, 0, 0, 0, 0];
     const last30Normal: number[] = [0, 0, 0, 0, 0, 0, 0];
     const thirtyDaysAgo = new Date(now);
@@ -203,9 +195,9 @@ export class AdminAnalyticsService {
       }
     }
 
-    // Period 3: Tháng này (current month)
+    // Period 3: This month (current month)
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthLabels = ['Tuần 1', 'Tuần 2', 'Tuần 3', 'Tuần 4', 'Hôm nay'];
+    const monthLabels = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Today'];
     const monthAuction: number[] = [0, 0, 0, 0, 0];
     const monthNormal: number[] = [0, 0, 0, 0, 0];
     let monthTotalAuction = 0;
@@ -229,9 +221,22 @@ export class AdminAnalyticsService {
       }
     }
 
-    // Period 4: Năm nay (current year - 12 months)
+    // Period 4: This year (current year - 12 months)
     const yearStart = new Date(now.getFullYear(), 0, 1);
-    const yearLabels = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'];
+    const yearLabels = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     const yearAuction: number[] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     const yearNormal: number[] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     let yearTotalAuction = 0;
@@ -263,41 +268,41 @@ export class AdminAnalyticsService {
 
     const revenuePeriods = [
       {
-        label: '7 ngày',
+        label: '7 days',
         total: period7TotalAuction + period7TotalNormal,
         auction: period7TotalAuction,
         normal: period7TotalNormal,
-        unit: 'tuần này',
+        unit: 'this week',
         labels: last7DaysLabels,
         auctionValues: scaleValues(last7DaysAuction),
         normalValues: scaleValues(last7DaysNormal),
       },
       {
-        label: '30 ngày',
+        label: '30 days',
         total: period30TotalAuction + period30TotalNormal,
         auction: period30TotalAuction,
         normal: period30TotalNormal,
-        unit: '30 ngày',
+        unit: '30 days',
         labels: last30Labels,
         auctionValues: scaleValues(last30Auction),
         normalValues: scaleValues(last30Normal),
       },
       {
-        label: 'Tháng này',
+        label: 'This month',
         total: monthTotalAuction + monthTotalNormal,
         auction: monthTotalAuction,
         normal: monthTotalNormal,
-        unit: 'tháng này',
+        unit: 'this month',
         labels: monthLabels,
         auctionValues: scaleValues(monthAuction),
         normalValues: scaleValues(monthNormal),
       },
       {
-        label: `Năm ${now.getFullYear()}`,
+        label: `Year ${now.getFullYear()}`,
         total: yearTotalAuction + yearTotalNormal,
         auction: yearTotalAuction,
         normal: yearTotalNormal,
-        unit: 'năm nay',
+        unit: 'this year',
         labels: yearLabels,
         auctionValues: scaleValues(yearAuction),
         normalValues: scaleValues(yearNormal),
@@ -334,7 +339,7 @@ export class AdminAnalyticsService {
     const peakBucketIndex = bidHourBuckets.findIndex((b) => b.count === maxBidCount);
     const peakWindow =
       peakBucketIndex >= 0 && maxBidCount > 0
-        ? `${bidHourBuckets[peakBucketIndex].label} (giờ vàng)`
+        ? `${bidHourBuckets[peakBucketIndex].label} (peak)`
         : '20h – 22h';
     const peakBidsPerMinute = maxBidCount > 0 ? Math.max(1, Math.round(maxBidCount / 60)) : 0;
 
@@ -344,7 +349,7 @@ export class AdminAnalyticsService {
         : bidHourBuckets.map(() => 0);
 
     const bidFrequency = {
-      subtitle: 'Tải WebGL & phân bổ lượt trả giá theo khung giờ',
+      subtitle: 'WebGL load & hourly bid distribution',
       peakWindow,
       peakBidsPerMinute,
       health: 'CPU 18% • 6 nodes OK',

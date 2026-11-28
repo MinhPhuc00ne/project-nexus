@@ -193,7 +193,7 @@ export default function OrderReviewModal({
         t('orders.reviewModal.defaultProductComment'),
       );
 
-      // Gửi đánh giá gian hàng nếu có chọn
+      // Submit shop review if selected
       if (includeShop && canReviewShop) {
         await saveBuyerShopReviewApi(hasExistingShopReview, order.id, shopReviewOrderIds, {
           rating: shopRating,
@@ -264,7 +264,7 @@ export default function OrderReviewModal({
             </div>
           )}
 
-          {/* Danh sách sản phẩm trong đơn */}
+          {/* List of products in the order */}
           <div className="space-y-4">
             <h4 className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wide text-slate-700">
               <Package size={14} className="text-blue-600" />
@@ -303,7 +303,7 @@ export default function OrderReviewModal({
                     </div>
                   </div>
 
-                  {/* Chọn sao */}
+                  {/* Star rating */}
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold text-slate-700">
                       {t('orders.reviewModal.ratingLabel')}
@@ -342,7 +342,7 @@ export default function OrderReviewModal({
                     </span>
                   </div>
 
-                  {/* Nhận xét */}
+                  {/* Comment */}
                   <div>
                     <textarea
                       rows={2}
@@ -359,7 +359,7 @@ export default function OrderReviewModal({
             })}
           </div>
 
-          {/* Đánh giá gian hàng (Shop) */}
+          {/* Shop review */}
           {canReviewShop && !loadingShopEligibility && (
             <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
               <div className="flex items-center justify-between">

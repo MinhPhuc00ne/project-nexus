@@ -51,7 +51,8 @@ function orderStatus(text: string): string | undefined {
     text.includes('đã thanh toán') ||
     text.includes('thanh toán thành công') ||
     text.includes('payment received') ||
-    text.includes('payment successful')
+    text.includes('payment successful') ||
+    text.includes('order paid')
   ) {
     return 'paid';
   }
@@ -79,17 +80,31 @@ function resolveOrderTarget(type: string, text: string): string | undefined {
   if (isReviewNotification(type, text)) {
     return buyerOrdersUrl('completed', search);
   }
-  if (type.includes('ORDER') || text.includes('đơn hàng') || text.includes('giao hàng')) {
+  if (
+    type.includes('ORDER') ||
+    text.includes('đơn hàng') ||
+    text.includes('giao hàng') ||
+    text.includes('order') ||
+    text.includes('delivery')
+  ) {
     return buyerOrdersUrl(orderStatus(text), search);
   }
   return undefined;
 }
 
 function resolveFallbackTarget(type: string, text: string): string {
-  if (type.includes('AUCTION') || text.includes('đấu giá')) return '/auction';
+  if (type.includes('AUCTION') || text.includes('đấu giá') || text.includes('auction')) {
+    return '/auction';
+  }
   const orderTarget = resolveOrderTarget(type, text);
   if (orderTarget) return orderTarget;
-  if (type.includes('DISPUTE') || text.includes('khiếu nại') || text.includes('trả hàng')) {
+  if (
+    type.includes('DISPUTE') ||
+    text.includes('khiếu nại') ||
+    text.includes('trả hàng') ||
+    text.includes('dispute') ||
+    text.includes('return')
+  ) {
     return '/buyer/disputes';
   }
   if (
@@ -98,6 +113,9 @@ function resolveFallbackTarget(type: string, text: string): string {
     text.includes('số dư') ||
     text.includes('nạp tiền') ||
     text.includes('rút tiền') ||
+    text.includes('wallet') ||
+    text.includes('balance') ||
+    text.includes('deposit') ||
     text.includes('withdrawal')
   ) {
     return '/buyer/wallet';
@@ -106,11 +124,15 @@ function resolveFallbackTarget(type: string, text: string): string {
     type.includes('REPUTATION') ||
     type.includes('TRUST') ||
     text.includes('uy tín') ||
-    text.includes('tín nhiệm')
+    text.includes('tín nhiệm') ||
+    text.includes('reputation') ||
+    text.includes('trust')
   ) {
     return '/buyer/reputation';
   }
-  if (type.includes('WISHLIST') || text.includes('yêu thích')) return '/buyer/wishlist';
+  if (type.includes('WISHLIST') || text.includes('yêu thích') || text.includes('wishlist')) {
+    return '/buyer/wishlist';
+  }
   return '/buyer/notifications';
 }
 
@@ -124,7 +146,8 @@ export function resolveNotificationTargetUrl(
 ): string {
   if (
     item.metadata?.actionType === 'SECOND_CHANCE_INVITATION' ||
-    (item.type === 'AUCTION' && item.title?.startsWith('Cơ hội mua '))
+    (item.type === 'AUCTION' &&
+      (item.title?.startsWith('Cơ hội mua ') || item.title?.startsWith('Second-chance ')))
   ) {
     return '/buyer/profile?tab=auction-offers';
   }

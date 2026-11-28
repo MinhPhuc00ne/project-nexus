@@ -58,14 +58,14 @@ export class AuctionConsignmentHelper {
     ]);
 
     if (!auction) {
-      throw new NotFoundException('Không tìm thấy phòng đấu giá.');
+      throw new NotFoundException('Auction room not found.');
     }
     if (!seller || seller.role !== Role.SELLER) {
-      throw new ForbiddenException('Chỉ tài khoản Người bán mới được gửi vật phẩm ký gửi đấu giá.');
+      throw new ForbiddenException('Only Seller accounts may submit auction consignments.');
     }
     if (seller.isShopSuspended) {
       throw new ForbiddenException({
-        message: 'Gian hàng của bạn đang bị tạm khóa, không thể ký gửi vật phẩm.',
+        message: 'Your store is currently suspended and cannot consign items.',
         errorCode: AppErrorCode.SHOP_SUSPENDED,
       });
     }
@@ -77,19 +77,19 @@ export class AuctionConsignmentHelper {
       effectiveTrustLevel === 'SUSPENDED'
     ) {
       throw new BadRequestException(
-        'Tài khoản đang ở mức thử thách hoặc bị đình chỉ, không thể ký gửi vật phẩm đấu giá.',
+        'Accounts on probation or suspended status cannot consign auction items.',
       );
     }
     if (seller.reputationScore < auction.minSellerReputation) {
       throw new ForbiddenException(
-        `Điểm uy tín tối thiểu để ký gửi vào phiên này là ${auction.minSellerReputation}.`,
+        `Minimum reputation score required to consign to this auction is ${auction.minSellerReputation}.`,
       );
     }
     if (auction.status !== AuctionStatus.SCHEDULED || auction.isConsignmentLocked) {
-      throw new BadRequestException('Phiên đấu giá đã khóa nhận ký gửi hoặc đã bắt đầu.');
+      throw new BadRequestException('Auction room has locked consignments or has already started.');
     }
     if (auction.consignmentDeadline && Date.now() > auction.consignmentDeadline.getTime()) {
-      throw new BadRequestException('Đã quá hạn chót đăng ký vật phẩm ký gửi cho phiên này.');
+      throw new BadRequestException('The consignment deadline for this auction has passed.');
     }
 
     if (
@@ -97,7 +97,7 @@ export class AuctionConsignmentHelper {
       dto.proposedStartingPrice < dto.proposedReservePrice
     ) {
       throw new BadRequestException(
-        'Giá khởi điểm đề xuất phải lớn hơn hoặc bằng giá sàn (reserve price).',
+        'Proposed starting price must be greater than or equal to the reserve price.',
       );
     }
 
@@ -132,7 +132,7 @@ export class AuctionConsignmentHelper {
   async adminGetAuctionItems(auctionId: string) {
     const auction = await this.prisma.auction.findUnique({ where: { id: auctionId } });
     if (!auction) {
-      throw new NotFoundException('Không tìm thấy phòng đấu giá.');
+      throw new NotFoundException('Auction room not found.');
     }
 
     const items = await this.prisma.auctionItem.findMany({
@@ -182,20 +182,18 @@ export class AuctionConsignmentHelper {
       include: { auction: true },
     });
     if (!item) {
-      throw new NotFoundException('Không tìm thấy vật phẩm ký gửi.');
+      throw new NotFoundException('Consigned item not found.');
     }
     if (
       item.auction.status !== AuctionStatus.SCHEDULED &&
       item.auction.status !== AuctionStatus.DRAFT
     ) {
-      throw new BadRequestException(
-        'Không thể xét duyệt vật phẩm sau khi phiên đấu giá đã bắt đầu.',
-      );
+      throw new BadRequestException('Cannot review items after the auction has started.');
     }
 
     if (dto.action === ReviewAction.REJECT) {
       if (!dto.rejectionReason?.trim()) {
-        throw new BadRequestException('Vui lòng nhập lý do từ chối vật phẩm.');
+        throw new BadRequestException('Please provide a rejection reason for the item.');
       }
 
       const rejected = await this.prisma.auctionItem.update({
@@ -214,8 +212,8 @@ export class AuctionConsignmentHelper {
           userId: item.sellerId,
           auctionId: item.auctionId,
           targetUrl: `/seller/auctions`,
-          title: `Vật phẩm "${item.title}" chưa được duyệt đấu giá`,
-          content: `Admin đã từ chối vật phẩm "${item.title}" cho phiên "${item.auction.title}". Lý do: ${dto.rejectionReason.trim()}`,
+          title: `Item "${item.title}" was not approved for auction`,
+          content: `Admin rejected item "${item.title}" for auction "${item.auction.title}". Reason: ${dto.rejectionReason.trim()}`,
           type: NotificationType.AUCTION,
           channel: NotificationChannel.IN_APP,
         },
@@ -236,7 +234,7 @@ export class AuctionConsignmentHelper {
 
     if (effectiveReservePrice !== null && effectiveStartingPrice < effectiveReservePrice) {
       throw new BadRequestException(
-        'Giá khởi điểm chính thức không được thấp hơn giá sàn (reserve price) để đảm bảo ngay cả người đặt đầu tiên vẫn đạt giá sàn.',
+        'Official starting price cannot be lower than the reserve price so even the first bid meets the reserve.',
       );
     }
 
@@ -270,8 +268,8 @@ export class AuctionConsignmentHelper {
         userId: item.sellerId,
         auctionId: item.auctionId,
         targetUrl: auctionTargetUrl(item.auctionId),
-        title: `Vật phẩm "${item.title}" đã được duyệt (Lô #${lotNumber})`,
-        content: `Admin đã duyệt "${item.title}" vào Lô #${lotNumber} của phiên "${item.auction.title}" với giá khởi điểm ${formatVnd(effectiveStartingPrice)}.`,
+        title: `Item "${item.title}" approved (Lot #${lotNumber})`,
+        content: `Admin approved "${item.title}" as Lot #${lotNumber} in auction "${item.auction.title}" with starting price ${formatVnd(effectiveStartingPrice)}.`,
         type: NotificationType.AUCTION,
         channel: NotificationChannel.IN_APP,
       },
@@ -316,7 +314,7 @@ export class AuctionConsignmentHelper {
   }
 
   /**
-   * Support Staff operational overview for "Hỗ Trợ Đấu Giá 3D":
+   * Support Staff operational overview for 3D Auction Support:
    * active/scheduled rooms, lots awaiting review or closing, open complaints, and auction support chats.
    */
   async getStaffOverview() {
@@ -395,7 +393,7 @@ export class AuctionConsignmentHelper {
   async staffAddItemNote(itemId: string, staffId: string, dto: StaffAuctionNoteInput) {
     const item = await this.prisma.auctionItem.findUnique({ where: { id: itemId } });
     if (!item) {
-      throw new NotFoundException('Không tìm thấy vật phẩm đấu giá.');
+      throw new NotFoundException('Auction item not found.');
     }
     const noteText = dto.staffNote?.trim() || null;
     this.logger.log(`Support Staff ${staffId} updated note on auction item ${itemId}`);
@@ -421,16 +419,16 @@ export class AuctionConsignmentHelper {
       select: { id: true, title: true },
     });
     if (!auction) {
-      throw new NotFoundException('Không tìm thấy phòng đấu giá.');
+      throw new NotFoundException('Auction room not found.');
     }
     if (!this.chatService) {
-      throw new ConflictException('Dịch vụ trò chuyện hỗ trợ hiện chưa khả dụng.');
+      throw new ConflictException('Support chat service is currently unavailable.');
     }
 
     return this.chatService.requestSupport(userId, userRole, {
       contextType: 'AUCTION',
       contextId: auctionId,
-      subject: `Hỗ trợ phòng đấu giá: ${auction.title}`,
+      subject: `Auction room support: ${auction.title}`,
       message,
     });
   }

@@ -24,7 +24,7 @@ export function roundCurrency(value: number): number {
 }
 
 export function lotDisplayTitle(lotNumber: number | null | undefined, title: string): string {
-  return lotNumber ? `Lô #${lotNumber}: ${title}` : title;
+  return lotNumber ? `Lot #${lotNumber}: ${title}` : title;
 }
 
 export function getIntroDurationMs(lotCount: number): number {

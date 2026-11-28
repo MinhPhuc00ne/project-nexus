@@ -222,7 +222,7 @@ test(
       }
       const faq = await post({ message: 'huy don da xac nhan' });
       assert.equal(faq.status, 200);
-      assert.match((await faq.json()).reply, /Admin duyệt/);
+      assert.match((await faq.json()).reply, /Admin approval/);
       const followup = await post({
         message: 'Vậy cần làm gì?',
         history: [
@@ -246,7 +246,7 @@ test(
       assert.match(aiBody.reply, /Admin xem xét/);
       assert.equal(geminiCalls[0].contents.length, 3);
       assert.equal(geminiCalls[0].contents[1].role, 'model');
-      assert.match(geminiCalls[0].systemInstruction.parts[0].text, /Người dùng đã đăng nhập/);
+      assert.match(geminiCalls[0].systemInstruction.parts[0].text, /The user is signed in/);
       aiEnabled = false;
       const owner = await post({ message: 'order', orderId });
       assert.equal(owner.status, 200);
@@ -293,7 +293,7 @@ test(
         history: [{ role: 'user', content: 'Tôi vừa mua hàng' }],
       });
       assert.equal((await guestAi.json()).engine, 'GEMINI');
-      assert.match(geminiCalls.at(-1).systemInstruction.parts[0].text, /Người dùng chưa đăng nhập/);
+      assert.match(geminiCalls.at(-1).systemInstruction.parts[0].text, /The user is not signed in/);
       aiEnabled = false;
       for (const body of [
         { message: 'hi', orderId },

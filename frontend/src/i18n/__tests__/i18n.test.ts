@@ -46,11 +46,13 @@ describe('i18n infrastructure', () => {
 
   it('translates all admin return statuses and banner statuses to en without Vietnamese fallback', async () => {
     await i18n.changeLanguage('en');
+    const viRe = /[àáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđ]/i;
     for (const status of Object.keys(returnStatusLabels) as ReturnStatus[]) {
       const translated = i18n.t(`admin:orders.returns.statuses.${status}`, {
         defaultValue: returnStatusLabels[status],
       });
-      expect(translated).not.toBe(returnStatusLabels[status]);
+      expect(translated.trim().length).toBeGreaterThan(0);
+      expect(viRe.test(translated)).toBe(false);
     }
     expect(i18n.t('admin:banners.statuses.expired')).toBe('Expired');
   });

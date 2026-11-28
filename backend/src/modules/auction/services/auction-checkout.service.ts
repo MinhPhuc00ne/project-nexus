@@ -87,7 +87,7 @@ export class AuctionCheckoutService {
     const buyerWallet = await tx.wallet.findUnique({ where: { userId: input.buyerId } });
     if (!buyerWallet || Number(buyerWallet.lockedBalance) < depositAmount) {
       throw new ConflictException({
-        message: 'Số dư tạm giữ trong ví không đủ để khởi tạo tiền cọc 30%.',
+        message: 'Locked wallet balance is insufficient to initialize the 30% deposit.',
         errorCode: AppErrorCode.CONFLICT,
       });
     }
@@ -112,7 +112,7 @@ export class AuctionCheckoutService {
             amount: unlockAmount,
             status: WalletTransactionStatus.SUCCESS,
             referenceId: input.auctionId,
-            description: `Hoàn 70% tiền giữ chỗ (${formatVnd(unlockAmount)}) sau khi thắng ${lotLabel(input.lotNumber, input.title)}; giữ lại 30% tiền cọc (${formatVnd(depositAmount)}).`,
+            description: `Released 70% bid hold (${formatVnd(unlockAmount)}) after winning ${lotLabel(input.lotNumber, input.title)}; retained 30% deposit (${formatVnd(depositAmount)}).`,
           },
         });
       }
@@ -149,8 +149,8 @@ export class AuctionCheckoutService {
         userId: input.buyerId,
         auctionId: input.auctionId,
         targetUrl: `/auction/${input.auctionId}`,
-        title: `Bạn đã thắng ${lotLabel(input.lotNumber, input.title)}!`,
-        content: `Hệ thống đã hoàn 70% (${formatVnd(refundAmount)}) về ví và giữ 30% tiền cọc (${formatVnd(depositAmount)}). Vui lòng hoàn tất đặt mua và thanh toán 70% còn lại + phí vận chuyển trong vòng 24 giờ.`,
+        title: `You won ${lotLabel(input.lotNumber, input.title)}!`,
+        content: `70% (${formatVnd(refundAmount)}) has been released back to your wallet and 30% (${formatVnd(depositAmount)}) is held as your deposit. Please complete checkout for the remaining 70% + shipping within 24 hours.`,
         type: NotificationType.AUCTION,
         channel: NotificationChannel.IN_APP,
         metadata: {
@@ -324,11 +324,13 @@ export class AuctionCheckoutService {
       }
       if (current.status !== AuctionAwardStatus.AWAITING_CHECKOUT || !current.order) {
         throw new ConflictException(
-          'Quyền mua lô hàng đấu giá này không còn ở trạng thái chờ thanh toán.',
+          'Purchase right for this auction lot is no longer awaiting payment.',
         );
       }
       if (current.expiresAt.getTime() <= Date.now()) {
-        throw new BadRequestException('Thời hạn 24 giờ thanh toán lô hàng đấu giá đã hết.');
+        throw new BadRequestException(
+          'The 24-hour payment window for this auction lot has expired.',
+        );
       }
 
       await tx.$queryRaw`SELECT id FROM wallets WHERE user_id = ${buyerId} FOR UPDATE`;
@@ -342,11 +344,11 @@ export class AuctionCheckoutService {
 
       if (!wallet || Number(wallet.balance) < dueNow) {
         throw new BadRequestException(
-          `Số dư ví khả dụng không đủ để thanh toán 70% còn lại và phí vận chuyển (cần ${formatVnd(dueNow)}).`,
+          `Available wallet balance is insufficient to pay the remaining 70% plus shipping (${formatVnd(dueNow)} required).`,
         );
       }
       if (Number(wallet.lockedBalance) < depositAmount) {
-        throw new ConflictException('Khoản cọc 30% trong ví tạm giữ không hợp lệ.');
+        throw new ConflictException('Invalid 30% locked deposit in wallet.');
       }
 
       await tx.wallet.update({
@@ -363,7 +365,7 @@ export class AuctionCheckoutService {
           amount: -dueNow,
           status: WalletTransactionStatus.SUCCESS,
           referenceId: current.order.id,
-          description: `Thanh toán 70% còn lại (${formatVnd(remainingProductAmount)}) + phí GHN (${formatVnd(shippingFee)}) cho đơn đấu giá #${current.order.id.slice(0, 8)} (đã trừ cọc ${formatVnd(depositAmount)}).`,
+          description: `Paid remaining 70% (${formatVnd(remainingProductAmount)}) + GHN fee (${formatVnd(shippingFee)}) for auction order #${current.order.id.slice(0, 8)} (deposit ${formatVnd(depositAmount)} applied).`,
         },
       });
 
@@ -413,8 +415,8 @@ export class AuctionCheckoutService {
             userId: sellerId,
             auctionId: current.auctionId,
             targetUrl: `/seller/orders/${updatedOrder.id}`,
-            title: 'Người thắng đấu giá đã thanh toán đơn hàng!',
-            content: `Đơn hàng cho "${itemTitle}" (${formatVnd(totalAmount)}) đã thanh toán đầy đủ. Vui lòng chuẩn bị giao hàng.`,
+            title: 'Auction winner has paid the order!',
+            content: `Order for "${itemTitle}" (${formatVnd(totalAmount)}) has been paid in full. Please prepare for shipment.`,
             type: NotificationType.ORDER,
             channel: NotificationChannel.IN_APP,
             metadata: {
@@ -458,18 +460,18 @@ export class AuctionCheckoutService {
       },
     });
     if (!offer || (offer.buyerId !== buyerId && offer.order?.buyerId !== buyerId)) {
-      throw new ForbiddenException('Bạn không có quyền thanh toán đơn đấu giá này.');
+      throw new ForbiddenException('You do not have permission to pay for this auction order.');
     }
     if (allowPaid && offer.status === AuctionAwardStatus.PAID && offer.order) {
       return offer;
     }
     if (offer.status !== AuctionAwardStatus.AWAITING_CHECKOUT || !offer.order) {
       throw new ConflictException(
-        'Quyền mua lô hàng đấu giá này không còn hiệu lực để thanh toán.',
+        'Purchase right for this auction lot is no longer valid for payment.',
       );
     }
     if (offer.expiresAt.getTime() <= Date.now()) {
-      throw new BadRequestException('Thời hạn 24 giờ thanh toán lô hàng đấu giá đã hết.');
+      throw new BadRequestException('The 24-hour payment window for this auction lot has expired.');
     }
     return offer;
   }
@@ -480,7 +482,7 @@ export class AuctionCheckoutService {
     dto: CheckoutAuctionAwardInput,
   ) {
     if (!offer.order) {
-      throw new ConflictException('Đơn hàng đấu giá chưa được khởi tạo.');
+      throw new ConflictException('Auction order has not been initialized.');
     }
     const address = await this.resolveAddress(buyerId, dto);
     const items: GhnParcelItem[] = offer.order.items.map(
@@ -507,7 +509,7 @@ export class AuctionCheckoutService {
         where: { id: dto.addressId, userId: buyerId },
       });
       if (!address) {
-        throw new NotFoundException('Không tìm thấy địa chỉ giao hàng.');
+        throw new NotFoundException('Shipping address not found.');
       }
       return address;
     }
@@ -528,7 +530,7 @@ export class AuctionCheckoutService {
       orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
     });
     if (!fallback) {
-      throw new BadRequestException('Vui lòng chọn hoặc nhập địa chỉ giao hàng.');
+      throw new BadRequestException('Please select or enter a shipping address.');
     }
     return fallback;
   }

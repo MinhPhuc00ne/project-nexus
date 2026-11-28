@@ -26,7 +26,7 @@ export function shipmentGhnContext(metadata: unknown): {
     !['SANDBOX', 'PRODUCTION'].includes(String(data.ghnEnvironment))
   ) {
     throw new BadRequestException(
-      'Vận đơn chưa có điểm GHN đã xác minh. Cần đối soát dữ liệu cũ trước khi thao tác.',
+      'Shipment does not have a verified GHN shop yet. Reconcile legacy data before proceeding.',
     );
   }
   return { shopId: Number(data.ghnShopId), environment: data.ghnEnvironment as GhnEnvironment };

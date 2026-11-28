@@ -63,18 +63,18 @@ export class UsersChatFacade {
     const minBuyerReputation = 40;
     const globalReasons: string[] = [];
     if (user.role === Role.ADMIN || user.role === Role.SUPPORT_STAFF) {
-      globalReasons.push('Tài khoản Admin / Nhân viên hỗ trợ không tham gia đặt giá.');
+      globalReasons.push('Admin / Support Staff accounts cannot place bids.');
     }
     if (user.isSellerActive) {
       globalReasons.push(
-        'Tài khoản đang bật chế độ Người bán. Cần chuyển về chế độ Người mua để đặt giá.',
+        'Account is currently in Seller mode. Switch back to Buyer mode to place bids.',
       );
     }
     if (user.isShopSuspended || user.trustLevel === ReputationTrustLevel.SUSPENDED) {
-      globalReasons.push('Tài khoản đang bị tạm khóa hoặc hạn chế quyền giao dịch.');
+      globalReasons.push('Account is suspended or has restricted trading privileges.');
     }
     if (!user.wallet) {
-      globalReasons.push('Chưa khởi tạo ví NEXUS Pay để khóa tiền đặt giá.');
+      globalReasons.push('NEXUS Pay wallet has not been initialized to lock bid deposits.');
     }
 
     const normalizedFilter = normalizeChatSearchText(auctionNameFilter ?? '');
@@ -105,7 +105,7 @@ export class UsersChatFacade {
       const reasons = [...globalReasons];
       if (user.reputationScore < requiredRep) {
         reasons.push(
-          `Điểm uy tín hiện tại (${user.reputationScore}) thấp hơn yêu cầu của phiên (${requiredRep}).`,
+          `Current reputation score (${user.reputationScore}) is below the session requirement (${requiredRep}).`,
         );
       }
       const matchedItems = filterTokens.length
@@ -136,7 +136,7 @@ export class UsersChatFacade {
     const summaryReasons = [...globalReasons];
     if (user.reputationScore < minBuyerReputation) {
       summaryReasons.push(
-        `Điểm uy tín hiện tại (${user.reputationScore}) thấp hơn mức tối thiểu (${minBuyerReputation}).`,
+        `Current reputation score (${user.reputationScore}) is below the minimum requirement (${minBuyerReputation}).`,
       );
     }
 

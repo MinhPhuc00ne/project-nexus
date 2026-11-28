@@ -15,7 +15,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 
 export type SellerRequestFilter = 'PENDING' | 'APPROVED' | 'REJECTED' | 'ALL';
 
-// Giữ danh sách/bộ lọc/phân trang dùng chung cho panel, sidebar và trang tổng quan.
+// Shared list/filter/pagination state used across panel, sidebar, and overview page.
 function useSellerRequests() {
   const { t } = useTranslation('admin');
   const { token } = useAuth();
@@ -38,8 +38,8 @@ function useSellerRequests() {
     promise: Promise<[PaginatedResult<SellerUpgradeRequest>, number]>;
   } | null>(null);
 
-  // AdminLayout chỉ tạo provider này sau khi xác minh tài khoản có role ADMIN.
-  // Tải lại khi đổi trạng thái, đổi trang hoặc gọi refresh().
+  // AdminLayout mounts this provider only after verifying the account has role ADMIN.
+  // Reload whenever status filter, page, or refresh() changes.
   useEffect(() => {
     const current = ++revision.current;
     setLoading(true);
@@ -73,10 +73,10 @@ function useSellerRequests() {
     }
     void inFlight.current.promise
       .then(([list, pending]) => {
-        // Nếu bộ lọc/trang đã đổi trong lúc chờ, bỏ phản hồi cũ.
+        // Discard stale responses if filters or page changed while waiting.
         if (current !== revision.current) return;
         setPendingTotal(pending);
-        // Sau khi duyệt hồ sơ cuối trang, quay về trang còn dữ liệu nếu số trang giảm.
+        // After approving the last item on a page, fall back to a populated page if totalPages shrank.
         if (page > Math.max(1, list.totalPages)) {
           setPage(Math.max(1, list.totalPages));
           return;
@@ -95,7 +95,7 @@ function useSellerRequests() {
     };
   }, [token, status, page, refreshRevision]);
 
-  // Tăng revision để effect chạy lại, kể cả khi bộ lọc và số trang vẫn như cũ.
+  // Bump revision so the effect re-runs even when filter and page are unchanged.
   const refresh = useCallback(() => setRefreshRevision((value) => value + 1), []);
   return {
     status,
@@ -115,7 +115,7 @@ function useSellerRequests() {
 
 const Context = createContext<ReturnType<typeof useSellerRequests> | null>(null);
 
-// Các component gọi hook này để đọc cùng một state của provider, không tạo danh sách riêng.
+// Components call this hook to read the shared provider state instead of keeping a separate list.
 export function useAdminSellerRequests() {
   const state = useContext(Context);
   if (!state) throw new Error('AdminSellerRequestsProvider is required');

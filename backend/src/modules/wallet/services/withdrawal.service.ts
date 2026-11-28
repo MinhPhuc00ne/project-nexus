@@ -80,7 +80,7 @@ export class WithdrawalService {
 
     if (!user) {
       throw new NotFoundException({
-        message: 'Không tìm thấy tài khoản người dùng.',
+        message: 'User account not found.',
         errorCode: AppErrorCode.NOT_FOUND,
       });
     }
@@ -109,9 +109,9 @@ export class WithdrawalService {
 
     if (currentBalance < withdrawAmount) {
       throw new BadRequestException(
-        `Số dư ví khả dụng không đủ để rút. Số dư hiện tại: ${currentBalance.toLocaleString(
+        `Insufficient available wallet balance for withdrawal. Current balance: ${currentBalance.toLocaleString(
           'vi-VN',
-        )} VND, số tiền yêu cầu rút: ${withdrawAmount.toLocaleString('vi-VN')} VND.`,
+        )} VND, requested amount: ${withdrawAmount.toLocaleString('vi-VN')} VND.`,
       );
     }
 
@@ -147,7 +147,7 @@ export class WithdrawalService {
     return {
       success: true,
       message:
-        'Gửi yêu cầu rút tiền thành công! Hệ thống sẽ thẩm định và giải ngân trong vòng 3-7 ngày làm việc.',
+        'Withdrawal request submitted successfully! The system will review and disburse within 3-7 business days.',
       withdrawalRequest: {
         id: result.req.id,
         amount: Number(result.req.amount),
@@ -278,14 +278,14 @@ export class WithdrawalService {
     options?: CreateWithdrawalOptions,
   ) {
     if (options?.requireSellerRole && user.role !== Role.SELLER && user.role !== Role.ADMIN) {
-      throw new ForbiddenException('Chỉ tài khoản Người bán (Seller) mới có quyền rút tiền.');
+      throw new ForbiddenException('Only Seller accounts have permission to withdraw funds.');
     }
 
     if (user.role === Role.SELLER && user.isShopSuspended) {
       throw new ForbiddenException({
-        message: `Gian hàng của bạn hiện đang bị Admin đình chỉ hoạt động.${
-          user.suspensionReason ? ` Lý do: ${user.suspensionReason}` : ''
-        } Không thể thực hiện rút tiền.`,
+        message: `Your shop is currently suspended by Admin.${
+          user.suspensionReason ? ` Reason: ${user.suspensionReason}` : ''
+        } Cannot perform withdrawals.`,
         errorCode: AppErrorCode.SHOP_SUSPENDED,
       });
     }
@@ -326,7 +326,7 @@ export class WithdrawalService {
 
     if (pendingCount >= WithdrawalService.MAX_PENDING_WITHDRAWALS) {
       throw new BadRequestException(
-        `Bạn đã có ${WithdrawalService.MAX_PENDING_WITHDRAWALS} yêu cầu rút tiền đang chờ xử lý. Vui lòng chờ Quản trị viên duyệt các yêu cầu trước đó.`,
+        `You already have ${WithdrawalService.MAX_PENDING_WITHDRAWALS} pending withdrawal requests. Please wait for an administrator to review your existing requests.`,
       );
     }
   }
@@ -348,7 +348,7 @@ export class WithdrawalService {
     if (!bankName || !accountNumber || !accountHolderName) {
       throw new BadRequestException({
         message:
-          'Thông tin ngân hàng chưa đầy đủ. Vui lòng cập nhật thông tin ngân hàng trong Hồ sơ cá nhân hoặc nhập trực tiếp khi gửi yêu cầu rút tiền.',
+          'Incomplete bank account details. Please update your bank information in your Profile or enter it directly when submitting a withdrawal request.',
         errorCode: AppErrorCode.BAD_REQUEST,
       });
     }
@@ -416,7 +416,7 @@ export class WithdrawalService {
 
       if (debitResult.count === 0) {
         throw new BadRequestException({
-          message: 'Số dư ví khả dụng không đủ để thực hiện rút tiền.',
+          message: 'Insufficient available wallet balance for withdrawal.',
           errorCode: AppErrorCode.INSUFFICIENT_BALANCE,
         });
       }
@@ -444,7 +444,7 @@ export class WithdrawalService {
           type: WalletTransactionType.WITHDRAW,
           status: WalletTransactionStatus.PENDING,
           referenceId: req.id,
-          description: `Yêu cầu rút tiền về ${bankDetails.bankName} - STK: ${bankDetails.accountNumber} (${bankDetails.accountHolderName})`,
+          description: `Withdrawal request to ${bankDetails.bankName} - Account: ${bankDetails.accountNumber} (${bankDetails.accountHolderName})`,
         },
       });
 
@@ -454,8 +454,8 @@ export class WithdrawalService {
         tx,
         {
           userId,
-          title: 'Yêu cầu rút tiền đã được tiếp nhận ⏳',
-          content: `Yêu cầu rút ${formattedAmount} VND về ${bankDetails.bankName} (${bankDetails.accountNumber}) đã được tiếp nhận. Hệ thống sẽ thẩm định và giải ngân trong vòng 3-7 ngày làm việc. Số dư ví khả dụng đã được tạm giữ an toàn.`,
+          title: 'Withdrawal request received ⏳',
+          content: `Your withdrawal request for ${formattedAmount} VND to ${bankDetails.bankName} (${bankDetails.accountNumber}) has been received. The system will review and disburse within 3-7 business days. The available wallet balance has been safely locked.`,
           type: NotificationType.PAYMENT,
           targetUrl: userRole === Role.SELLER ? '/seller/finance' : '/buyer/wallet',
         },
@@ -466,10 +466,10 @@ export class WithdrawalService {
       await notifyAllAdmins(
         tx,
         {
-          title: isSeller ? 'Yêu cầu rút tiền Seller mới' : 'Yêu cầu rút tiền Buyer mới',
+          title: isSeller ? 'New Seller withdrawal request' : 'New Buyer withdrawal request',
           content: isSeller
-            ? `Gian hàng ${displayName} gửi yêu cầu rút ${formattedAmount} VND về ${bankDetails.bankName} (${bankDetails.accountNumber}).`
-            : `Người dùng ${displayName} gửi yêu cầu rút ${formattedAmount} VND về ${bankDetails.bankName} (${bankDetails.accountNumber}).`,
+            ? `Shop ${displayName} submitted a withdrawal request for ${formattedAmount} VND to ${bankDetails.bankName} (${bankDetails.accountNumber}).`
+            : `User ${displayName} submitted a withdrawal request for ${formattedAmount} VND to ${bankDetails.bankName} (${bankDetails.accountNumber}).`,
           type: NotificationType.PAYMENT,
           targetUrl: '/admin/finance',
         },

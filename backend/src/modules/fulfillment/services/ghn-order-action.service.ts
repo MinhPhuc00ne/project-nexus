@@ -17,7 +17,7 @@ export class GhnOrderActionService {
     const context = shipmentGhnContext(shipment.metadata);
     const token = this.config.get<string>('GHN_TOKEN');
     if (!token || !shipment.waybillCode || context.environment !== ghnEnvironment(this.config))
-      throw new BadRequestException('Cấu hình hoặc vận đơn GHN không hợp lệ.');
+      throw new BadRequestException('Invalid GHN configuration or waybill.');
     const base = (
       this.config.get<string>('GHN_API_URL') || 'https://online-gateway.ghn.vn/shiip/public-api/v2'
     ).replace(/\/$/, '');
@@ -43,12 +43,14 @@ export class GhnOrderActionService {
       if (response.ok && body.code === 200 && item?.result === true) return;
       if ((response.ok && item?.result === false) || response.status === 400)
         throw new GhnActionRejectedException(
-          'GHN từ chối thao tác; cần kiểm tra trạng thái vận đơn.',
+          'GHN rejected the action; please verify waybill status.',
         );
-      throw new BadGatewayException('GHN chưa xác nhận thao tác. Hãy đối soát trước khi thử lại.');
+      throw new BadGatewayException('GHN has not confirmed the action. Reconcile before retrying.');
     } catch (error) {
       if (error instanceof BadRequestException || error instanceof BadGatewayException) throw error;
-      throw new BadGatewayException('Kết nối GHN gián đoạn. Chưa xác nhận hủy/chuyển hoàn.');
+      throw new BadGatewayException(
+        'GHN connection interrupted. Cancellation/return not confirmed.',
+      );
     }
   }
 }

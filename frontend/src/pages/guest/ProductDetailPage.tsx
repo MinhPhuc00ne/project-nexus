@@ -383,7 +383,7 @@ function ProductContent({ product }: { product: ProductDetail }) {
               </p>
             </div>
 
-            {/* TÍNH NĂNG #5: CHỌN PHÂN LOẠI HÀNG / TÙY CHỌN (MÀU SẮC, SIZE, PHIÊN BẢN...) */}
+            {/* FEATURE #5: SELECT PRODUCT VARIANTS / OPTIONS (COLOR, SIZE, EDITION...) */}
             {optionGroups.length > 0 && (
               <div className="space-y-3.5 border-y border-slate-100 py-4">
                 {optionGroups.map((group) => (

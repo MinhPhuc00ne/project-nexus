@@ -103,7 +103,7 @@ test('review creation requires ownership, completion and purchased product, and 
   );
   await assert.rejects(
     service.create('buyer', 'order', { rating: 5 }, 'product', 'p1'),
-    /đơn hàng/,
+    /Order not found/,
   );
   order = {
     id: 'order',
@@ -114,12 +114,12 @@ test('review creation requires ownership, completion and purchased product, and 
   };
   await assert.rejects(
     service.create('buyer', 'order', { rating: 5 }, 'product', 'p1'),
-    /hoàn tất/,
+    /completed/,
   );
   order.status = 'CONFIRMED';
   await assert.rejects(
     service.create('buyer', 'order', { rating: 5 }, 'product', 'other'),
-    /không thuộc/,
+    /does not belong to this order/,
   );
   await service.create('buyer', 'order', { rating: 5 }, 'product', 'p1');
   assert.equal(tx.productReview.create.mock.callCount(), 1);
@@ -142,7 +142,7 @@ test('report shop ownership is resolved server-side; self reports and duplicate 
   const report = await service.create('buyer', 'p', 'product', dto);
   assert.equal(report.shopId, 'seller');
   assert.equal(report.reporterId, 'buyer');
-  await assert.rejects(service.create('seller', 'p', 'product', dto), /chính mình/);
+  await assert.rejects(service.create('seller', 'p', 'product', dto), /own shop or product/);
   pending = { id: 'report' };
   await assert.rejects(
     service.create('buyer', 'p', 'product', dto),
@@ -179,7 +179,7 @@ test('public banners filter active time windows and invalid intervals never writ
       startsAt: '2026-11-02',
       endsAt: '2026-11-01',
     }),
-    /kết thúc/,
+    /after/i,
   );
   assert.equal(created, false);
 });
@@ -228,7 +228,7 @@ test('support staff and admin can moderate reviews with valid reputation penalty
       { reason: 'Ngôn từ thô tục', pointsToDeduct: 0 },
       'SUPPORT_STAFF',
     ),
-    /lớn hơn 0/,
+    /greater than 0/,
   );
 
   await assert.rejects(
@@ -238,7 +238,7 @@ test('support staff and admin can moderate reviews with valid reputation penalty
       { reason: 'Ngôn từ thô tục', pointsToDeduct: 61 },
       'SUPPORT_STAFF',
     ),
-    /tối đa 60/,
+    /max 60/,
   );
 
   const res = await service.adminDeleteReview(
@@ -253,6 +253,6 @@ test('support staff and admin can moderate reviews with valid reputation penalty
   assert.equal(productUpdates[0].data.reviewCount, 1);
   assert.equal(productUpdates[0].data.averageRating, 5);
   assert.deepEqual(deletedIds, ['rev-1']);
-  assert.match(notifications[0].content, /Nhân viên kiểm duyệt/);
-  assert.match(notifications[0].content, /15 điểm uy tín/);
+  assert.match(notifications[0].content, /Moderation Staff/);
+  assert.match(notifications[0].content, /15 reputation points/);
 });

@@ -116,11 +116,11 @@ export class ReviewsModerationHelper {
 
   private validatePointsToDeduct(pointsToDeduct: number, currentScore: number): void {
     if (pointsToDeduct <= 0) {
-      throw new BadRequestException('Số điểm uy tín trừ phải lớn hơn 0.');
+      throw new BadRequestException('Reputation points to deduct must be greater than 0.');
     }
     if (pointsToDeduct > currentScore) {
       throw new BadRequestException(
-        `Không thể trừ quá số điểm hiện có của người dùng (tối đa ${currentScore} điểm).`,
+        `Cannot deduct more than the user's current score (max ${currentScore} points).`,
       );
     }
   }
@@ -132,7 +132,7 @@ export class ReviewsModerationHelper {
     actorRole?: string,
     actorId?: string,
   ): Promise<{ success: boolean; message: string }> {
-    const actorLabel = actorRole === 'SUPPORT_STAFF' ? 'Nhân viên kiểm duyệt' : 'Admin';
+    const actorLabel = actorRole === 'SUPPORT_STAFF' ? 'Moderation Staff' : 'Admin';
     const refPrefix = actorRole === 'SUPPORT_STAFF' ? 'STAFF_DELETE' : 'ADMIN_DELETE';
 
     return this.prisma.$transaction(async (tx) => {
@@ -149,7 +149,7 @@ export class ReviewsModerationHelper {
           {
             userId: review.reviewerId,
             deltaPoints: -dto.pointsToDeduct,
-            reason: `Bình luận sản phẩm "${review.product.title}" bị ${actorLabel} xóa do vi phạm: ${dto.reason.trim()}`,
+            reason: `Product comment on "${review.product.title}" removed by ${actorLabel} for violation: ${dto.reason.trim()}`,
             referenceId: `${refPrefix}_REVIEW:${id}`,
           },
           tx,
@@ -190,8 +190,8 @@ export class ReviewsModerationHelper {
             tx,
             {
               userId: review.reviewerId,
-              title: 'Đánh giá của bạn đã bị gỡ bỏ do vi phạm tiêu chuẩn ⚠️',
-              content: `Bình luận của bạn tại sản phẩm "${review.product.title}" đã bị ${actorLabel} xóa với lý do: "${dto.reason.trim()}". Bạn bị trừ ${dto.pointsToDeduct} điểm uy tín.`,
+              title: 'Your review was removed for policy violation ⚠️',
+              content: `Your comment on "${review.product.title}" was removed by ${actorLabel} for reason: "${dto.reason.trim()}". ${dto.pointsToDeduct} reputation points were deducted.`,
               type: NotificationType.SYSTEM,
               channel: NotificationChannel.IN_APP,
             },
@@ -201,7 +201,7 @@ export class ReviewsModerationHelper {
 
         return {
           success: true,
-          message: 'Đã xóa bình luận sản phẩm và trừ điểm uy tín người dùng.',
+          message: 'Product review deleted and user reputation points deducted.',
         };
       }
 
@@ -217,7 +217,7 @@ export class ReviewsModerationHelper {
         {
           userId: review.reviewerId,
           deltaPoints: -dto.pointsToDeduct,
-          reason: `Đánh giá gian hàng bị ${actorLabel} xóa do vi phạm: ${dto.reason.trim()}`,
+          reason: `Shop review removed by ${actorLabel} for violation: ${dto.reason.trim()}`,
           referenceId: `${refPrefix}_SHOP_REVIEW:${id}`,
         },
         tx,
@@ -246,8 +246,8 @@ export class ReviewsModerationHelper {
           tx,
           {
             userId: review.reviewerId,
-            title: 'Đánh giá gian hàng của bạn đã bị gỡ bỏ do vi phạm tiêu chuẩn ⚠️',
-            content: `Đánh giá gian hàng của bạn đã bị ${actorLabel} xóa với lý do: "${dto.reason.trim()}". Bạn bị trừ ${dto.pointsToDeduct} điểm uy tín.`,
+            title: 'Your shop review was removed for policy violation ⚠️',
+            content: `Your shop review was removed by ${actorLabel} for reason: "${dto.reason.trim()}". ${dto.pointsToDeduct} reputation points were deducted.`,
             type: NotificationType.SYSTEM,
             channel: NotificationChannel.IN_APP,
           },
@@ -255,7 +255,7 @@ export class ReviewsModerationHelper {
         );
       }
 
-      return { success: true, message: 'Đã xóa đánh giá gian hàng và trừ điểm uy tín người dùng.' };
+      return { success: true, message: 'Shop review deleted and user reputation points deducted.' };
     });
   }
 
@@ -265,7 +265,7 @@ export class ReviewsModerationHelper {
     actorRole?: string,
     actorId?: string,
   ): Promise<{ success: boolean; message: string }> {
-    const actorLabel = actorRole === 'SUPPORT_STAFF' ? 'Nhân viên kiểm duyệt' : 'Admin';
+    const actorLabel = actorRole === 'SUPPORT_STAFF' ? 'Moderation Staff' : 'Admin';
     const refPrefix = actorRole === 'SUPPORT_STAFF' ? 'STAFF_DELETE' : 'ADMIN_DELETE';
 
     return this.prisma.$transaction(async (tx) => {
@@ -284,7 +284,7 @@ export class ReviewsModerationHelper {
       });
 
       if (!review || !review.sellerReply) {
-        throw new NotFoundException('Không tìm thấy phản hồi của người bán.');
+        throw new NotFoundException('Seller reply not found.');
       }
 
       this.validatePointsToDeduct(dto.pointsToDeduct, review.product.seller.reputationScore);
@@ -293,7 +293,7 @@ export class ReviewsModerationHelper {
         {
           userId: review.product.sellerId,
           deltaPoints: -dto.pointsToDeduct,
-          reason: `Phản hồi đánh giá tại sản phẩm "${review.product.title}" bị ${actorLabel} gỡ do vi phạm: ${dto.reason.trim()}`,
+          reason: `Review reply on product "${review.product.title}" removed by ${actorLabel} for violation: ${dto.reason.trim()}`,
           referenceId: `${refPrefix}_SELLER_REPLY:${reviewId}`,
         },
         tx,
@@ -327,8 +327,8 @@ export class ReviewsModerationHelper {
           tx,
           {
             userId: review.product.sellerId,
-            title: 'Phản hồi đánh giá của bạn đã bị gỡ bỏ do vi phạm tiêu chuẩn ⚠️',
-            content: `Phản hồi của bạn tại sản phẩm "${review.product.title}" đã bị ${actorLabel} gỡ với lý do: "${dto.reason.trim()}". Bạn bị trừ ${dto.pointsToDeduct} điểm uy tín.`,
+            title: 'Your review reply was removed for policy violation ⚠️',
+            content: `Your reply on product "${review.product.title}" was removed by ${actorLabel} for reason: "${dto.reason.trim()}". ${dto.pointsToDeduct} reputation points were deducted.`,
             type: NotificationType.SYSTEM,
             channel: NotificationChannel.IN_APP,
           },
@@ -338,7 +338,7 @@ export class ReviewsModerationHelper {
 
       return {
         success: true,
-        message: 'Đã gỡ phản hồi của người bán và trừ điểm uy tín người bán.',
+        message: 'Seller reply removed and seller reputation points deducted.',
       };
     });
   }
@@ -406,7 +406,7 @@ export class ReviewsModerationHelper {
       return {
         authorId: existing.reviewerId,
         authorScore: existing.reviewer?.reputationScore ?? 0,
-        targetLabel: `đánh giá sản phẩm "${existing.product.title}"`,
+        targetLabel: `product review for "${existing.product.title}"`,
       };
     }
 
@@ -427,7 +427,7 @@ export class ReviewsModerationHelper {
       return {
         authorId: existing.reviewerId,
         authorScore: existing.reviewer?.reputationScore ?? 0,
-        targetLabel: 'đánh giá gian hàng',
+        targetLabel: 'shop review',
       };
     }
 
@@ -435,12 +435,12 @@ export class ReviewsModerationHelper {
       where: { id },
       select: { id: true, authorId: true, author: { select: { reputationScore: true } } },
     });
-    if (!existingReply) throw new NotFoundException('Không tìm thấy phản hồi đánh giá.');
+    if (!existingReply) throw new NotFoundException('Review reply not found.');
     await tx.reviewReply.update({ where: { id }, data: visibilityData });
     return {
       authorId: existingReply.authorId,
       authorScore: existingReply.author?.reputationScore ?? 0,
-      targetLabel: 'phản hồi đánh giá',
+      targetLabel: 'review reply',
     };
   }
 
@@ -451,8 +451,8 @@ export class ReviewsModerationHelper {
     dto: AdminModerateReviewVisibilityInput,
     actorRole?: string,
   ): Promise<{ success: boolean; isHidden: boolean; message: string }> {
-    const reason = dto.isHidden ? dto.reason?.trim() || 'Nội dung tiêu cực / không phù hợp' : null;
-    const actorLabel = actorRole === 'SUPPORT_STAFF' ? 'Nhân viên kiểm duyệt' : 'Admin';
+    const reason = dto.isHidden ? dto.reason?.trim() || 'Inappropriate / negative content' : null;
+    const actorLabel = actorRole === 'SUPPORT_STAFF' ? 'Moderation Staff' : 'Admin';
     const refPrefix = actorRole === 'SUPPORT_STAFF' ? 'STAFF_HIDE' : 'ADMIN_HIDE';
     const pointsToDeduct = dto.isHidden ? Number(dto.pointsToDeduct ?? 0) : 0;
     const visibilityData = {
@@ -476,7 +476,7 @@ export class ReviewsModerationHelper {
           {
             userId: authorId,
             deltaPoints: -pointsToDeduct,
-            reason: `${targetLabel} bị ${actorLabel} ẩn do vi phạm: ${reason}`,
+            reason: `${targetLabel} hidden by ${actorLabel} for violation: ${reason}`,
             referenceId: `${refPrefix}_${targetType.toUpperCase()}:${id}`,
           },
           tx,
@@ -484,13 +484,14 @@ export class ReviewsModerationHelper {
       }
 
       if (dto.isHidden && typeof tx?.notification?.create === 'function') {
-        const penaltyText = pointsToDeduct > 0 ? ` Bạn bị trừ ${pointsToDeduct} điểm uy tín.` : '';
+        const penaltyText =
+          pointsToDeduct > 0 ? ` ${pointsToDeduct} reputation points were deducted.` : '';
         await publishNotification(
           tx,
           {
             userId: authorId,
-            title: 'Nội dung đánh giá của bạn đã bị ẩn do vi phạm tiêu chuẩn ⚠️',
-            content: `Nội dung ${targetLabel} của bạn đã bị ${actorLabel} ẩn với lý do: "${reason}".${penaltyText}`,
+            title: 'Your review content was hidden for policy violation ⚠️',
+            content: `Your ${targetLabel} was hidden by ${actorLabel} for reason: "${reason}".${penaltyText}`,
             type: NotificationType.SYSTEM,
             channel: NotificationChannel.IN_APP,
           },
@@ -518,8 +519,8 @@ export class ReviewsModerationHelper {
         success: true,
         isHidden: dto.isHidden,
         message: dto.isHidden
-          ? `Đã ẩn ${targetLabel} khỏi bên nhận và hiển thị công khai.`
-          : `Đã bỏ ẩn ${targetLabel}.`,
+          ? `Hidden ${targetLabel} from public view.`
+          : `Unhidden ${targetLabel}.`,
       };
     });
   }

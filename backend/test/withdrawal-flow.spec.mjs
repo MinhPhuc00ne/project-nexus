@@ -145,7 +145,7 @@ test('Buyer can create withdrawal using profile bank info, freezes balance, and 
   assert.equal(mock.notifications.length, 1);
   assert.equal(mock.notifications[0].userId, 'buyer-1');
   assert.equal(mock.adminNotifications.length, 2);
-  assert.equal(mock.adminNotifications[0].title, 'Yêu cầu rút tiền Buyer mới');
+  assert.equal(mock.adminNotifications[0].title, 'New Buyer withdrawal request');
   assert.equal(mock.adminNotifications[0].targetUrl, '/admin/finance');
 });
 
@@ -303,7 +303,7 @@ test('AdminService.reviewWithdrawalRequest handles COMPLETED approval and REJECT
   assert.equal(walletUpdates[1].data.balance, undefined);
   assert.equal(txUpdates[1].data.status, 'SUCCESS');
   assert.equal(notifications[1].userId, 'buyer-1');
-  assert.match(notifications[1].title, /phê duyệt thành công/);
+  assert.match(notifications[1].title, /approved successfully/);
 });
 
 test('AdminFinanceService.getPlatformUserWalletTransactions filters deposits and user roles with pagination', async () => {

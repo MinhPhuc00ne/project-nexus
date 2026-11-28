@@ -79,36 +79,36 @@ export type CommerceChange =
   | { entity: 'transactions'; id: string; status: 'reconciled'; reason: string };
 
 export const saleTypeLabels: Record<SaleType, string> = {
-  normal: 'Bán thường',
-  auction: 'Đấu giá',
+  normal: 'Regular Sale',
+  auction: 'Auction',
 };
 export const productLabels: Record<ProductStatus, string> = {
-  pending: 'Chờ duyệt',
-  active: 'Đang hiển thị',
-  rejected: 'Đã từ chối',
-  hidden: 'Đã ẩn',
+  pending: 'Pending Approval',
+  active: 'Active',
+  rejected: 'Rejected',
+  hidden: 'Hidden',
 };
 export const orderLabels: Record<OrderStatus, string> = {
-  pending: 'Chờ xác nhận',
-  confirmed: 'Đã xác nhận',
-  shipping: 'Đang giao',
-  delivered: 'Đã giao',
-  cancelled: 'Đã hủy',
+  pending: 'Pending Confirmation',
+  confirmed: 'Confirmed',
+  shipping: 'Shipping',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled',
 };
 export const reportLabels: Record<ManagedReport['status'], string> = {
-  open: 'Mới tiếp nhận',
-  investigating: 'Đang xác minh',
-  resolved: 'Đã xử lý',
-  dismissed: 'Đã bác bỏ',
+  open: 'Open',
+  investigating: 'Investigating',
+  resolved: 'Resolved',
+  dismissed: 'Dismissed',
 };
 export const reportTypeLabels: Record<ManagedReport['type'], string> = {
-  product: 'Sản phẩm',
+  product: 'Product',
   seller: 'Seller',
-  bidding: 'Gian lận trả giá',
-  order: 'Tranh chấp đơn hàng',
+  bidding: 'Bidding Fraud',
+  order: 'Order Dispute',
 };
 export const transactionKindLabels: Record<ManagedTransaction['kind'], string> = {
-  payment: 'Thu thanh toán',
-  refund: 'Hoàn tiền',
-  payout: 'Thanh toán Seller',
+  payment: 'Payment Collected',
+  refund: 'Refund',
+  payout: 'Seller Payout',
 };

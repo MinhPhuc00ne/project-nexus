@@ -112,7 +112,7 @@ export interface CheckoutQuoteResponse {
 }
 
 /**
- * Lấy báo giá phí vận chuyển GHN chính thức trước khi đặt hàng
+ * Fetch official GHN shipping quote before checkout
  */
 export async function getCheckoutQuoteApi(data: {
   shippingAddress: ShippingAddressInput;
@@ -131,7 +131,7 @@ export async function getCheckoutQuoteApi(data: {
 }
 
 /**
- * 1. Đặt hàng từ giỏ hàng hiện tại (Checkout)
+ * 1. Create orders from the current cart (Checkout)
  */
 export async function checkoutApi(data: CheckoutInput): Promise<CheckoutResponse> {
   const isCod = data.paymentMethod === 'COD';
@@ -156,7 +156,7 @@ export async function checkoutApi(data: CheckoutInput): Promise<CheckoutResponse
 }
 
 /**
- * 2. Khởi tạo liên kết thanh toán PayOS VietQR cho một đơn hàng cụ thể
+ * 2. Initialize a PayOS VietQR payment link for a specific order
  */
 export async function payOrderApi(
   orderId: string,
@@ -179,7 +179,7 @@ export async function payOrderApi(
 }
 
 /**
- * 3. Xem danh sách đơn hàng đã đặt của Buyer
+ * 3. Fetch the buyer's placed orders list
  */
 export async function getBuyerOrdersApi(): Promise<BuyerOrder[]> {
   const response = await api.get<{
@@ -195,7 +195,7 @@ export async function getBuyerOrdersApi(): Promise<BuyerOrder[]> {
 }
 
 /**
- * 4. Xem chi tiết một đơn hàng cụ thể
+ * 4. Fetch details for a specific order
  */
 export async function getBuyerOrderDetailApi(orderId: string): Promise<BuyerOrder> {
   const response = await api.get<{
@@ -211,7 +211,7 @@ export async function getBuyerOrderDetailApi(orderId: string): Promise<BuyerOrde
 }
 
 /**
- * 5. Gửi khiếu nại đơn hàng (Dispute)
+ * 5. Submit an order dispute
  */
 export async function disputeOrderApi(orderId: string, reason: string): Promise<unknown> {
   const response = await api.post(`/commerce/orders/${encodeURIComponent(orderId)}/dispute`, {
@@ -221,7 +221,7 @@ export async function disputeOrderApi(orderId: string, reason: string): Promise<
 }
 
 /**
- * 6. Người mua xác nhận đã nhận hàng (Confirm Delivery & Release Escrow)
+ * 6. Buyer confirms delivery and releases escrow
  */
 export async function confirmDeliveryOrderApi(orderId: string): Promise<unknown> {
   const response = await api.post(
@@ -238,7 +238,7 @@ export interface PaymentStatusResponse {
 }
 
 /**
- * 7. Kiểm tra trạng thái thanh toán đơn hàng (hỗ trợ tự động đồng bộ PayOS)
+ * 7. Check order payment status (with automatic PayOS sync)
  */
 export async function checkPaymentStatusApi(orderId: string): Promise<PaymentStatusResponse> {
   const response = await api.get<

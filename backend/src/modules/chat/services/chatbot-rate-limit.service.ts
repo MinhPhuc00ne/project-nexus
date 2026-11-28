@@ -22,14 +22,18 @@ export class ChatbotRateLimitService {
     try {
       count = await this.redis.getClient().eval(consume, 1, `chatbot:rate:${userId}`);
     } catch {
-      throw new ServiceUnavailableException('Chatbot tạm gián đoạn. Vui lòng thử lại sau.');
+      throw new ServiceUnavailableException(
+        'Chatbot is temporarily unavailable. Please try again later.',
+      );
     }
     if (typeof count !== 'number' || !Number.isInteger(count) || count < 1)
-      throw new ServiceUnavailableException('Chatbot tạm gián đoạn. Vui lòng thử lại sau.');
+      throw new ServiceUnavailableException(
+        'Chatbot is temporarily unavailable. Please try again later.',
+      );
     if (count > 20)
       throw new HttpException(
         {
-          message: 'Bạn gửi quá nhiều tin nhắn. Vui lòng thử lại sau một phút.',
+          message: 'You are sending too many messages. Please try again in a minute.',
           errorCode: AppErrorCode.RATE_LIMIT_EXCEEDED,
         },
         HttpStatus.TOO_MANY_REQUESTS,

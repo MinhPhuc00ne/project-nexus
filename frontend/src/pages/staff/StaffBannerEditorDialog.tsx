@@ -129,7 +129,7 @@ export default function StaffBannerEditorDialog({
                 {error}
               </p>
             )}
-            {/* Field: Tiêu đề */}
+            {/* Field: Title */}
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 {t('banners.titleLabel')} <span className="text-red-500">*</span>
@@ -259,7 +259,7 @@ export default function StaffBannerEditorDialog({
               </p>
             </div>
 
-            {/* Field: Link đích (Target URL) */}
+            {/* Field: Target URL */}
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 {t('banners.targetUrlLabel')}
@@ -318,7 +318,7 @@ export default function StaffBannerEditorDialog({
               </div>
             </div>
 
-            {/* Field: Độ ưu tiên & Switch Kích hoạt */}
+            {/* Field: Priority & Active Switch */}
             <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-3.5 space-y-3">
               <div className="flex items-center justify-between">
                 <div>

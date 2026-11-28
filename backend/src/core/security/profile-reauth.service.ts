@@ -38,7 +38,7 @@ export class ProfileReauthService {
     expiresIn: number;
   }> {
     if (!user.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) {
-      throw new ForbiddenException('Mật khẩu xác minh không chính xác.');
+      throw new ForbiddenException('Incorrect verification password.');
     }
     const verificationToken = await this.jwt.signAsync(
       { sub: user.id, purpose: 'PROFILE_UPDATE', version: passwordVersion(user.passwordHash) },
@@ -105,7 +105,7 @@ export class ProfileReauthService {
       // Redis outages must not bypass verification; direct password/proof remains available.
     }
     throw new ForbiddenException(
-      'Vui lòng xác minh lại mật khẩu trong vòng 5 phút trước khi sửa hồ sơ Seller.',
+      'Please re-verify your password within 5 minutes before updating your Seller profile.',
     );
   }
 }

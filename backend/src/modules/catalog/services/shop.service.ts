@@ -75,7 +75,7 @@ export class ShopService {
     const andConditions: Prisma.UserWhereInput[] = [];
 
     if (query.search) {
-      assertCleanContent(query.search, 'Từ khóa tìm kiếm gian hàng');
+      assertCleanContent(query.search, 'Store search keyword');
       const searchKeyword = query.search.trim();
       andConditions.push({
         OR: [
@@ -255,7 +255,7 @@ export class ShopService {
     });
 
     if (!seller || seller.isShopSuspended) {
-      throw new NotFoundException('Không tìm thấy gian hàng này.');
+      throw new NotFoundException('Store not found.');
     }
 
     const isSeller =
@@ -264,7 +264,7 @@ export class ShopService {
       seller.sellerUpgradeRequests.length > 0;
 
     if (!isSeller) {
-      throw new NotFoundException('Tài khoản này không phải là gian hàng người bán.');
+      throw new NotFoundException('This account is not a seller store.');
     }
 
     const approvedRequest = seller.sellerUpgradeRequests[0];

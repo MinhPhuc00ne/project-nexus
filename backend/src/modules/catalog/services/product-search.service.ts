@@ -145,17 +145,17 @@ export class ProductSearchService {
 
   private validateProductQuery(query: QueryProductInput): void {
     if (query.status && query.status !== ProductStatus.ACTIVE) {
-      throw new BadRequestException('Danh sách công khai chỉ trả sản phẩm đang bán.');
+      throw new BadRequestException('Public catalog listing only returns active products.');
     }
     if (
       query.minPrice !== undefined &&
       query.maxPrice !== undefined &&
       query.minPrice > query.maxPrice
     ) {
-      throw new BadRequestException('Giá tối thiểu không được lớn hơn giá tối đa.');
+      throw new BadRequestException('Minimum price cannot exceed maximum price.');
     }
     if (query.search) {
-      assertCleanContent(query.search, 'Từ khóa tìm kiếm');
+      assertCleanContent(query.search, 'Search keyword');
     }
   }
 

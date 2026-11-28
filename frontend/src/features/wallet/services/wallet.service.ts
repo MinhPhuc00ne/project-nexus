@@ -90,7 +90,7 @@ export interface BuyerFinanceTransaction {
 }
 
 /**
- * Lấy thông tin ví và lịch sử giao dịch từ API thực tế /commerce/wallet
+ * Fetch wallet details and transaction history from `/commerce/wallet`
  */
 export async function getBuyerWalletApi(): Promise<BuyerWalletResponse> {
   const response = await api.get<{
@@ -115,7 +115,7 @@ export async function getBuyerWalletApi(): Promise<BuyerWalletResponse> {
 }
 
 /**
- * Nạp tiền vào ví cá nhân từ API thực tế /commerce/wallet/deposit
+ * Deposit funds into personal wallet via `/commerce/wallet/deposit`
  */
 export async function depositBuyerWalletApi(dto: DepositWalletInput): Promise<DepositWalletResult> {
   const response = await api.post<{

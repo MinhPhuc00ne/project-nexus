@@ -43,14 +43,16 @@ export class OrderCancellationService {
       const current = await this.store.lock(tx, orderId);
       this.store.authorize(current, actor);
       if (current.isAuction && current.status === 'PENDING_PAYMENT')
-        throw new BadRequestException('Dùng chức năng từ chối quyền mua đấu giá để hoàn tiền cọc.');
+        throw new BadRequestException(
+          'Use the auction purchase forfeit action to handle deposit refunds.',
+        );
       if (current.status === 'CANCELLED') return current;
       if (!['PENDING_PAYMENT', 'PAID', 'PREPARING'].includes(current.status))
         throw new BadRequestException(
-          'Chỉ hủy trước khi GHN nhận hàng. Đơn đang giao cần yêu cầu trả hàng.',
+          'Orders can only be cancelled before GHN pickup. Orders in transit require a return request.',
         );
       if (current.dispute || (current.afterSales && current.afterSales.kind !== 'CANCEL'))
-        throw new ConflictException('Đơn đang có yêu cầu khiếu nại/trả hàng.');
+        throw new ConflictException('Order already has an active dispute or return request.');
       if (
         current.afterSales?.requestedBy === current.buyerId &&
         ['REQUESTED', 'APPROVING'].includes(current.afterSales.status) &&
@@ -58,10 +60,12 @@ export class OrderCancellationService {
         actor.id !== current.buyerId &&
         actor.role !== 'ADMIN'
       )
-        throw new ForbiddenException('Yêu cầu hủy của người mua cần Admin xác nhận.');
+        throw new ForbiddenException('Buyer cancellation requests require Admin confirmation.');
       const state = objectValue(current.shipment?.metadata).dispatchState;
       if (!current.shipment?.waybillCode && state && state !== 'REJECTED')
-        throw new ConflictException('Cần đối soát yêu cầu tạo vận đơn đang xử lý trước khi hủy.');
+        throw new ConflictException(
+          'Pending shipment creation request must be reconciled before cancelling.',
+        );
       await tx.afterSalesRequest.upsert({
         where: { orderId },
         update:
@@ -88,8 +92,8 @@ export class OrderCancellationService {
         await notifyAllAdmins(
           tx,
           {
-            title: 'Yêu cầu hủy đơn hàng đang chuẩn bị ⚠️',
-            content: `Đơn #${orderId.slice(0, 8)} đã được người mua gửi yêu cầu hủy khi đang chuẩn bị giao, cần Admin xác nhận.`,
+            title: 'Cancellation request for preparing order ⚠️',
+            content: `Buyer requested cancellation for order #${orderId.slice(0, 8)} while preparing for shipment; Admin confirmation required.`,
             type: NotificationType.ORDER,
             targetUrl: '/admin/refunds',
           },
@@ -114,7 +118,9 @@ export class OrderCancellationService {
         );
         if (detail.status !== 'cancel') {
           if (!['ready_to_pick', 'picking', 'money_collect_picking'].includes(detail.status))
-            throw new GhnActionRejectedException('GHN đã nhận hàng; cần dùng yêu cầu trả hàng.');
+            throw new GhnActionRejectedException(
+              'GHN has already picked up the parcel; a return request is required.',
+            );
           await this.actions.change('cancel', shipment, dto.reason);
         }
       } catch (error) {
@@ -135,7 +141,7 @@ export class OrderCancellationService {
         return tx.afterSalesRequest.findUniqueOrThrow({ where: { orderId } });
       if (!['PENDING_PAYMENT', 'PAID', 'PREPARING'].includes(current.status))
         throw new ConflictException(
-          'Trạng thái đơn đã thay đổi; cần đối soát trước khi hoàn tiền.',
+          'Order status has changed; reconciliation is required before issuing a refund.',
         );
       await tx.afterSalesRequest.update({ where: { orderId }, data: { status: 'APPROVED' } });
       if (current.escrowRecord)
@@ -193,19 +199,21 @@ export class OrderCancellationService {
     dto: ReviewReturnInput,
   ): Promise<AfterSalesRequest> {
     if (actor.role !== 'ADMIN')
-      throw new ForbiddenException('Chỉ Admin được duyệt yêu cầu hủy đơn.');
+      throw new ForbiddenException('Only Admins may review order cancellation requests.');
     const request = await this.prisma.$transaction(async (tx) => {
       const current = await this.store.lock(tx, orderId);
       const pending = current.afterSales;
       if (!pending || pending.kind !== 'CANCEL' || pending.requestedBy !== current.buyerId)
-        throw new BadRequestException('Không có yêu cầu hủy của người mua để duyệt.');
+        throw new BadRequestException('No buyer cancellation request found to review.');
       if (current.status === 'CANCELLED' && dto.decision === 'APPROVE') return pending;
       if (!['REQUESTED', 'APPROVING'].includes(pending.status))
-        throw new ConflictException('Yêu cầu hủy đã được xử lý.');
+        throw new ConflictException('Cancellation request has already been processed.');
       if (pending.status === 'APPROVING' && dto.decision === 'REJECT')
-        throw new ConflictException('Yêu cầu đang được hủy và đối soát GHN.');
+        throw new ConflictException('Request is currently cancelling and reconciling with GHN.');
       if (!['PENDING_PAYMENT', 'PAID', 'PREPARING'].includes(current.status))
-        throw new ConflictException('Đơn đã chuyển trạng thái; cần đối soát trước khi hủy.');
+        throw new ConflictException(
+          'Order status has changed; reconciliation is required before cancelling.',
+        );
       const updated = await tx.afterSalesRequest.update({
         where: { orderId },
         data: {

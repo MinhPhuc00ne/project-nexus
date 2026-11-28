@@ -16,7 +16,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 
     if (!clientID || !clientSecret) {
       Logger.warn(
-        'GOOGLE_CLIENT_ID hoặc GOOGLE_CLIENT_SECRET chưa được cấu hình trong .env. Tính năng Google OAuth sẽ không hoạt động.',
+        'GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET is not configured in .env. Google OAuth will not work.',
         GoogleStrategy.name,
       );
     }

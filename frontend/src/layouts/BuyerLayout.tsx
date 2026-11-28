@@ -60,7 +60,7 @@ export default function BuyerLayout() {
 
   const hasSellerRole = profile?.role === Role.SELLER;
 
-  // Khi đang ở khu vực Buyer (/buyer/*), đồng bộ chế độ hoạt động là BUYER
+  // Sync active mode to BUYER while browsing the Buyer area (/buyer/*)
   useEffect(() => {
     if (profile && profile.role === Role.SELLER && profile.currentMode === 'SELLER') {
       void switchActiveMode('BUYER').catch(() => undefined);

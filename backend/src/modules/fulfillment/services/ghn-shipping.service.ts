@@ -76,7 +76,9 @@ export class GhnShippingService {
     label: string,
   ): Promise<{ districtId: number; wardCode: string }> {
     if (!address.city?.trim() || !address.district?.trim() || !address.ward?.trim()) {
-      throw new BadRequestException(`${label} phải có đầy đủ tỉnh/thành, quận/huyện và phường/xã.`);
+      throw new BadRequestException(
+        `${label} must include complete province/city, district, and ward.`,
+      );
     }
     const location = await this.ghn.resolveDistrictAndWard(
       address.city,
@@ -84,7 +86,7 @@ export class GhnShippingService {
       address.ward,
     );
     if (!location?.districtId || !location.wardCode) {
-      throw new BadRequestException(`GHN không xác định được ${label.toLowerCase()}.`);
+      throw new BadRequestException(`GHN could not resolve ${label.toLowerCase()}.`);
     }
     return location;
   }
@@ -99,7 +101,9 @@ export class GhnShippingService {
       Boolean(overrides.fromDistrictId) !== Boolean(overrides.fromWardCode) ||
       Boolean(overrides.toDistrictId) !== Boolean(overrides.toWardCode)
     ) {
-      throw new BadRequestException('Phải cung cấp cùng lúc mã quận/huyện và mã phường/xã GHN.');
+      throw new BadRequestException(
+        'Both GHN district ID and ward code must be provided together.',
+      );
     }
     const origin =
       overrides.originAddress ?? (sellerId ? await this.getSenderAddress(sellerId) : null);
@@ -111,11 +115,11 @@ export class GhnShippingService {
       !origin.wardCode ||
       !origin.ghnEnvironment
     ) {
-      throw new BadRequestException('Điểm lấy hàng chưa có cấu hình GHN đã xác minh.');
+      throw new BadRequestException('Pickup point does not have a verified GHN configuration.');
     }
     if (origin.ghnEnvironment !== this.pickup.environment()) {
       throw new BadRequestException(
-        'Điểm GHN thuộc môi trường khác; không thể dùng lẫn sandbox và production.',
+        'GHN point belongs to a different environment; sandbox and production cannot be mixed.',
       );
     }
     const normalizedOverrideWard = normalizeGhnWardCode(overrides.fromWardCode);
@@ -124,14 +128,16 @@ export class GhnShippingService {
       (overrides.fromDistrictId && overrides.fromDistrictId !== origin.districtId) ||
       (normalizedOverrideWard && normalizedOverrideWard !== normalizedOriginWard)
     ) {
-      throw new BadRequestException('Không được thay điểm gửi khác điểm lấy hàng đã xác minh.');
+      throw new BadRequestException('Sender point cannot differ from the verified pickup point.');
     }
     for (const address of [origin, destination]) {
       if (address?.country && address.country.toUpperCase() !== 'VN') {
-        throw new BadRequestException('Hiện chỉ hỗ trợ giao hàng trong Việt Nam.');
+        throw new BadRequestException(
+          'Domestic delivery within Vietnam is currently supported only.',
+        );
       }
       if (address?.phone && !/^(0|\+?84)\d{9,10}$/.test(address.phone.replace(/[\s.-]/g, ''))) {
-        throw new BadRequestException('Địa chỉ giao hàng phải dùng số điện thoại Việt Nam hợp lệ.');
+        throw new BadRequestException('Shipping address must use a valid Vietnam phone number.');
       }
     }
     const from = {
@@ -144,13 +150,13 @@ export class GhnShippingService {
             districtId: overrides.toDistrictId,
             wardCode: normalizeGhnWardCode(overrides.toWardCode)!,
           }
-        : await this.resolveAddress(destination, 'Địa chỉ nhận hàng');
+        : await this.resolveAddress(destination, 'Delivery address');
     const parcel = buildGhnParcel(items);
     for (const key of ['weightGrams', 'lengthCm', 'widthCm', 'heightCm'] as const) {
       const value = overrides[key];
       if (value !== undefined) {
         if (!Number.isSafeInteger(value) || value <= 0) {
-          throw new BadRequestException('Thông số kiện hàng GHN không hợp lệ.');
+          throw new BadRequestException('Invalid GHN parcel dimensions or weight.');
         }
         parcel[key] = value;
       }
@@ -164,7 +170,7 @@ export class GhnShippingService {
     const service = services?.find((item) => item.serviceTypeId === parcel.serviceTypeId);
     if (services && !service) {
       throw new BadRequestException(
-        'GHN chưa hỗ trợ dịch vụ phù hợp cho tuyến đường và kiện hàng này.',
+        'GHN does not support a suitable service for this route and parcel.',
       );
     }
     const request = {

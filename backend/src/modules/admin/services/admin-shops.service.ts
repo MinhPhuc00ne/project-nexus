@@ -181,7 +181,7 @@ export class AdminShopsService {
     });
 
     if (!seller || seller.role !== Role.SELLER) {
-      throw new NotFoundException('Không tìm thấy gian hàng của người bán này.');
+      throw new NotFoundException('Seller store not found.');
     }
 
     const latestApprovedRequest = seller.sellerUpgradeRequests[0];
@@ -466,7 +466,7 @@ export class AdminShopsService {
         select: { id: true },
       }))
     ) {
-      throw new NotFoundException('Không tìm thấy shop.');
+      throw new NotFoundException('Store not found.');
     }
     const page = Math.max(1, query.page || 1);
     const limit = Math.max(1, Math.min(100, query.limit || 10));

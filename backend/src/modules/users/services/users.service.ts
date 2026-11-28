@@ -91,9 +91,9 @@ export class UsersService {
   ): Promise<UserProfileResponse> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user || user.role !== 'SUPPORT_STAFF')
-      throw new ForbiddenException('Chỉ Staff được chỉnh hồ sơ Staff của chính mình.');
+      throw new ForbiddenException('Only Staff members can edit their own Staff profile.');
     if (dto.fullName !== undefined && dto.fullName.trim().length < 2)
-      throw new BadRequestException('Họ tên không hợp lệ.');
+      throw new BadRequestException('Invalid full name.');
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: {
@@ -141,7 +141,7 @@ export class UsersService {
         userId,
         fieldKey: 'FULL_NAME',
         points: 5,
-        reason: 'Cập nhật họ và tên đầy đủ',
+        reason: 'Completed full name',
       });
     }
     if (dto.avatarUrl && !user.avatarUrl) {
@@ -149,7 +149,7 @@ export class UsersService {
         userId,
         fieldKey: 'AVATAR',
         points: 5,
-        reason: 'Cập nhật ảnh đại diện',
+        reason: 'Updated profile avatar',
       });
     }
     if (dto.phoneNumber && !user.phoneNumber) {
@@ -157,7 +157,7 @@ export class UsersService {
         userId,
         fieldKey: 'PHONE',
         points: 10,
-        reason: 'Cập nhật số điện thoại liên hệ hợp lệ',
+        reason: 'Updated valid contact phone number',
       });
     }
     const hasBankInput = Boolean(dto.bankName || dto.accountNumber || dto.accountHolderName);
@@ -166,7 +166,7 @@ export class UsersService {
         userId,
         fieldKey: 'BANK',
         points: 10,
-        reason: 'Cập nhật thông tin tài khoản ngân hàng',
+        reason: 'Updated bank account information',
       });
     }
   }
@@ -197,7 +197,7 @@ export class UsersService {
 
     const effectiveRole = user.role;
     if (effectiveRole !== Role.BUYER && effectiveRole !== Role.SELLER) {
-      throw new ForbiddenException('Chỉ Buyer và Seller được phép chỉnh sửa hồ sơ cá nhân.');
+      throw new ForbiddenException('Only Buyers and Sellers can edit their personal profile.');
     }
 
     if (this.shouldRequireProfileReauth(dto)) {
@@ -245,8 +245,8 @@ export class UsersService {
     return {
       success: true,
       message: newSellerActive
-        ? 'Chuyển sang chế độ Người bán (Seller mode) thành công!'
-        : 'Chuyển về chế độ Người mua (Buyer mode) thành công!',
+        ? 'Switched to Seller mode successfully!'
+        : 'Switched back to Buyer mode successfully!',
       isSellerActive: newSellerActive,
       currentMode: newSellerActive ? ('SELLER' as const) : ('BUYER' as const),
       user: {
@@ -280,7 +280,7 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException('Không tìm thấy thông tin người dùng.');
+      throw new NotFoundException('User profile not found.');
     }
 
     return {
@@ -329,9 +329,9 @@ export class UsersService {
     dto: CreateSellerRequestInput,
     file?: Express.Multer.File,
   ) {
-    assertCleanContent(dto.storeName, 'Tên gian hàng');
+    assertCleanContent(dto.storeName, 'Shop name');
     if (dto.storeDescription) {
-      assertCleanContent(dto.storeDescription, 'Mô tả gian hàng');
+      assertCleanContent(dto.storeDescription, 'Shop description');
     }
 
     const user = await this.prisma.user.findUnique({
@@ -339,22 +339,22 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException('Không tìm thấy tài khoản người dùng.');
+      throw new NotFoundException('User account not found.');
     }
 
     if (user.role !== Role.BUYER) {
       if (user.role === Role.ADMIN || user.role === Role.SUPPORT_STAFF) {
         throw new ForbiddenException(
-          `Tài khoản với vai trò ${user.role} là nhân sự quản trị hệ thống, không được phép gửi yêu cầu nâng cấp lên Người bán.`,
+          `Accounts with role ${user.role} belong to platform administration and cannot submit seller upgrade requests.`,
         );
       }
       if (user.role === Role.SELLER) {
         throw new BadRequestException(
-          'Tài khoản của bạn đã là Người bán (Seller) rồi. Bạn không cần gửi yêu cầu nâng cấp nữa.',
+          'Your account is already a Seller. You do not need to submit an upgrade request.',
         );
       }
       throw new ForbiddenException(
-        'Chỉ tài khoản Người mua (BUYER) mới có quyền gửi yêu cầu nâng cấp lên Người bán.',
+        'Only Buyer (BUYER) accounts can submit seller upgrade requests.',
       );
     }
 
@@ -378,20 +378,20 @@ export class UsersService {
           if (cloudRes && cloudRes.url && !cloudRes.url.startsWith('data:')) {
             attachmentUrl = cloudRes.url;
             this.logger.log(
-              `Tải file chứng minh của Buyer lên Cloudinary thành công: ${attachmentUrl}`,
+              `Successfully uploaded buyer verification document to Cloudinary: ${attachmentUrl}`,
             );
           }
         }
       } catch (uploadError) {
         this.logger.warn(
-          `Không thể upload file chứng minh lên Cloudinary, sử dụng URL cục bộ: ${uploadError}`,
+          `Unable to upload verification document to Cloudinary, using local URL: ${uploadError}`,
         );
       }
     }
 
     if (!attachmentUrl) {
       throw new BadRequestException(
-        'Vui lòng tải lên file hoặc đính kèm tài liệu chứng minh (CCCD/CMND hoặc Giấy phép kinh doanh) để gửi yêu cầu nâng cấp.',
+        'Please upload a file or attach a verification document (National ID or Business License) to submit an upgrade request.',
       );
     }
 
@@ -404,7 +404,7 @@ export class UsersService {
 
     if (existingPending) {
       throw new BadRequestException(
-        'Bạn đã có một yêu cầu nâng cấp đang chờ duyệt. Vui lòng đợi quản trị viên xử lý trước khi gửi yêu cầu mới.',
+        'You already have a pending upgrade request. Please wait for an administrator to review it before submitting a new one.',
       );
     }
 
@@ -439,8 +439,8 @@ export class UsersService {
     await notifyAllAdmins(
       this.prisma,
       {
-        title: 'Yêu cầu nâng cấp Seller mới',
-        content: `Gian hàng "${dto.storeName.trim()}" vừa gửi hồ sơ đăng ký nâng cấp lên Seller chờ phê duyệt.`,
+        title: 'New Seller upgrade request',
+        content: `Shop "${dto.storeName.trim()}" has submitted a seller upgrade application for approval.`,
         type: NotificationType.SYSTEM,
         targetUrl: '/admin/sellers',
       },
@@ -449,7 +449,7 @@ export class UsersService {
 
     return {
       message:
-        'Gửi yêu cầu nâng cấp lên Người bán thành công kèm tài liệu chứng minh! Quản trị viên sẽ kiểm tra và phê duyệt yêu cầu của bạn.',
+        'Seller upgrade request and verification document submitted successfully! An administrator will review and approve your request.',
       request,
     };
   }

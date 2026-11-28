@@ -87,13 +87,13 @@ export default function AdminLayout() {
   );
 }
 
-// Layout là khung chung: sidebar, header, footer và state tồn tại khi chuyển trang admin.
-// Khung này chỉ được tạo sau khi API xác nhận role ADMIN; page con chưa mount trước đó.
+// Shared workspace shell: sidebar, header, footer, and state preserved across admin pages.
+// Mounted only after the API confirms ADMIN role; child pages stay unmounted before then.
 function AdminWorkspace({ user }: { user: UserProfile }) {
   const { t } = useTranslation(['admin', 'common']);
   const sellerRequests = useAdminSellerRequests();
   const { pathname } = useLocation();
-  // Lấy tên trang từ URL, ví dụ /admin/users -> users, để chọn tiêu đề tương ứng.
+  // Extract current page segment from URL, e.g. /admin/users -> users, to select its title.
   const tab = pathname.split('/')[2] ?? 'overview';
   const [reportCount, setReportCount] = useState(0);
   const [refundCount, setRefundCount] = useState(0);
@@ -120,17 +120,17 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
   }, [tab]);
   const contentRef = useRef<HTMLElement>(null);
   const navigate = useNavigate();
-  // Các state bên dưới quản lý giao diện: menu mobile, thông báo và hai loại hộp thoại.
+  // State below manages UI chrome: mobile drawer, toast notice, and detail modal.
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { success: notify } = useToast();
   const [detail, setDetail] = useState<{ title: string; content: string } | null>(null);
-  // Đổi tab thì cuộn lên đầu và đóng hộp thoại của tab trước đó.
+  // Scroll to top and close previous tab popovers when switching tabs.
   useEffect(() => {
     contentRef.current?.scrollTo(0, 0);
     setSidebarOpen(false);
     setDetail(null);
   }, [pathname]);
-  // Các tab nhận một bộ callback chung thay vì tự sửa dữ liệu riêng.
+  // Tabs receive a shared actions callback object rather than mutating state independently.
   const actions: AdminActions = {
     updateCommerce: () => undefined,
     navigate: (target) => navigate(`/admin/${target}`),
@@ -143,12 +143,12 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
     : tab === 'categories'
       ? t('admin:nav.categories')
       : t('admin:layout.fallbackTitle');
-  // Tính số đếm từ dữ liệu hiện tại; duyệt hồ sơ xong badge sẽ tự giảm sau lần render tiếp.
+  // Derive counts from live data so approving an application updates the badge on next render.
   const sellerCount = sellerRequests.pendingTotal;
   return (
     <div className="h-dvh overflow-hidden bg-[#f5f7fb] text-slate-800 selection:bg-blue-100">
-      {/* Đây là sidebar: menu điều hướng bên trái, dùng chung cho mọi trang admin.
-          open/onClose điều khiển đóng mở menu trên mobile; các count hiển thị badge. */}
+      {/* Left navigation sidebar shared across all admin pages.
+          open/onClose toggle mobile drawer visibility; counts display pending badges. */}
       <Sidebar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -157,18 +157,18 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
         productCount={0}
         reportCount={reportCount}
       />
-      {/* lg:ml-64 chừa 256px cho sidebar trên desktop. min-w-0 giúp bảng cuộn trong khung. */}
+      {/* lg:ml-64 reserves 256px for desktop sidebar. min-w-0 allows inner tables to scroll. */}
       <div className="flex h-full min-w-0 flex-col lg:ml-64">
-        {/* Gắn header phía trên: nhận tài khoản admin, nút mở menu mobile và số việc chờ xử lý. */}
+        {/* Top header receives admin user, mobile drawer trigger, and pending count. */}
         <AdminHeader
           user={user}
           onMenu={() => setSidebarOpen(true)}
           pendingCount={sellerCount + refundCount + reportCount}
         />
-        {/* Đây là vùng nội dung cuộn của trang; sidebar và header vẫn giữ nguyên vị trí. */}
+        {/* Scrollable page body; sidebar and header remain fixed. */}
         <main ref={contentRef} className="min-h-0 flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-[1720px] px-4 py-5 sm:px-7 sm:py-6">
-            {/* Thanh đường dẫn: Quản trị > tên trang hiện tại. */}
+            {/* Breadcrumb: Admin > current page title. */}
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-[11px] text-slate-400">
                 <span>{t('admin:layout.breadcrumbRoot')}</span>
@@ -176,32 +176,32 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
                 <span className="font-medium text-slate-600">{title}</span>
               </div>
             </div>
-            {/* Tiêu đề trang con; trang overview có tiêu đề riêng nên không hiển thị ở đây. */}
+            {/* Child page heading; overview renders its own hero header. */}
             {tab !== 'overview' && (
               <h1 className="mb-5 text-2xl font-bold tracking-tight text-primary">{title}</h1>
             )}
-            {/* Gắn trang con tại đây: /admin/users hiện trang Users, /admin/sellers hiện trang Sellers...
-                Router chọn page theo URL; page đọc dữ liệu và thao tác chung qua useAdminContext. */}
+            {/* Child routes mount here: /admin/users renders Users, /admin/sellers renders Sellers, etc.
+                Router picks the page by URL; pages share state/actions via useAdminContext. */}
             <Outlet
               context={{ data: EMPTY_ADMIN_DATA, actions, pendingRefundCount: refundCount }}
             />
           </div>
         </main>
-        {/* Đây là footer dùng chung ở cuối khung admin. */}
+        {/* Shared footer at the bottom of the admin shell. */}
         <footer className="flex shrink-0 flex-wrap justify-between gap-2 border-t border-slate-200 bg-white px-4 py-3 text-[10px] text-slate-400 sm:px-7">
           <span>{t('admin:layout.footerOps')}</span>
           <span>{t('admin:layout.footerPlatform')}</span>
         </footer>
       </div>
-      {/* Hộp thoại thông tin chỉ để xem. */}
+      {/* Read-only detail modal. */}
       {detail && <DetailDialog {...detail} onClose={() => setDetail(null)} />}
     </div>
   );
 }
 
-// Hộp xem chi tiết do layout mở cho mọi trang con; chỉ khai báo nội bộ tại nơi sử dụng.
-// Hộp thoại xem thông tin: đóng bằng nút, click lớp nền hoặc phím Escape khi focus bên trong.
-// stopPropagation giữ hộp thoại mở khi người dùng bấm vào phần nội dung.
+// Shared detail modal opened by AdminLayout for child pages; declared locally where used.
+// Detail dialog closes via button, backdrop click, or Escape key when focused inside.
+// stopPropagation keeps the modal open when clicking inside its content.
 function DetailDialog({
   title,
   content,

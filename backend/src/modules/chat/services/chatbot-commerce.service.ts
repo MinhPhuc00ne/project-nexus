@@ -29,13 +29,13 @@ import {
 } from './chatbot-commerce-intent';
 import { chatbotKnowledge, matchChatbotTopic, normalizeChatText } from './chatbot-knowledge';
 
-const money = (value: number): string => `${value.toLocaleString('vi-VN')} đ`;
+const money = (value: number): string => `${value.toLocaleString('en-US')} VND`;
 const pageSummary = (page: number, totalPages: number): string =>
-  totalPages > 1 || page > 1 ? ` Trang ${page}/${totalPages}.` : '';
+  totalPages > 1 || page > 1 ? ` Page ${page}/${totalPages}.` : '';
 const auctionStatusLabels: Partial<Record<AuctionStatus, string>> = {
-  ACTIVE: 'Đang diễn ra',
-  EXTENDED: 'Đang gia hạn',
-  SCHEDULED: 'Sắp diễn ra',
+  ACTIVE: 'Live',
+  EXTENDED: 'Extended',
+  SCHEDULED: 'Scheduled',
 };
 const support: ChatbotReply['actions'] = [
   { type: 'REQUEST_SUPPORT', endpoint: '/api/v1/chat/request-support' },
@@ -68,19 +68,19 @@ export class ChatbotCommerceService {
     const context = this.queryContext(dto);
     if (context.needsScopeClarification) {
       const prompt = context.status
-        ? `Bạn muốn xem đơn mua hay đơn bán ở trạng thái ${orderLabels[context.status]}? Hãy nêu rõ "đơn mua" hoặc "đơn bán".`
-        : 'Bạn muốn xem tất cả đơn mua hay đơn bán? Hãy nêu rõ "đơn mua" hoặc "đơn bán".';
+        ? `Would you like to view purchase orders or sales orders with status ${orderLabels[context.status]}? Please specify "purchases" or "sales".`
+        : 'Would you like to view all purchase orders or sales orders? Please specify "purchases" or "sales".';
       return this.clarificationReply(prompt);
     }
     const intent = context.intent;
     if (!intent) return null;
     if (intent !== 'CART' && !dto.status && needsCommerceClarification(dto.message)) {
       return this.clarificationReply(
-        'Bạn muốn kiểm tra một đơn cụ thể hay lọc danh sách theo một trạng thái? Hãy chọn mã đơn hoặc nêu một trạng thái rõ ràng; mình chưa áp dụng bộ lọc cho câu hỏi này.',
+        'Would you like to check a specific order or filter the list by status? Please select an order ID or specify a clear status; no filter has been applied yet.',
       );
     }
     if (intent === 'CART' && dto.status) {
-      throw new BadRequestException('Giỏ hàng không hỗ trợ bộ lọc trạng thái đơn.');
+      throw new BadRequestException('Shopping cart does not support order status filters.');
     }
     const query = this.buildQuery(dto, context.status);
     if (intent === 'CART') {
@@ -143,19 +143,19 @@ export class ChatbotCommerceService {
       .slice(0, 5)
       .map(
         (item) =>
-          `${item.name.slice(0, 100)}${Object.keys(item.selections).length ? ` (${Object.values(item.selections).join(', ').slice(0, 100)})` : ''}: ${item.quantity} × ${money(item.currentPrice)}${item.hasPriceChanged ? ` — giá đã đổi (từ ${money(item.priceAtAdded)})` : ''}${item.hasInvalidSelections ? ' — phân loại không hợp lệ' : ''}${item.isOutOfStock ? ' — hết hàng' : item.isStockInsufficient ? ' — không đủ tồn' : ''}${item.isUnavailable ? ' — không khả dụng' : ''}`,
+          `${item.name.slice(0, 100)}${Object.keys(item.selections).length ? ` (${Object.values(item.selections).join(', ').slice(0, 100)})` : ''}: ${item.quantity} × ${money(item.currentPrice)}${item.hasPriceChanged ? ` — price changed (from ${money(item.priceAtAdded)})` : ''}${item.hasInvalidSelections ? ' — invalid variant' : ''}${item.isOutOfStock ? ' — out of stock' : item.isStockInsufficient ? ' — insufficient stock' : ''}${item.isUnavailable ? ' — unavailable' : ''}`,
       );
     const reply =
       cart.total === 0
-        ? 'Giỏ hàng của bạn hiện đang trống.'
-        : `Giỏ có ${cart.totalCount} sản phẩm (${cart.total} dòng), tiền hàng ${money(cart.totalPrice)}, chưa gồm phí giao hàng.${pageSummary(cart.page, cart.totalPages)}\n${lines.join('\n')}${cart.items.length > 5 ? '\nĐang tóm tắt 5 dòng đầu của trang.' : ''}${cart.isExpired ? '\nGiỏ đã quá hạn lưu; cần kiểm tra lại trước khi mua.' : ''}${cart.hasPriceChanged ? '\nCó sản phẩm thay đổi giá.' : ''}${cart.hasUnavailableItems ? '\nCó sản phẩm hết hàng, không đủ tồn hoặc không khả dụng.' : ''}${!cart.items.length ? '\nTrang này không có sản phẩm.' : ''}`;
+        ? 'Your shopping cart is currently empty.'
+        : `Cart has ${cart.totalCount} items (${cart.total} lines), subtotal ${money(cart.totalPrice)}, excluding shipping.${pageSummary(cart.page, cart.totalPages)}\n${lines.join('\n')}${cart.items.length > 5 ? '\nShowing the first 5 lines of this page.' : ''}${cart.isExpired ? '\nYour saved cart has expired; please review before checkout.' : ''}${cart.hasPriceChanged ? '\nSome items have updated prices.' : ''}${cart.hasUnavailableItems ? '\nSome items are out of stock, low on stock, or unavailable.' : ''}${!cart.items.length ? '\nNo items on this page.' : ''}`;
     return {
       reply,
       engine: 'CART',
       topic: 'CART',
       cart,
-      sources: [{ id: 'CART_DATABASE', title: 'Dữ liệu giỏ hàng NEXUS' }],
-      actions: [{ type: 'NAVIGATE', path: '/cart', label: 'Mở giỏ hàng' }, ...support],
+      sources: [{ id: 'CART_DATABASE', title: 'NEXUS Cart Data' }],
+      actions: [{ type: 'NAVIGATE', path: '/cart', label: 'Open cart' }, ...support],
     };
   }
 
@@ -168,12 +168,12 @@ export class ChatbotCommerceService {
   private formatCartEligibilityReply(cart: CommerceChatCart, budget: number | null): ChatbotReply {
     if (cart.total === 0) {
       return {
-        reply: 'Giỏ hàng của bạn hiện đang trống.',
+        reply: 'Your shopping cart is currently empty.',
         engine: 'CART',
         topic: 'CART',
         cart,
-        sources: [{ id: 'CART_DATABASE', title: 'Dữ liệu giỏ hàng NEXUS' }],
-        actions: [{ type: 'NAVIGATE', path: '/cart', label: 'Mở giỏ hàng' }, ...support],
+        sources: [{ id: 'CART_DATABASE', title: 'NEXUS Cart Data' }],
+        actions: [{ type: 'NAVIGATE', path: '/cart', label: 'Open cart' }, ...support],
       };
     }
 
@@ -191,28 +191,28 @@ export class ChatbotCommerceService {
         .slice(0, 5)
         .map(
           (item) =>
-            `- ${item.name.slice(0, 100)}: ${item.quantity} × ${money(item.currentPrice)} (tổng ${money(item.itemSubtotal)})`,
+            `- ${item.name.slice(0, 100)}: ${item.quantity} × ${money(item.currentPrice)} (subtotal ${money(item.itemSubtotal)})`,
         );
       const reply = availableItems.length
-        ? `Trong giỏ hàng có ${availableItems.length} sản phẩm đủ điều kiện mua ngay:\n${lines.join('\n')}${unavailableCount > 0 ? `\n(${unavailableCount} sản phẩm khác hiện hết hàng, không đủ tồn hoặc không khả dụng.)` : ''}`
-        : 'Hiện không có sản phẩm nào trong giỏ hàng đủ điều kiện mua (các sản phẩm đang hết hàng, không đủ tồn hoặc không khả dụng).';
+        ? `Your cart has ${availableItems.length} eligible items ready for purchase:\n${lines.join('\n')}${unavailableCount > 0 ? `\n(${unavailableCount} other items are out of stock, insufficient in stock, or unavailable.)` : ''}`
+        : 'There are currently no eligible items in your cart ready for purchase (items are out of stock, insufficient in stock, or unavailable).';
       return {
         reply,
         engine: 'CART',
         topic: 'CART',
         cart,
-        sources: [{ id: 'CART_DATABASE', title: 'Dữ liệu giỏ hàng NEXUS' }],
-        actions: [{ type: 'NAVIGATE', path: '/cart', label: 'Mở giỏ hàng' }, ...support],
+        sources: [{ id: 'CART_DATABASE', title: 'NEXUS Cart Data' }],
+        actions: [{ type: 'NAVIGATE', path: '/cart', label: 'Open cart' }, ...support],
       };
     }
 
     const affordable = availableItems.filter((item) => item.currentPrice <= budget);
     const lines = affordable.slice(0, 5).map((item) => {
       if (item.itemSubtotal <= budget) {
-        return `- ${item.name.slice(0, 100)}: ${item.quantity} × ${money(item.currentPrice)} (tổng ${money(item.itemSubtotal)})`;
+        return `- ${item.name.slice(0, 100)}: ${item.quantity} × ${money(item.currentPrice)} (subtotal ${money(item.itemSubtotal)})`;
       }
       const maxQty = Math.floor(budget / item.currentPrice);
-      return `- ${item.name.slice(0, 100)}: ${money(item.currentPrice)}/sp (đủ mua tối đa ${maxQty} sp; giỏ đang chọn ${item.quantity} sp = ${money(item.itemSubtotal)})`;
+      return `- ${item.name.slice(0, 100)}: ${money(item.currentPrice)}/item (up to ${maxQty} items affordable; cart has ${item.quantity} = ${money(item.itemSubtotal)})`;
     });
 
     const excludedCount = cart.items.length - affordable.length;
@@ -221,18 +221,18 @@ export class ChatbotCommerceService {
       : null;
 
     const reply = affordable.length
-      ? `Với ngân sách ${money(budget)} (chưa tính phí giao hàng), trong giỏ hàng có ${affordable.length} sản phẩm đủ điều kiện mua:\n${lines.join('\n')}${excludedCount > 0 ? `\n(${excludedCount} sản phẩm khác vượt mức ${money(budget)} hoặc chưa đủ tồn kho/khả dụng.)` : ''}\nLưu ý: Tổng thanh toán thực tế sẽ cộng thêm phí giao hàng.`
+      ? `With a budget of ${money(budget)} (excluding shipping), ${affordable.length} items in your cart are eligible for purchase:\n${lines.join('\n')}${excludedCount > 0 ? `\n(${excludedCount} other items exceed ${money(budget)} or lack sufficient stock/availability.)` : ''}\nNote: The final total will include shipping fees.`
       : availableItems.length
-        ? `Với ngân sách ${money(budget)}, hiện không có sản phẩm nào trong giỏ hàng đủ điều kiện mua (sản phẩm khả dụng thấp nhất trong giỏ là ${money(minPrice ?? 0)}, chưa gồm phí giao hàng).`
-        : 'Hiện không có sản phẩm khả dụng nào trong giỏ hàng đủ điều kiện mua.';
+        ? `With a budget of ${money(budget)}, no items in your cart are currently affordable (lowest available item in cart is ${money(minPrice ?? 0)}, excluding shipping).`
+        : 'There are currently no eligible items in your cart ready for purchase.';
 
     return {
       reply,
       engine: 'CART',
       topic: 'CART',
       cart,
-      sources: [{ id: 'CART_DATABASE', title: 'Dữ liệu giỏ hàng NEXUS' }],
-      actions: [{ type: 'NAVIGATE', path: '/cart', label: 'Mở giỏ hàng' }, ...support],
+      sources: [{ id: 'CART_DATABASE', title: 'NEXUS Cart Data' }],
+      actions: [{ type: 'NAVIGATE', path: '/cart', label: 'Open cart' }, ...support],
     };
   }
 
@@ -247,7 +247,7 @@ export class ChatbotCommerceService {
       const variants = Object.values(item.selections).join(', ').slice(0, 60);
       return `${item.name.slice(0, 80)}${variants ? ` (${variants})` : ''} × ${item.quantity}`;
     });
-    const extra = items.length > 2 ? ` (+${items.length - 2} sản phẩm khác)` : '';
+    const extra = items.length > 2 ? ` (+${items.length - 2} more items)` : '';
     return `${preview.join(', ')}${extra}`;
   }
 
@@ -263,33 +263,33 @@ export class ChatbotCommerceService {
     status: ChatbotMessageInput['status'],
     orders: CommerceChatOrders,
   ): ChatbotReply {
-    const label = intent === 'SALES' ? 'đơn bán' : 'đơn mua';
+    const label = intent === 'SALES' ? 'sales orders' : 'purchase orders';
     const lines = orders.items.slice(0, 5).map((order) => {
       const itemSummary = this.summarizeOrderItems(order.items);
       const dateText =
         order.createdAt instanceof Date && !Number.isNaN(order.createdAt.getTime())
-          ? order.createdAt.toLocaleDateString('vi-VN')
+          ? order.createdAt.toLocaleDateString('en-US')
           : '';
-      const heading = itemSummary || 'Đơn hàng';
+      const heading = itemSummary || 'Order';
       const meta = [dateText, orderLabels[order.status]].filter(Boolean).join(' · ');
-      return `- ${heading} (${meta}) — ${money(order.totalAmount)} [Mã đơn: ${order.id}]`;
+      return `- ${heading} (${meta}) — ${money(order.totalAmount)} [Order ID: ${order.id}]`;
     });
     const reply =
       orders.total === 0
-        ? `Bạn chưa có ${label}${status ? ` ở trạng thái ${orderLabels[status]}` : ''}.`
-        : `Có ${orders.total} ${label}${status ? ` ở trạng thái ${orderLabels[status]}` : ''}.${pageSummary(orders.page, orders.totalPages)}\n${lines.join('\n')}${orders.items.length > 5 ? '\nĐang tóm tắt 5 đơn đầu của trang.' : ''}${!orders.items.length ? '\nTrang này không có đơn hàng.' : ''}\nĐây là trạng thái đã lưu trên NEXUS.`;
+        ? `You have no ${label}${status ? ` with status ${orderLabels[status]}` : ''}.`
+        : `Found ${orders.total} ${label}${status ? ` with status ${orderLabels[status]}` : ''}.${pageSummary(orders.page, orders.totalPages)}\n${lines.join('\n')}${orders.items.length > 5 ? '\nShowing the first 5 orders on this page.' : ''}${!orders.items.length ? '\nNo orders on this page.' : ''}\nThis reflects the current saved status on NEXUS.`;
     return {
       reply,
       engine: 'ORDER',
       topic: 'ORDER',
       orders,
-      sources: [{ id: 'ORDER_DATABASE', title: 'Dữ liệu đơn hàng NEXUS' }],
+      sources: [{ id: 'ORDER_DATABASE', title: 'NEXUS Order Data' }],
       actions: [
         { type: 'SELECT_ORDER' },
         {
           type: 'NAVIGATE',
           path: intent === 'SALES' ? '/seller/orders' : '/buyer/orders',
-          label: intent === 'SALES' ? 'Mở đơn bán' : 'Mở đơn hàng của tôi',
+          label: intent === 'SALES' ? 'Open sales orders' : 'Open my orders',
         },
       ],
     };
@@ -365,18 +365,18 @@ export class ChatbotCommerceService {
         ? ` — ${money(order.totalAmount)}`
         : '';
     const waybillSegment = order.shipment?.waybillCode
-      ? ` Vận đơn GHN: ${order.shipment.waybillCode}${order.shipment.status ? ` (${order.shipment.status})` : ''}.`
+      ? ` GHN waybill: ${order.shipment.waybillCode}${order.shipment.status ? ` (${order.shipment.status})` : ''}.`
       : '';
     return {
-      reply: `Đơn ${order.id}${itemsSegment}: ${orderLabels[order.status]}${amountSegment}.${waybillSegment}${order.afterSales ? ` Yêu cầu hậu mãi: ${order.afterSales.status}.` : ''} Đây là trạng thái đã lưu trên NEXUS; chatbot không tự thay đổi trạng thái hoặc xác nhận hoàn tiền.${policy ? `\n${policy.answer}` : ''}`,
+      reply: `Order ${order.id}${itemsSegment}: ${orderLabels[order.status]}${amountSegment}.${waybillSegment}${order.afterSales ? ` After-sales request: ${order.afterSales.status}.` : ''} This reflects the saved status on NEXUS; the chatbot cannot alter statuses or confirm refunds.${policy ? `\n${policy.answer}` : ''}`,
       engine: 'ORDER',
       topic: 'ORDER',
       sources: [
-        { id: 'ORDER_DATABASE', title: 'Dữ liệu đơn hàng NEXUS' },
+        { id: 'ORDER_DATABASE', title: 'NEXUS Order Data' },
         ...(policy ? [{ id: policy.id, title: policy.title }] : []),
       ],
       actions: [
-        { type: 'NAVIGATE', path: `/buyer/orders/${order.id}`, label: 'Xem chi tiết đơn' },
+        { type: 'NAVIGATE', path: `/buyer/orders/${order.id}`, label: 'View order details' },
         ...support,
       ],
       order: {
@@ -402,52 +402,52 @@ export class ChatbotCommerceService {
     if (!result.products.length && !result.auctions.length) {
       return {
         reply: query
-          ? `Hiện tại NEXUS không có sản phẩm hay phiên đấu giá nào phù hợp với "${query}".`
-          : 'Hiện tại NEXUS chưa có sản phẩm hay phiên đấu giá nào đang mở.',
+          ? `NEXUS currently has no products or auctions matching "${query}".`
+          : 'NEXUS currently has no open products or auctions.',
         engine: 'ORDER',
         topic: 'ORDER',
-        sources: [{ id: 'CATALOG_DATABASE', title: 'Sản phẩm & Đấu giá NEXUS' }],
+        sources: [{ id: 'CATALOG_DATABASE', title: 'NEXUS Products & Auctions' }],
         actions: support,
       };
     }
 
     const productSection = result.products.length
-      ? `Sản phẩm đang bán:\n${result.products
+      ? `Active products:\n${result.products
           .map(
             (p) =>
-              `- ${p.title} — ${money(p.price)} (${p.availableQty > 0 ? `Còn ${p.availableQty}` : 'Hết hàng'})`,
+              `- ${p.title} — ${money(p.price)} (${p.availableQty > 0 ? `${p.availableQty} left` : 'Out of stock'})`,
           )
           .join('\n')}`
-      : 'Sản phẩm đang bán: Không có sản phẩm phù hợp.';
+      : 'Active products: No matching products found.';
 
     const auctionSection = result.auctions.length
-      ? `Đấu giá:\n${result.auctions
+      ? `Auctions:\n${result.auctions
           .map((a) => {
             const state = auctionStatusLabels[a.status] ?? a.status;
             const roomNote =
-              a.auctionTitle && a.auctionTitle !== a.title ? `Phiên: ${a.auctionTitle} · ` : '';
+              a.auctionTitle && a.auctionTitle !== a.title ? `Room: ${a.auctionTitle} · ` : '';
             return `- ${a.title} (${roomNote}${state}) — ${money(a.price)}`;
           })
           .join('\n')}`
-      : 'Đấu giá: Không có phiên đấu giá phù hợp.';
+      : 'Auctions: No matching auctions found.';
 
     const navigationActions: ChatbotReply['actions'] = [
       ...result.products.slice(0, 3).map((p) => ({
         type: 'NAVIGATE' as const,
         path: `/product/${p.id}`,
-        label: `Xem SP: ${p.title.slice(0, 32)}`,
+        label: `View: ${p.title.slice(0, 32)}`,
       })),
       ...result.auctions.slice(0, 3).map((a) => ({
         type: 'NAVIGATE' as const,
         path: `/auction/${a.auctionId}`,
-        label: `Vào đấu giá: ${a.title.slice(0, 28)}`,
+        label: `Join auction: ${a.title.slice(0, 28)}`,
       })),
       ...(query
         ? [
             {
               type: 'NAVIGATE' as const,
               path: `/search?q=${encodeURIComponent(query)}`,
-              label: 'Xem trang tìm kiếm',
+              label: 'View search results',
             },
           ]
         : []),
@@ -457,7 +457,7 @@ export class ChatbotCommerceService {
       reply: `${productSection}\n\n${auctionSection}`,
       engine: 'ORDER',
       topic: 'ORDER',
-      sources: [{ id: 'CATALOG_DATABASE', title: 'Sản phẩm & Đấu giá NEXUS' }],
+      sources: [{ id: 'CATALOG_DATABASE', title: 'NEXUS Products & Auctions' }],
       actions: [...navigationActions, ...support],
     };
   }
@@ -473,7 +473,7 @@ export class ChatbotCommerceService {
     if (!target) return null;
     if (!authenticated && target.requiresAuth) {
       return {
-        reply: `Vui lòng đăng nhập để truy cập trang ${target.label}.`,
+        reply: `Please sign in to access ${target.label}.`,
         engine: 'FAQ',
         topic: 'ORDER',
         sources: [],
@@ -486,15 +486,15 @@ export class ChatbotCommerceService {
       if (target.searchKind === 'AUCTION' && catalog.auctions.length > 0) {
         const first = catalog.auctions[0];
         return {
-          reply: `Đang chuyển bạn đến phiên đấu giá ${first.auctionTitle || first.title}.`,
+          reply: `Taking you to auction ${first.auctionTitle || first.title}.`,
           engine: 'ORDER',
           topic: 'ORDER',
-          sources: [{ id: 'CATALOG_DATABASE', title: 'Sản phẩm & Đấu giá NEXUS' }],
+          sources: [{ id: 'CATALOG_DATABASE', title: 'NEXUS Products & Auctions' }],
           actions: [
             {
               type: 'NAVIGATE',
               path: `/auction/${first.auctionId}`,
-              label: `Mở ${(first.auctionTitle || first.title).slice(0, 32)}`,
+              label: `Open ${(first.auctionTitle || first.title).slice(0, 32)}`,
               auto: true,
             },
           ],
@@ -503,31 +503,31 @@ export class ChatbotCommerceService {
       if (target.searchKind === 'PRODUCT' && catalog.products.length > 0) {
         const first = catalog.products[0];
         return {
-          reply: `Đang chuyển bạn đến sản phẩm ${first.title}.`,
+          reply: `Taking you to product ${first.title}.`,
           engine: 'ORDER',
           topic: 'ORDER',
-          sources: [{ id: 'CATALOG_DATABASE', title: 'Sản phẩm & Đấu giá NEXUS' }],
+          sources: [{ id: 'CATALOG_DATABASE', title: 'NEXUS Products & Auctions' }],
           actions: [
             {
               type: 'NAVIGATE',
               path: `/product/${first.id}`,
-              label: `Mở ${first.title.slice(0, 32)}`,
+              label: `Open ${first.title.slice(0, 32)}`,
               auto: true,
             },
           ],
         };
       }
       return {
-        reply: `Hiện tại NEXUS không có sản phẩm hay phiên đấu giá nào phù hợp với "${target.searchQuery}".`,
+        reply: `NEXUS currently has no products or auctions matching "${target.searchQuery}".`,
         engine: 'ORDER',
         topic: 'ORDER',
-        sources: [{ id: 'CATALOG_DATABASE', title: 'Sản phẩm & Đấu giá NEXUS' }],
+        sources: [{ id: 'CATALOG_DATABASE', title: 'NEXUS Products & Auctions' }],
         actions: support,
       };
     }
 
     return {
-      reply: `Đang chuyển bạn đến trang ${target.label}.`,
+      reply: `Taking you to ${target.label}.`,
       engine: 'FAQ',
       topic: 'WELCOME',
       sources: [],
@@ -535,7 +535,7 @@ export class ChatbotCommerceService {
         {
           type: 'NAVIGATE',
           path: target.path,
-          label: `Mở ${target.label}`,
+          label: `Open ${target.label}`,
           auto: true,
         },
       ],
@@ -562,18 +562,18 @@ export class ChatbotCommerceService {
     if (!status) return null;
 
     const walletLine = status.hasWallet
-      ? `Ví NEXUS Pay: Khả dụng ${money(status.availableBalance)} (đang khóa: ${money(status.lockedBalance)}).`
-      : 'Ví NEXUS Pay: Chưa khởi tạo ví.';
-    const reputationLine = `Điểm uy tín của bạn: ${status.reputationScore} (${status.trustLevel}).`;
+      ? `NEXUS Pay Wallet: Available ${money(status.availableBalance)} (locked: ${money(status.lockedBalance)}).`
+      : 'NEXUS Pay Wallet: Wallet not initialized yet.';
+    const reputationLine = `Your reputation score: ${status.reputationScore} (${status.trustLevel}).`;
 
     if (intent === 'WALLET') {
       return {
         reply: walletLine,
         engine: 'ORDER',
         topic: 'WALLET',
-        sources: [{ id: 'ACCOUNT_DATABASE', title: 'Dữ liệu tài khoản NEXUS' }],
+        sources: [{ id: 'ACCOUNT_DATABASE', title: 'NEXUS Account Data' }],
         actions: [
-          { type: 'NAVIGATE', path: '/buyer/wallet', label: 'Mở Ví NEXUS Pay' },
+          { type: 'NAVIGATE', path: '/buyer/wallet', label: 'Open NEXUS Pay Wallet' },
           ...support,
         ],
       };
@@ -584,9 +584,9 @@ export class ChatbotCommerceService {
         reply: reputationLine,
         engine: 'ORDER',
         topic: 'REPUTATION',
-        sources: [{ id: 'ACCOUNT_DATABASE', title: 'Dữ liệu tài khoản NEXUS' }],
+        sources: [{ id: 'ACCOUNT_DATABASE', title: 'NEXUS Account Data' }],
         actions: [
-          { type: 'NAVIGATE', path: '/buyer/reputation', label: 'Xem Điểm uy tín' },
+          { type: 'NAVIGATE', path: '/buyer/reputation', label: 'View Reputation Score' },
           ...support,
         ],
       };
@@ -596,55 +596,55 @@ export class ChatbotCommerceService {
     let auctionButtons: ChatbotReply['actions'] = [];
 
     if (auctionFilter && status.auctions.length === 0) {
-      eligibilityLine = `Hiện tại không có phiên đấu giá nào đang mở hoặc sắp diễn ra phù hợp với "${auctionFilter}".`;
+      eligibilityLine = `There are currently no open or upcoming auctions matching "${auctionFilter}".`;
     } else if (status.auctions.length > 0) {
       const eligibleLines = status.eligibleAuctions.slice(0, 5).map((a) => {
         const state = auctionStatusLabels[a.status] ?? a.status;
         const itemNote = a.matchedItems.length
-          ? ` · Khớp: ${a.matchedItems.slice(0, 2).join(', ')}`
+          ? ` · Matched: ${a.matchedItems.slice(0, 2).join(', ')}`
           : '';
-        return `- ${a.title} (${state} · yêu cầu >= ${a.minBuyerReputation} điểm${itemNote})`;
+        return `- ${a.title} (${state} · requires >= ${a.minBuyerReputation} pts${itemNote})`;
       });
       const ineligibleLines = status.ineligibleAuctions.slice(0, 5).map((a) => {
         const state = auctionStatusLabels[a.status] ?? a.status;
-        return `- ${a.title} (${state} · yêu cầu >= ${a.minBuyerReputation} điểm): ${a.reasons[0]}`;
+        return `- ${a.title} (${state} · requires >= ${a.minBuyerReputation} pts): ${a.reasons[0]}`;
       });
       const parts: string[] = [];
       if (eligibleLines.length) {
         parts.push(
-          `Các phiên đấu giá bạn ĐỦ điều kiện tham gia (${status.eligibleAuctions.length}):\n${eligibleLines.join('\n')}`,
+          `Auctions you ARE eligible to join (${status.eligibleAuctions.length}):\n${eligibleLines.join('\n')}`,
         );
       } else {
-        parts.push('Bạn CHƯA đủ điều kiện tham gia phiên đấu giá nào trong danh sách phù hợp.');
+        parts.push('You are NOT YET eligible to join any matching auctions.');
       }
       if (ineligibleLines.length) {
         parts.push(
-          `Các phiên bạn CHƯA đủ điều kiện (${status.ineligibleAuctions.length}):\n${ineligibleLines.join('\n')}`,
+          `Auctions you are NOT YET eligible for (${status.ineligibleAuctions.length}):\n${ineligibleLines.join('\n')}`,
         );
       }
       eligibilityLine = parts.join('\n\n');
       auctionButtons = status.eligibleAuctions.slice(0, 5).map((a) => ({
         type: 'NAVIGATE' as const,
         path: `/auction/${a.id}`,
-        label: `Vào phiên: ${a.title.slice(0, 28)}`,
+        label: `Enter auction: ${a.title.slice(0, 28)}`,
       }));
     } else {
       eligibilityLine = status.auctionEligible
-        ? `Điều kiện đấu giá: Đủ điều kiện tham gia đấu giá (tối thiểu ${status.minBuyerReputation} điểm uy tín, chế độ Người mua, có ví NEXUS Pay). Khi đặt giá, số dư khả dụng cần đủ mức giá muốn đặt.`
-        : `Điều kiện đấu giá: Chưa đủ điều kiện.\n- ${status.auctionReasons.join('\n- ')}`;
+        ? `Auction eligibility: Eligible to participate (minimum ${status.minBuyerReputation} reputation points, Buyer mode, active NEXUS Pay wallet). When bidding, your available balance must cover the bid amount.`
+        : `Auction eligibility: Not eligible.\n- ${status.auctionReasons.join('\n- ')}`;
     }
 
     return {
       reply: `${reputationLine}\n${walletLine}\n\n${eligibilityLine}`,
       engine: 'ORDER',
       topic: 'AUCTION',
-      sources: [{ id: 'ACCOUNT_DATABASE', title: 'Dữ liệu tài khoản NEXUS' }],
+      sources: [{ id: 'ACCOUNT_DATABASE', title: 'NEXUS Account Data' }],
       actions: [
         ...auctionButtons,
         ...(!auctionButtons.length
-          ? [{ type: 'NAVIGATE' as const, path: '/auction', label: 'Mở trang Đấu giá' }]
+          ? [{ type: 'NAVIGATE' as const, path: '/auction', label: 'Open Auctions' }]
           : []),
-        { type: 'NAVIGATE', path: '/buyer/wallet', label: 'Mở Ví NEXUS Pay' },
+        { type: 'NAVIGATE', path: '/buyer/wallet', label: 'Open NEXUS Pay Wallet' },
         ...support,
       ],
     };

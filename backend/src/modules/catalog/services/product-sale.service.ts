@@ -34,11 +34,11 @@ export class ProductSaleService {
         seller.isShopSuspended ||
         (seller.role === 'SELLER' && !seller.isSellerActive)
       )
-        throw new ForbiddenException('Shop không có quyền cập nhật sale.');
+        throw new ForbiddenException('Store does not have permission to update sale settings.');
       const product = await tx.product.findUnique({ where: { id: productId } });
-      if (!product) throw new NotFoundException('Không tìm thấy sản phẩm.');
+      if (!product) throw new NotFoundException('Product not found.');
       if (product.sellerId !== sellerId)
-        throw new ForbiddenException('Không được sửa sale của shop khác.');
+        throw new ForbiddenException('Cannot modify sale settings for another store.');
       const salePrice = dto.salePrice === undefined ? product.salePrice : dto.salePrice;
       const startsAt =
         dto.saleStartsAt === undefined
@@ -56,10 +56,12 @@ export class ProductSaleService {
         salePrice !== null &&
         (Number(salePrice) < 1000 || Number(salePrice) >= Number(product.basePrice))
       ) {
-        throw new BadRequestException('Giá sale phải từ 1.000đ và nhỏ hơn giá gốc.');
+        throw new BadRequestException(
+          'Sale price must be at least 1,000 VND and less than the original price.',
+        );
       }
       if (salePrice !== null && startsAt && endsAt && startsAt >= endsAt)
-        throw new BadRequestException('Thời gian kết thúc sale phải sau thời gian bắt đầu.');
+        throw new BadRequestException('Sale end time must be after the start time.');
       const updated = await tx.product.update({
         where: { id: productId },
         data: {

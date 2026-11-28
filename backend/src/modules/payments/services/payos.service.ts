@@ -46,7 +46,7 @@ export class PayosService {
   }
 
   /**
-   * Tạo link thanh toán VietQR động
+   * Create a dynamic VietQR payment link.
    */
   async createPaymentLink(
     paymentData: CreatePaymentLinkRequest,
@@ -56,26 +56,26 @@ export class PayosService {
     }
     try {
       this.logger.log(
-        `Đang tạo PayOS Payment Link cho orderCode=${paymentData.orderCode}, số tiền=${paymentData.amount}`,
+        `Creating PayOS payment link for orderCode=${paymentData.orderCode}, amount=${paymentData.amount}`,
       );
       const result = await this.payOS.paymentRequests.create(paymentData);
       return result;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error(
-        `Lỗi khi tạo payment link PayOS (orderCode=${paymentData.orderCode}): ${message}`,
+        `Failed to create PayOS payment link (orderCode=${paymentData.orderCode}): ${message}`,
       );
       throw new BadRequestException({
         message:
           message ||
-          'Không thể tạo liên kết thanh toán PayOS. Vui lòng kiểm tra lại cấu hình hoặc dữ liệu đơn hàng.',
+          'Unable to create PayOS payment link. Please check the configuration or order data.',
         errorCode: AppErrorCode.PAYMENT_FAILED,
       });
     }
   }
 
   /**
-   * Xác thực chữ ký webhook từ PayOS (đảm bảo request xuất phát từ server PayOS)
+   * Verify the webhook signature from PayOS to ensure the request originated from PayOS servers.
    */
   async verifyWebhook(webhookBody: Webhook): Promise<WebhookData> {
     if (this.providers.isPaymentSandbox()) {
@@ -86,16 +86,16 @@ export class PayosService {
       return verified;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Chữ ký Webhook PayOS không hợp lệ: ${message}`);
+      this.logger.error(`Invalid PayOS webhook signature: ${message}`);
       throw new BadRequestException({
-        message: 'Chữ ký Webhook PayOS không hợp lệ hoặc dữ liệu bị thay đổi',
+        message: 'Invalid PayOS webhook signature or tampered data',
         errorCode: AppErrorCode.PAYMENT_FAILED,
       });
     }
   }
 
   /**
-   * Lấy thông tin thanh toán theo orderCode hoặc paymentLinkId
+   * Retrieve payment link information by orderCode or paymentLinkId.
    */
   async getPaymentLink(orderCodeOrId: number | string): Promise<PaymentLink> {
     if (this.providers.isPaymentSandbox()) {
@@ -108,29 +108,29 @@ export class PayosService {
       return await this.payOS.paymentRequests.get(orderCodeOrId);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Lỗi khi truy vấn payment link PayOS: ${message}`);
+      this.logger.error(`Failed to query PayOS payment link: ${message}`);
       throw new BadRequestException({
-        message: 'Không tìm thấy thông tin liên kết thanh toán PayOS',
+        message: 'PayOS payment link information not found',
         errorCode: AppErrorCode.PAYMENT_FAILED,
       });
     }
   }
 
   /**
-   * Đăng ký và xác nhận Webhook URL với hệ thống PayOS
+   * Register and confirm the webhook URL with PayOS.
    */
   async confirmWebhook(webhookUrl: string): Promise<ConfirmWebhookResponse> {
     if (this.providers.isPaymentSandbox()) {
       return this.sandbox.confirmWebhook(webhookUrl);
     }
     try {
-      this.logger.log(`Xác nhận webhook URL với PayOS: ${webhookUrl}`);
+      this.logger.log(`Confirming webhook URL with PayOS: ${webhookUrl}`);
       return await this.payOS.webhooks.confirm(webhookUrl);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Lỗi khi xác nhận Webhook URL với PayOS: ${message}`);
+      this.logger.error(`Failed to confirm webhook URL with PayOS: ${message}`);
       throw new BadRequestException({
-        message: `Không thể xác nhận Webhook URL với PayOS: ${message}`,
+        message: `Unable to confirm webhook URL with PayOS: ${message}`,
         errorCode: AppErrorCode.PAYMENT_FAILED,
       });
     }

@@ -46,7 +46,7 @@ export class PayosWebhookService {
     if (settledTopup) return settledTopup;
 
     this.logger.warn(
-      `Không tìm thấy bản ghi Payment hoặc WalletTransaction cho PayOS orderCode=${orderCode}`,
+      `Payment or WalletTransaction record not found for PayOS orderCode=${orderCode}`,
     );
     return { success: false, message: 'Payment record not found' };
   }

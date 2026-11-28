@@ -14,9 +14,9 @@ const FALLBACK_GALLERY_IMG =
   'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=1000&q=80';
 
 /**
- * Khung Tranh Triển Lãm 3D (3D Gallery Frame):
- * Tự động kích hoạt khi sản phẩm của Seller KHÔNG nằm trong 10 model 3D dựng sẵn.
- * Đóng gói toàn bộ các hình ảnh món hàng của Seller vào khung trưng bày 3D có đèn rọi & chuyển góc mượt.
+ * 3D Exhibition Gallery Frame:
+ * Automatically activated when a Seller product does not match the 10 preset 3D models.
+ * Wraps all Seller product images in a spotlighted 3D display frame with smooth angle transitions.
  */
 export const SellerGalleryFrame3D: React.FC<SellerGalleryFrame3DProps> = ({
   title,
@@ -47,9 +47,9 @@ export const SellerGalleryFrame3D: React.FC<SellerGalleryFrame3DProps> = ({
 
   return (
     <div className="relative flex flex-col items-center justify-center w-full h-full px-4">
-      {/* Khung cảnh không gian 3D Perspective */}
+      {/* 3D Perspective stage */}
       <div className="museum-frame-stage relative flex items-center justify-center w-full max-w-[480px] h-[320px]">
-        {/* Cánh ảnh phụ bên trái (nếu seller gửi >= 2 ảnh) */}
+        {/* Left side wing image (if seller provided >= 2 images) */}
         {leftPreview && (
           <div className="museum-frame-wing museum-frame-wing-left hidden sm:block">
             <img
@@ -63,9 +63,9 @@ export const SellerGalleryFrame3D: React.FC<SellerGalleryFrame3DProps> = ({
           </div>
         )}
 
-        {/* Khung Tranh Trung Tâm mạ vàng 3D */}
+        {/* Gold-plated 3D Center Gallery Frame */}
         <div className="museum-frame-center relative z-10 w-[250px] sm:w-[290px] h-[250px] sm:h-[280px] rounded-xl p-3 bg-gradient-to-br from-amber-300 via-yellow-600 to-amber-900 shadow-[0_28px_70px_rgba(0,0,0,0.85)]">
-          {/* Lớp bo nhung bảo tàng bên trong */}
+          {/* Inner museum velvet mat border */}
           <div className="relative w-full h-full rounded-lg bg-slate-950 p-2.5 border border-amber-200/40 shadow-inner overflow-hidden">
             <img
               key={activeUrl}
@@ -77,13 +77,13 @@ export const SellerGalleryFrame3D: React.FC<SellerGalleryFrame3DProps> = ({
               }}
             />
 
-            {/* Hiệu ứng ánh sáng lướt qua mặt kính bảo vệ khung tranh */}
+            {/* Glass reflection shimmer sweeping across the frame */}
             <div className="museum-frame-glass-glare pointer-events-none absolute inset-0" />
 
-            {/* Thanh tia quét laser thẩm định trực tiếp trên ảnh Seller */}
+            {/* Verification laser scan beam across Seller photo */}
             <div className="hud-scanline pointer-events-none" />
 
-            {/* Nhãn góc ảnh */}
+            {/* Image corner badge */}
             <div className="absolute bottom-2 right-2 z-20 flex items-center gap-1 rounded-md bg-slate-950/85 px-2 py-0.5 text-[10px] font-mono text-amber-200 border border-amber-400/30">
               <ImageIcon className="w-3 h-3 text-amber-400" />
               <span>
@@ -95,7 +95,7 @@ export const SellerGalleryFrame3D: React.FC<SellerGalleryFrame3DProps> = ({
             </div>
           </div>
 
-          {/* Bảng đồng khắc tên dưới chân khung */}
+          {/* Engraved brass nameplate below the frame */}
           <div className="mx-auto -mt-1 w-4/5 rounded-b-md border border-amber-400/50 bg-gradient-to-r from-amber-950 via-amber-800 to-amber-950 px-3 py-1 text-center shadow-lg">
             <p className="truncate text-[10px] font-bold tracking-widest text-amber-100 uppercase">
               {lotNumber ? t('showcase.frameLotPrefix', { number: lotNumber }) : ''}
@@ -104,7 +104,7 @@ export const SellerGalleryFrame3D: React.FC<SellerGalleryFrame3DProps> = ({
           </div>
         </div>
 
-        {/* Cánh ảnh phụ bên phải (nếu seller gửi >= 3 ảnh) */}
+        {/* Right side wing image (if seller provided >= 3 images) */}
         {rightPreview && (
           <div className="museum-frame-wing museum-frame-wing-right hidden sm:block">
             <img

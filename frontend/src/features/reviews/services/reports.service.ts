@@ -18,21 +18,21 @@ export interface SubmittedReport {
 }
 
 export const PRODUCT_REPORT_REASONS = [
-  'Sản phẩm giả mạo / Không chính hãng',
-  'Thông tin mô tả hoặc thông số sai sự thật',
-  'Giá bán bất thường hoặc có dấu hiệu gian lận',
-  'Hình ảnh phản cảm hoặc vi phạm bản quyền',
-  'Sản phẩm thuộc danh mục cấm kinh doanh',
-  'Lý do khác',
+  'Counterfeit / Not authentic',
+  'Misleading description or specifications',
+  'Abnormal pricing or suspected fraud',
+  'Offensive or copyright-infringing images',
+  'Prohibited product category',
+  'Other reason',
 ];
 
 export const SHOP_REPORT_REASONS = [
-  'Gian hàng có dấu hiệu lừa đảo / Yêu cầu chuyển khoản ngoài sàn',
-  'Thái độ phục vụ thiếu chuẩn mực / Ngôn từ xúc phạm',
-  'Giao hàng sai sản phẩm nhiều lần / Không hỗ trợ bảo hành',
-  'Mạo danh thương hiệu hoặc cửa hàng ủy quyền',
-  'Spam tin nhắn hoặc quảng cáo trái phép',
-  'Lý do khác',
+  'Suspected scam / Off-platform bank transfer request',
+  'Unprofessional service or offensive language',
+  'Repeatedly ships wrong items / No warranty support',
+  'Impersonating a brand or authorized store',
+  'Spam messages or unauthorized advertising',
+  'Other reason',
 ];
 
 export async function uploadReportEvidence(file: File): Promise<string> {

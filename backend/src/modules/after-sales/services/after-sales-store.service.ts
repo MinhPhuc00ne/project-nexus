@@ -36,7 +36,7 @@ export class AfterSalesStoreService {
     const order = await tx.order.findUnique({ where: { id: orderId }, include: afterSalesInclude });
     if (!order) {
       throw new NotFoundException({
-        message: 'Không tìm thấy đơn hàng.',
+        message: 'Order not found.',
         errorCode: AppErrorCode.NOT_FOUND,
       });
     }
@@ -46,7 +46,7 @@ export class AfterSalesStoreService {
   authorize(order: AfterSalesOrder, actor: ShipmentActor): void {
     if (actor.id !== order.buyerId && actor.id !== order.sellerId && !isStaff(actor))
       throw new ForbiddenException({
-        message: 'Bạn không có quyền thao tác đơn hàng này.',
+        message: 'You do not have permission to access this order.',
         errorCode: AppErrorCode.FORBIDDEN,
       });
   }
@@ -58,7 +58,7 @@ export class AfterSalesStoreService {
     });
     if (!order) {
       throw new NotFoundException({
-        message: 'Không tìm thấy đơn hàng.',
+        message: 'Order not found.',
         errorCode: AppErrorCode.NOT_FOUND,
       });
     }
@@ -98,8 +98,8 @@ export class AfterSalesStoreService {
           userId,
           type: 'ORDER',
           channel: 'IN_APP',
-          title: 'Cập nhật hủy/trả hàng',
-          content: `Đơn #${order.id.slice(0, 8)}: ${action}.`,
+          title: 'Cancellation/return update',
+          content: `Order #${order.id.slice(0, 8)}: ${action}.`,
         },
         this.notifications,
       );
@@ -144,7 +144,7 @@ export class AfterSalesStoreService {
   ): Promise<{ items: OrderRefund[]; total: number; page: number; limit: number }> {
     if (!isStaff(actor)) {
       throw new ForbiddenException({
-        message: 'Chỉ nhân viên được xem hàng đợi hoàn tiền.',
+        message: 'Only support staff may view the refund queue.',
         errorCode: AppErrorCode.FORBIDDEN,
       });
     }
@@ -171,7 +171,7 @@ export class AfterSalesStoreService {
         userId: sellerId,
         deltaPoints: -10,
         penaltyType: 'ORDER_CANCELLATION',
-        reason: 'Hủy đơn do lỗi người bán',
+        reason: 'Order cancelled due to seller fault',
         referenceId: orderId,
       },
       tx,

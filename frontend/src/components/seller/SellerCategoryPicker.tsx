@@ -9,7 +9,7 @@ function searchText(value: string) {
     .toLocaleLowerCase('vi-VN')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd');
+    .replace(/\u0111/g, 'd');
 }
 
 export default function SellerCategoryPicker({

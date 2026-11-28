@@ -295,16 +295,14 @@ describe('M1 Security Hotfixes', () => {
           '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
         ),
       });
-      await expect(service.uploadMedia(svgFile)).rejects.toThrow(
-        /Định dạng file không được hỗ trợ/,
-      );
+      await expect(service.uploadMedia(svgFile)).rejects.toThrow(/Unsupported file format/);
 
       const spoofedPng = createMediaFile({
         originalname: 'fake.png',
         mimetype: 'image/png',
         buffer: Buffer.from('MZ\x90\x00not-really-a-png-file-payload'),
       });
-      await expect(service.uploadMedia(spoofedPng)).rejects.toThrow(/Nội dung file không khớp/);
+      await expect(service.uploadMedia(spoofedPng)).rejects.toThrow(/File content does not match/);
 
       const truncatedTiff = createMediaFile({
         originalname: 'truncated.tiff',

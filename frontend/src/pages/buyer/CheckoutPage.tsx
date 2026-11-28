@@ -73,7 +73,7 @@ export default function CheckoutPage() {
           setSelectedAddressId(def?.id ?? '');
         }
       } catch (err) {
-        console.warn('Lỗi tải dữ liệu thanh toán:', err);
+        console.warn('Failed to load checkout data:', err);
       } finally {
         if (isMounted) setLoadingCart(false);
       }

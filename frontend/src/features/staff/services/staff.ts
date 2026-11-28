@@ -346,7 +346,7 @@ export async function uploadStaffAvatarFile(file: File): Promise<string> {
     );
     url = `${origin}${url}`;
   }
-  // Chuẩn hóa localhost thành 127.0.0.1 để vượt qua kiểm tra @IsUrl() của backend (validator.js yêu cầu TLD hoặc IP hợp lệ)
+  // Normalize localhost to 127.0.0.1 to satisfy backend @IsUrl() validator (requires TLD or valid IP)
   return url.replace('://localhost', '://127.0.0.1');
 }
 

@@ -61,16 +61,14 @@ export class ChatSupportService {
     triggerAutoReplyFn?: TriggerAutoReplyDelegate,
   ) {
     if (role === 'SUPPORT_STAFF' || role === 'ADMIN') {
-      throw new BadRequestException(
-        'Tài khoản nhân viên hoặc quản trị viên không thể gửi yêu cầu hỗ trợ người dùng.',
-      );
+      throw new BadRequestException('Staff or Admin accounts cannot submit user support requests.');
     }
 
     const text = (dto.message || '').trim();
     if (!text) {
-      throw new BadRequestException('Nội dung yêu cầu hỗ trợ không được để trống.');
+      throw new BadRequestException('Support request message cannot be empty.');
     }
-    assertCleanContent(text, 'Nội dung yêu cầu hỗ trợ');
+    assertCleanContent(text, 'Support request message');
 
     if (dto.contextType === 'DISPUTE' && dto.contextId) {
       const existingDisputeConv = await this.prisma.chatConversation.findFirst({
@@ -107,8 +105,8 @@ export class ChatSupportService {
         title:
           dto.subject ||
           (dto.contextType === 'DISPUTE'
-            ? `Hỗ trợ khiếu nại #${dto.contextId}`
-            : 'Yêu cầu hỗ trợ CSKH'),
+            ? `Dispute support #${dto.contextId}`
+            : 'Customer Support Request'),
         contextId: dto.contextId || null,
         contextType: dto.contextType || 'GENERAL',
         lastMessage: text,
@@ -139,14 +137,14 @@ export class ChatSupportService {
         conversation: conv,
       });
       this.logger.log(
-        `Tự động gán ticket ${conv.id} cho staff online sớm nhất: ${availableStaffId}`,
+        `Auto-assigned ticket ${conv.id} to earliest online staff: ${availableStaffId}`,
       );
     } else {
       this.realtime.toStaff('new_queue_ticket', {
         conversationId: conv.id,
         conversation: conv,
       });
-      this.logger.log(`Ticket ${conv.id} đã vào hàng đợi OPEN (chưa có staff rảnh online).`);
+      this.logger.log(`Ticket ${conv.id} added to OPEN queue (no online staff available).`);
     }
 
     if (triggerAutoReplyFn) {
@@ -169,7 +167,7 @@ export class ChatSupportService {
       where: { id: disputeId },
       include: { order: { select: { id: true, buyerId: true, sellerId: true } } },
     });
-    if (!dispute) throw new NotFoundException('Không tìm thấy khiếu nại tranh chấp.');
+    if (!dispute) throw new NotFoundException('Dispute not found.');
 
     const isParty =
       dispute.openedByUserId === userId ||
@@ -178,7 +176,9 @@ export class ChatSupportService {
     const isStaffOrAdmin = role === 'SUPPORT_STAFF' || role === 'ADMIN';
 
     if (!isParty && !isStaffOrAdmin) {
-      throw new ForbiddenException('Bạn không có quyền truy cập hội thoại của tranh chấp này.');
+      throw new ForbiddenException(
+        'You do not have permission to access this dispute conversation.',
+      );
     }
 
     let conv = await this.prisma.chatConversation.findFirst({
@@ -195,8 +195,8 @@ export class ChatSupportService {
         userId,
         role,
         {
-          subject: `Tranh chấp đơn hàng #${dispute.orderId}`,
-          message: `Mở hội thoại hỗ trợ giải quyết khiếu nại: ${dispute.reason}`,
+          subject: `Order dispute #${dispute.orderId}`,
+          message: `Opened support conversation to resolve dispute: ${dispute.reason}`,
           contextId: disputeId,
           contextType: 'DISPUTE',
         },
@@ -214,7 +214,7 @@ export class ChatSupportService {
   async getQueue(role: string, query: QueryQueueInput) {
     if (role !== 'SUPPORT_STAFF' && role !== 'ADMIN') {
       throw new ForbiddenException(
-        'Chỉ nhân viên hoặc quản trị viên mới có quyền xem hàng đợi hỗ trợ.',
+        'Only support staff or administrators may view the support queue.',
       );
     }
 
@@ -269,18 +269,16 @@ export class ChatSupportService {
    */
   async claimConversation(convId: string, staffId: string, role: string) {
     if (role !== 'SUPPORT_STAFF' && role !== 'ADMIN') {
-      throw new ForbiddenException(
-        'Chỉ nhân viên hoặc quản trị viên mới có quyền tiếp nhận cuộc trò chuyện.',
-      );
+      throw new ForbiddenException('Only support staff or administrators may claim conversations.');
     }
 
     const conv = await this.prisma.chatConversation.findUnique({
       where: { id: convId },
     });
 
-    if (!conv) throw new NotFoundException('Không tìm thấy cuộc trò chuyện.');
+    if (!conv) throw new NotFoundException('Conversation not found.');
     if (conv.status !== 'OPEN') {
-      throw new BadRequestException('Cuộc trò chuyện này đã được tiếp nhận hoặc đã hoàn tất.');
+      throw new BadRequestException('This conversation has already been claimed or resolved.');
     }
 
     const updated = await this.prisma.chatConversation.update({
@@ -321,13 +319,15 @@ export class ChatSupportService {
     const conv = await this.prisma.chatConversation.findUnique({
       where: { id: convId },
     });
-    if (!conv) throw new NotFoundException('Không tìm thấy cuộc trò chuyện.');
+    if (!conv) throw new NotFoundException('Conversation not found.');
 
     const isAuditAdmin = role === 'ADMIN';
     const isAssigned = conv.assignedStaffId === userId || conv.participant2Id === userId;
 
     if (!isAssigned && !isAuditAdmin) {
-      throw new ForbiddenException('Bạn không có quyền cập nhật trạng thái cuộc trò chuyện này.');
+      throw new ForbiddenException(
+        'You do not have permission to update this conversation status.',
+      );
     }
 
     const updated = await this.prisma.chatConversation.update({
@@ -355,7 +355,7 @@ export class ChatSupportService {
     if (dto.resolutionNotes?.trim() && sendMessageFn) {
       await sendMessageFn(userId, role, {
         conversationId: convId,
-        content: `[Ghi chú kết thúc hỗ trợ]: ${dto.resolutionNotes.trim()}`,
+        content: `[Support resolution note]: ${dto.resolutionNotes.trim()}`,
       });
     }
 
@@ -381,10 +381,10 @@ export class ChatSupportService {
       if (!nextTicket) return;
 
       await this.claimConversation(nextTicket.id, staffId, 'SUPPORT_STAFF');
-      this.logger.log(`Tự động phân phối ticket FIFO ${nextTicket.id} cho staff ${staffId}`);
+      this.logger.log(`Auto-assigned FIFO ticket ${nextTicket.id} to staff ${staffId}`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      this.logger.warn(`Lỗi khi phân phối ticket cho staff ${staffId}: ${msg}`);
+      this.logger.warn(`Error assigning ticket to staff ${staffId}: ${msg}`);
     }
   }
 }

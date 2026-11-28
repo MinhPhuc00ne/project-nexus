@@ -8,7 +8,7 @@ import {
 } from '@/features/shipping/services/shipping';
 import type { GhnProvince, GhnDistrict, GhnWard } from '@/features/shipping/types/shipping.types';
 
-// Danh sách 63 Tỉnh/Thành phố dự phòng chuẩn hành chính Việt Nam khi GHN mạng chậm
+// Standard Vietnam 63 provinces/cities fallback list when GHN API is slow
 const FALLBACK_PROVINCES = [
   'TP. Hồ Chí Minh',
   'Hà Nội',
@@ -88,7 +88,7 @@ export interface AdministrativeAddressSelectProps {
 function isJunkAdministrativeName(name: string): boolean {
   if (!name || typeof name !== 'string') return true;
   const lower = name.trim().toLowerCase();
-  // Loại bỏ các tên test như "Hà Nội 02", "Tỉnh - 001"
+  // Exclude numeric test placeholder province names (e.g. "City 02", "Province - 001")
   return (
     lower.includes('test') ||
     lower.includes('alert') ||
@@ -167,7 +167,7 @@ export default function AdministrativeAddressSelect({
   const prevCityRef = useRef<string>(city);
   const prevDistrictRef = useRef<string>(district);
 
-  // 1. Tải danh sách Tỉnh/Thành
+  // 1. Load provinces/cities list
   useEffect(() => {
     let isMounted = true;
     setLoadingProvinces(true);
@@ -177,7 +177,7 @@ export default function AdministrativeAddressSelect({
         if (isMounted && Array.isArray(data) && data.length > 0) {
           setProvinces(cleanAndSortProvinces(data));
         } else if (isMounted) {
-          // Dùng fallback nếu API rỗng
+          // Use fallback if API returns empty
           setProvinces(
             FALLBACK_PROVINCES.map((p, idx) => ({
               provinceId: idx + 1,
@@ -207,7 +207,7 @@ export default function AdministrativeAddressSelect({
     };
   }, []);
 
-  // 2. Tìm provinceId tương ứng với city hiện tại và tải danh sách Quận/Huyện
+  // 2. Resolve provinceId for current city and load districts list
   useEffect(() => {
     if (!city.trim() || provinces.length === 0) {
       setDistricts([]);
@@ -243,7 +243,7 @@ export default function AdministrativeAddressSelect({
     };
   }, [city, provinces]);
 
-  // 3. Tìm districtId tương ứng với district hiện tại và tải danh sách Phường/Xã
+  // 3. Resolve districtId for current district and load wards list
   useEffect(() => {
     if (!district.trim() || districts.length === 0) {
       setWards([]);
@@ -279,7 +279,7 @@ export default function AdministrativeAddressSelect({
     };
   }, [district, districts]);
 
-  // Handle thay đổi Tỉnh / Thành phố
+  // Handle Province / City change
   const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedCity = e.target.value;
     prevCityRef.current = selectedCity;
@@ -293,7 +293,7 @@ export default function AdministrativeAddressSelect({
     });
   };
 
-  // Handle thay đổi Quận / Huyện
+  // Handle District change
   const handleDistrictChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedDistrict = e.target.value;
     prevDistrictRef.current = selectedDistrict;
@@ -305,7 +305,7 @@ export default function AdministrativeAddressSelect({
     });
   };
 
-  // Handle thay đổi Phường / Xã
+  // Handle Ward change
   const handleWardChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedWard = e.target.value;
     onChange({
@@ -327,7 +327,7 @@ export default function AdministrativeAddressSelect({
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-      {/* 1. Tỉnh / Thành phố */}
+      {/* 1. Province / City */}
       <div>
         <label className={labelClasses}>
           {t('addressSelect.provinceLabel')} {required && <span className="text-red-500">*</span>}
@@ -361,7 +361,7 @@ export default function AdministrativeAddressSelect({
         </div>
       </div>
 
-      {/* 2. Quận / Huyện */}
+      {/* 2. District */}
       <div>
         <label className={labelClasses}>
           {t('addressSelect.districtLabel')} {required && <span className="text-red-500">*</span>}
@@ -397,7 +397,7 @@ export default function AdministrativeAddressSelect({
         </div>
       </div>
 
-      {/* 3. Phường / Xã */}
+      {/* 3. Ward */}
       <div>
         <label className={labelClasses}>
           {t('addressSelect.wardLabel')} {required && <span className="text-red-500">*</span>}

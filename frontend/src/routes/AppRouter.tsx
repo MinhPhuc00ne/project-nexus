@@ -239,7 +239,7 @@ function AppRouter() {
               {/* Non-admin fallback */}
               <Route path="*" element={<NotFoundPage />} />
             </Route>
-            {/* Route cha giữ khung chung; mỗi route con mở một page cụ thể trong Outlet. */}
+            {/* Parent route preserves shared chrome; each child route renders its page inside Outlet. */}
             <Route element={<ProtectedRoute allowedRoles={[Role.ADMIN]} />}>
               <Route path={ROUTES.ADMIN} element={<AdminLayout />}>
                 <Route index element={<Navigate to="overview" replace />} />

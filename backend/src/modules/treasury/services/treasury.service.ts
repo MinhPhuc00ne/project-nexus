@@ -43,7 +43,7 @@ export class TreasuryService {
           currency: 'VND',
         },
       });
-      this.logger.log(`Đã khởi tạo ví hệ thống ${type}: ${created.id}`);
+      this.logger.log(`Initialized system wallet ${type}: ${created.id}`);
       return created;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -91,7 +91,7 @@ export class TreasuryService {
 
     if (!adminUser) {
       throw new NotFoundException(
-        'Không tìm thấy tài khoản Quản trị viên (ADMIN) trên hệ thống để gán ví nền tảng.',
+        'No Administrator (ADMIN) account found on the system to assign the platform wallet.',
       );
     }
 
@@ -105,7 +105,7 @@ export class TreasuryService {
           currency: 'VND',
         },
       });
-      this.logger.log(`Đã khởi tạo ví Admin hệ thống cho userId: ${adminUser.id}`);
+      this.logger.log(`Initialized system Admin wallet for userId: ${adminUser.id}`);
     }
 
     return wallet;

@@ -772,7 +772,7 @@ test('adminCreateAuction notifies only eligible Sellers at creation, while admin
 
   await assert.rejects(
     h.auctionService.adminStartAuction(room.id),
-    /chưa có vật phẩm nào được duyệt/,
+    /no approved \(APPROVED\) items/,
   );
 
   const item = await h.auctionService.registerAuctionItem(room.id, 'seller-1', {
@@ -830,7 +830,7 @@ test('adminReviewAuctionItem rejects startingPrice below reservePrice and blocks
       auctionItemId: item.id,
       bidAmount: 1_000_000,
     }),
-    /đang phát đoạn giới thiệu 3D/,
+    /currently playing the 3D intro/,
   );
 });
 
@@ -854,13 +854,13 @@ test('multi-lot per-lot bidding enforces Seller view-only mode, 100% escrow lock
       auctionItemId: lot1.id,
       bidAmount: 1_000_000,
     }),
-    /không thể tự đặt giá cho vật phẩm của chính mình/,
+    /cannot bid on their own items/,
   );
 
   // Missing auctionItemId rejected when multiple lots exist
   await assert.rejects(
     h.auctionService.placeBid(room.id, 'buyer-1', { bidAmount: 1_000_000 }),
-    /có nhiều lô hàng/,
+    /multiple lots/,
   );
 
   // Set lot1 close to end (90s remaining) to test per-lot +120s anti-sniping

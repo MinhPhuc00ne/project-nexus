@@ -65,7 +65,7 @@ export class MediaService {
     const isVideo = REVIEW_VIDEO_EXTENSIONS.has(ext);
     if (!isImage && !isVideo) {
       throw new BadRequestException({
-        message: `Định dạng file không được hỗ trợ (${ext}). Review chỉ hỗ trợ ảnh (PNG, JPG, WEBP) và video (MP4, MOV).`,
+        message: `Unsupported file format (${ext}). Reviews only support images (PNG, JPG, WEBP) and videos (MP4, MOV).`,
         errorCode: AppErrorCode.UNSUPPORTED_MEDIA_TYPE,
       });
     }
@@ -73,7 +73,7 @@ export class MediaService {
     if (file.size > limitBytes) {
       const maxMb = isImage ? 5 : 50;
       throw new BadRequestException({
-        message: `Kích thước ${isImage ? 'ảnh' : 'video'} vượt quá giới hạn cho phép (tối đa ${maxMb}MB).`,
+        message: `${isImage ? 'Image' : 'Video'} size exceeds the allowed limit (max ${maxMb}MB).`,
         errorCode: AppErrorCode.FILE_TOO_LARGE,
       });
     }
@@ -84,7 +84,7 @@ export class MediaService {
     const rawExt = path.extname(baseName).toLowerCase();
     if (baseName.startsWith('.') && !rawExt) {
       throw new BadRequestException({
-        message: `Định dạng file không được hỗ trợ (${baseName}). Vui lòng tải lên file hợp lệ.`,
+        message: `Unsupported file format (${baseName}). Please upload a valid file.`,
         errorCode: AppErrorCode.UNSUPPORTED_MEDIA_TYPE,
       });
     }
@@ -97,7 +97,7 @@ export class MediaService {
   ): asserts file is Express.Multer.File {
     if (!file || !file.buffer) {
       throw new BadRequestException({
-        message: 'Vui lòng chọn file hình ảnh hợp lệ để tải lên.',
+        message: 'Please select a valid image file to upload.',
         errorCode: AppErrorCode.BAD_REQUEST,
       });
     }
@@ -112,7 +112,7 @@ export class MediaService {
     if (file.size > maxFileSize) {
       const maxMb = options.allowVideo ? 50 : 25;
       throw new BadRequestException({
-        message: `Kích thước file vượt quá giới hạn cho phép (tối đa ${maxMb}MB).`,
+        message: `File size exceeds the allowed limit (max ${maxMb}MB).`,
         errorCode: AppErrorCode.FILE_TOO_LARGE,
       });
     }
@@ -120,10 +120,10 @@ export class MediaService {
     const allowedExtensions = options.allowVideo ? ALLOWED_REVIEW_EXTENSIONS : ALLOWED_EXTENSIONS;
     if (!allowedExtensions.has(ext)) {
       const supported = options.allowVideo
-        ? 'hình ảnh hoặc video (JPG, PNG, WEBP, GIF, BMP, TIFF, MP4, WEBM, MOV)'
-        : 'hình ảnh (JPG, PNG, WEBP, GIF, BMP, TIFF)';
+        ? 'image or video (JPG, PNG, WEBP, GIF, BMP, TIFF, MP4, WEBM, MOV)'
+        : 'image (JPG, PNG, WEBP, GIF, BMP, TIFF)';
       throw new BadRequestException({
-        message: `Định dạng file không được hỗ trợ (${ext}). Vui lòng tải lên file ${supported}.`,
+        message: `Unsupported file format (${ext}). Please upload a ${supported} file.`,
         errorCode: AppErrorCode.UNSUPPORTED_MEDIA_TYPE,
       });
     }
@@ -139,7 +139,7 @@ export class MediaService {
     }
     if (!expectedMimes || !detected || !expectedMimes.includes(detected.mime)) {
       throw new BadRequestException({
-        message: `Nội dung file không khớp với định dạng ${ext}. Vui lòng tải lên file hợp lệ.`,
+        message: `File content does not match the ${ext} format. Please upload a valid file.`,
         errorCode: AppErrorCode.UNSUPPORTED_MEDIA_TYPE,
       });
     }
@@ -165,10 +165,10 @@ export class MediaService {
 
     try {
       fs.writeFileSync(localFilePath, file.buffer);
-      this.logger.log(`Đã lưu file thành công tại server: ${localFilePath} (${file.size} bytes)`);
+      this.logger.log(`Saved file successfully on server: ${localFilePath} (${file.size} bytes)`);
     } catch (writeErr) {
-      this.logger.error(`Lỗi khi ghi file vào ổ đĩa: ${writeErr}`);
-      throw new BadRequestException('Không thể lưu file lên máy chủ backend.');
+      this.logger.error(`Failed to write file to disk: ${writeErr}`);
+      throw new BadRequestException('Failed to save file on the backend server.');
     }
 
     return {
@@ -216,15 +216,15 @@ export class MediaService {
         if (!resolvedUrl || resolvedUrl.toLowerCase().startsWith('data:')) {
           throw new Error('Cloudinary returned an invalid media URL');
         }
-        this.logger.log(`Đã tải ảnh lên Cloudinary thành công: ${resolvedUrl}`);
+        this.logger.log(`Successfully uploaded image to Cloudinary: ${resolvedUrl}`);
         finalUrl = resolvedUrl;
         publicId = cloudRes.publicId || `cloud-${uniqueSuffix}`;
       } catch (err) {
         this.logger.error(
-          `Không thể upload lên Cloudinary (STORAGE_PROVIDER=cloudinary): ${err instanceof Error ? err.message : String(err)}`,
+          `Unable to upload to Cloudinary (STORAGE_PROVIDER=cloudinary): ${err instanceof Error ? err.message : String(err)}`,
         );
         throw new ServiceUnavailableException(
-          'Không thể tải file lên Cloudinary. Vui lòng thử lại sau.',
+          'Unable to upload file to Cloudinary. Please try again later.',
         );
       }
     }
@@ -254,7 +254,7 @@ export class MediaService {
     options: MediaUploadOptions = {},
   ): Promise<MultipleMediaUploadResponseDto> {
     if (!files || files.length === 0) {
-      throw new BadRequestException('Vui lòng chọn ít nhất một file hình ảnh để tải lên.');
+      throw new BadRequestException('Please select at least one image file to upload.');
     }
 
     const items = await Promise.all(files.map((file) => this.uploadMedia(file, req, options)));

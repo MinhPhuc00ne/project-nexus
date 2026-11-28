@@ -20,7 +20,7 @@ export class SellerEngagementService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * 1. Lấy danh sách đánh giá của khách hàng gửi cho gian hàng kèm thống kê số sao
+   * 1. List customer reviews submitted for the shop with star distribution stats.
    */
   async getReviews(sellerId: string, query: QuerySellerReviewsInput) {
     const page = Math.max(1, query.page || 1);
@@ -88,7 +88,7 @@ export class SellerEngagementService {
       }),
     ]);
 
-    // Tính điểm trung bình và phân bố sao (1 - 5 sao)
+    // Compute average rating and star distribution (1 - 5 stars)
     const totalAll = allReviews.length;
     const averageRating =
       totalAll > 0
@@ -119,8 +119,7 @@ export class SellerEngagementService {
         totalAmount: Number(r.order.totalAmount),
         items: r.order.items.map((it) => ({
           id: it.id,
-          title:
-            it.product?.title || it.auctionItem?.title || it.titleSnapshot || 'Sản phẩm đấu giá',
+          title: it.product?.title || it.auctionItem?.title || it.titleSnapshot || 'Auction item',
           quantity: it.quantity,
           unitPrice: Number(it.unitPrice),
           thumbnail: it.product?.images?.[0]?.imageUrl || it.auctionItem?.images?.[0] || null,
@@ -143,7 +142,7 @@ export class SellerEngagementService {
   }
 
   /**
-   * 2. Lấy danh sách khiếu nại (Disputes) trên các đơn hàng của người bán
+   * 2. List disputes on the seller's orders.
    */
   async getDisputes(sellerId: string, query: QuerySellerDisputesInput) {
     const page = Math.max(1, query.page || 1);
@@ -235,8 +234,7 @@ export class SellerEngagementService {
         status: d.order.status,
         items: d.order.items.map((it) => ({
           id: it.id,
-          title:
-            it.product?.title || it.auctionItem?.title || it.titleSnapshot || 'Sản phẩm đấu giá',
+          title: it.product?.title || it.auctionItem?.title || it.titleSnapshot || 'Auction item',
           quantity: it.quantity,
           unitPrice: Number(it.unitPrice),
           thumbnail: it.product?.images?.[0]?.imageUrl || it.auctionItem?.images?.[0] || null,
@@ -255,7 +253,7 @@ export class SellerEngagementService {
   }
 
   /**
-   * 3. Người bán gửi giải trình / đối chất cho khiếu nại
+   * 3. Seller submits an explanation/response for a dispute.
    */
   async respondToDispute(sellerId: string, disputeId: string, dto: RespondDisputeInput) {
     const dispute = await this.prisma.dispute.findUnique({
@@ -266,11 +264,11 @@ export class SellerEngagementService {
     });
 
     if (!dispute) {
-      throw new NotFoundException('Không tìm thấy bản ghi khiếu nại.');
+      throw new NotFoundException('Dispute record not found.');
     }
 
     if (dispute.order.sellerId !== sellerId) {
-      throw new ForbiddenException('Bạn không có quyền phản hồi khiếu nại của đơn hàng này.');
+      throw new ForbiddenException('You do not have permission to respond to this order dispute.');
     }
 
     if (
@@ -279,15 +277,15 @@ export class SellerEngagementService {
       dispute.status === DisputeStatus.CANCELLED
     ) {
       throw new BadRequestException(
-        `Không thể gửi giải trình vì khiếu nại đã kết thúc ở trạng thái '${dispute.status}'.`,
+        `Cannot submit a response because the dispute already ended in '${dispute.status}' status.`,
       );
     }
 
     const timestamp = new Date().toISOString();
     const existingNotes = dispute.resolutionNotes ? `${dispute.resolutionNotes}\n\n` : '';
-    const newNotes = `${existingNotes}[Phản hồi từ Người bán - ${timestamp}]: ${dto.responseNotes.trim()}`;
+    const newNotes = `${existingNotes}[Seller Response - ${timestamp}]: ${dto.responseNotes.trim()}`;
 
-    // Hợp nhất bằng chứng
+    // Merge evidence URLs
     let updatedEvidences: string[] = [];
     if (Array.isArray(dispute.evidenceUrls)) {
       updatedEvidences = [...(dispute.evidenceUrls as string[])];
@@ -305,13 +303,14 @@ export class SellerEngagementService {
       },
     });
     if (updated.count !== 1)
-      throw new BadRequestException('Khiếu nại đã được xử lý, không thể ghi đè kết quả phân xử.');
+      throw new BadRequestException('Dispute has already been resolved and cannot be overwritten.');
 
     this.logger.log(`Seller ${sellerId} responded to dispute ${disputeId}`);
 
     return {
       success: true,
-      message: 'Đã gửi phản hồi giải trình thành công. Đội ngũ kiểm duyệt Nexus sẽ xem xét hồ sơ.',
+      message:
+        'Dispute response submitted successfully. The Nexus moderation team will review your case.',
       disputeId,
       status: DisputeStatus.UNDER_REVIEW,
     };

@@ -173,19 +173,19 @@ export class ReportModerationService {
     dto: ReviewReportInput,
   ): Promise<ShopViolation> {
     if (!['ADMIN', 'SUPPORT_STAFF'].includes(actor.role))
-      throw new ForbiddenException('Chỉ nhân viên được xử lý báo cáo.');
+      throw new ForbiddenException('Only staff can handle violation reports.');
     if (dto.penaltyType && (actor.role !== 'ADMIN' || dto.status !== 'CONFIRMED'))
-      throw new ForbiddenException('Chỉ Admin được xác nhận chế tài gian lận.');
+      throw new ForbiddenException('Only Admin can confirm fraud penalties.');
     if (dto.reason.trim().length < 5)
-      throw new BadRequestException('Cần nêu lý do xử lý ít nhất 5 ký tự.');
+      throw new BadRequestException('Please provide a resolution reason of at least 5 characters.');
     return this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM shop_violations WHERE id = ${reportId} FOR UPDATE`;
       const report = await tx.shopViolation.findUnique({ where: { id: reportId } });
-      if (!report) throw new NotFoundException('Không tìm thấy báo cáo.');
+      if (!report) throw new NotFoundException('Report not found.');
       if (['CONFIRMED', 'DISMISSED'].includes(report.status)) {
         if (report.status === dto.status && (report.penaltyLevel ?? undefined) === dto.penaltyType)
           return report;
-        throw new ConflictException('Báo cáo đã có kết quả cuối cùng.');
+        throw new ConflictException('This report already has a final decision.');
       }
       if (report.status === dto.status && report.resolutionNotes === dto.reason.trim())
         return report;
@@ -232,8 +232,8 @@ export class ReportModerationService {
             tx,
             {
               userId: report.reporterId,
-              title: 'Báo cáo vi phạm đã được xử lý 🛡️',
-              content: `Báo cáo của bạn về ${report.productId ? 'sản phẩm' : 'gian hàng'} đã được Admin xử lý. Kết quả: ${isConfirmed ? 'Xác nhận có vi phạm và đã áp dụng chế tài' : 'Không phát hiện vi phạm'}. Cảm ơn bạn đã góp phần bảo vệ cộng đồng!`,
+              title: 'Violation report processed 🛡️',
+              content: `Your report regarding the ${report.productId ? 'product' : 'shop'} has been reviewed by Admin. Outcome: ${isConfirmed ? 'Violation confirmed and penalty applied' : 'No violation found'}. Thank you for helping keep the community safe!`,
               type: NotificationType.SYSTEM,
               channel: NotificationChannel.IN_APP,
             },

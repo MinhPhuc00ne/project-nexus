@@ -38,22 +38,22 @@ export class ReportsService {
               select: { id: true, sellerId: true },
             })
           : null;
-      if (kind === 'product' && !product) throw new NotFoundException('Không tìm thấy sản phẩm.');
+      if (kind === 'product' && !product) throw new NotFoundException('Product not found.');
       const shopId = product?.sellerId ?? targetId;
       const shop = await tx.user.findFirst({
         where: { id: shopId, role: 'SELLER' },
         select: { id: true },
       });
-      if (!shop) throw new NotFoundException('Không tìm thấy shop.');
+      if (!shop) throw new NotFoundException('Shop not found.');
       if (shopId === reporterId)
-        throw new BadRequestException('Không thể báo cáo shop/sản phẩm của chính mình.');
+        throw new BadRequestException('You cannot report your own shop or product.');
       const productId = product?.id ?? null;
       const pending = await tx.shopViolation.findFirst({
         where: { reporterId, shopId, productId, status: { in: ['PENDING', 'INVESTIGATING'] } },
         select: { id: true },
       });
       if (pending)
-        throw new ConflictException('Bạn đã có báo cáo đang được xử lý cho đối tượng này.');
+        throw new ConflictException('You already have a pending report for this target.');
       const report = await tx.shopViolation.create({
         data: {
           reporterId,
@@ -68,9 +68,8 @@ export class ReportsService {
       await notifyAdminsAndStaff(
         tx,
         {
-          title:
-            kind === 'product' ? 'Báo cáo vi phạm sản phẩm mới' : 'Báo cáo vi phạm gian hàng mới',
-          content: `Tiêu đề: ${dto.title.trim()} (${kind === 'product' ? 'Sản phẩm' : 'Shop'} #${targetId.slice(0, 8)}).`,
+          title: kind === 'product' ? 'New product violation report' : 'New shop violation report',
+          content: `Title: ${dto.title.trim()} (${kind === 'product' ? 'Product' : 'Shop'} #${targetId.slice(0, 8)}).`,
           type: NotificationType.DISPUTE,
           adminTargetUrl: '/admin/reports',
           staffTargetUrl: '/staff/disputes',

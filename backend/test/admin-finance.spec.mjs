@@ -68,7 +68,7 @@ test('AdminFinanceService.getDashboardAnalytics returns revenuePeriods, revenueC
   // 1. Verify revenuePeriods structure
   assert.ok(Array.isArray(analytics.revenuePeriods));
   assert.equal(analytics.revenuePeriods.length, 4);
-  const period7d = analytics.revenuePeriods.find((p) => p.label === '7 ngày');
+  const period7d = analytics.revenuePeriods.find((p) => p.label === '7 days');
   assert.ok(period7d);
   assert.equal(period7d.auction, 160000);
   assert.equal(period7d.normal, 70000);

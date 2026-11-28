@@ -213,7 +213,7 @@ test(
             ),
             inventory,
           );
-          await assert.rejects(retail.payOrderByWallet(offer.orderId, buyer.id), /quyền mua/);
+          await assert.rejects(retail.payOrderByWallet(offer.orderId, buyer.id), /claim checkout/);
           await assert.rejects(
             checkout.checkout(offer.id, runner.id, address),
             (error) => error.getStatus() === 403,

@@ -76,7 +76,7 @@ export function formatVnd(amount: number): string {
 }
 
 export function lotLabel(lotNumber: number | null | undefined, title: string): string {
-  return lotNumber ? `Lô #${lotNumber}: ${title}` : title;
+  return lotNumber ? `Lot #${lotNumber}: ${title}` : title;
 }
 
 export async function syncAuctionCompletionStatusTx(
@@ -142,8 +142,8 @@ export async function notifyDeclinedOfferTx(
       userId: params.buyerId,
       auctionId: params.auctionId,
       targetUrl: `/auction/${params.auctionId}`,
-      title: `Cảm ơn bạn đã phản hồi cho ${params.itemLabel}`,
-      content: `Hệ thống đã ghi nhận quyết định từ chối mua ${params.itemLabel}. Không có điểm uy tín nào bị trừ.`,
+      title: `Thank you for your response on ${params.itemLabel}`,
+      content: `We have recorded your decision to decline purchasing ${params.itemLabel}. No reputation points were deducted.`,
       type: NotificationType.AUCTION,
       channel: NotificationChannel.IN_APP,
       metadata: {
@@ -161,8 +161,8 @@ export async function notifyDeclinedOfferTx(
     {
       auctionId: params.auctionId,
       targetUrl: `/auction/${params.auctionId}`,
-      title: `Người mua kế tiếp đã từ chối mua ${params.itemLabel}`,
-      content: `Người mua dự bị đã từ chối tiếp nhận quyền mua ${params.itemLabel}. Lô đấu giá này đã kết thúc.`,
+      title: `Next bidder declined to purchase ${params.itemLabel}`,
+      content: `The backup bidder declined the offer to purchase ${params.itemLabel}. This auction lot has ended.`,
       metadata: {
         actionType: 'SECOND_CHANCE_DECLINED_NOTICE',
         auctionId: params.auctionId,

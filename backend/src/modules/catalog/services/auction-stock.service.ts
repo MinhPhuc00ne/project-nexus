@@ -29,7 +29,7 @@ export class AuctionStockService {
         },
       },
     });
-    if (!product) throw new NotFoundException('Không tìm thấy sản phẩm đấu giá.');
+    if (!product) throw new NotFoundException('Auction product not found.');
     if (
       product.status !== 'ACTIVE' ||
       product.seller.isShopSuspended ||
@@ -39,7 +39,7 @@ export class AuctionStockService {
       product.options.length
     )
       throw new BadRequestException(
-        'Sản phẩm đấu giá phải đang bán, có người bán đủ uy tín và xác định sẵn một phiên bản.',
+        'Auction product must be active, belong to a seller in good standing, and have a single fixed variant.',
       );
     if (
       !(await tx.inventoryReservation.findFirst({
