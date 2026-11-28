@@ -1292,7 +1292,7 @@ test('AuctionGateway enforces ADMIN-only 3D sync and emits BID_REJECTED on unaut
 
   // Authenticated bid calls registered handler and forwards BID_REJECTED on error
   gateway.registerPlaceBidHandler(async (_aucId, _itemId, _userId, bidAmount) => {
-    if (bidAmount < 1_000_000) throw new BadRequestException('Giá đặt quá thấp');
+    if (bidAmount < 1_000_000) throw new BadRequestException('Bid amount is too low.');
     return { bidId: 'bid-ws-1', bidAmount };
   });
 
@@ -1303,7 +1303,7 @@ test('AuctionGateway enforces ADMIN-only 3D sync and emits BID_REJECTED on unaut
   });
   assert.equal(lowRes.ok, false);
   assert.equal(clientEmits.at(-1).event, WS_AUCTION_EVENTS.SERVER.BID_REJECTED);
-  assert.equal(clientEmits.at(-1).payload.message, 'Giá đặt quá thấp');
+  assert.equal(clientEmits.at(-1).payload.message, 'Bid amount is too low.');
 
   const okRes = await gateway.handlePlaceBid(buyerSocket, {
     auctionId: 'auc-1',
