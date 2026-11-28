@@ -7,7 +7,7 @@ const updateSystemSettingsFields = {
       .number()
       .min(0)
       .max(100)
-      .describe('Tỷ lệ phần trăm hoa hồng / phí sàn thu từ người bán (%)')
+      .describe('Platform commission fee percentage collected from sellers (%)')
       .meta({ example: 7.0 }),
   ),
   cartExpirationDays: nullAsAbsent(
@@ -15,7 +15,7 @@ const updateSystemSettingsFields = {
       .number()
       .min(1)
       .max(90)
-      .describe('Thời gian giỏ hàng không hoạt động trước khi hết hạn (ngày)')
+      .describe('Inactive cart expiration duration (days)')
       .meta({ example: 7 }),
   ),
   checkoutTimeoutMinutes: nullAsAbsent(
@@ -23,7 +23,7 @@ const updateSystemSettingsFields = {
       .number()
       .min(5)
       .max(120)
-      .describe('Thời gian giữ tạm tồn kho khi người mua checkout (phút)')
+      .describe('Temporary inventory hold duration during checkout (minutes)')
       .meta({ example: 15 }),
   ),
   inventoryReservationTimeout: nullAsAbsent(
@@ -31,23 +31,18 @@ const updateSystemSettingsFields = {
       .number()
       .min(5)
       .max(240)
-      .describe('Thời gian hết hạn khóa tồn kho reservation (phút)')
+      .describe('Inventory reservation lock expiration duration (minutes)')
       .meta({ example: 30 }),
   ),
   maxActiveCartPerUser: nullAsAbsent(
-    z
-      .number()
-      .min(1)
-      .max(5)
-      .describe('Số lượng giỏ hàng hoạt động tối đa của mỗi người dùng')
-      .meta({ example: 1 }),
+    z.number().min(1).max(5).describe('Maximum active carts per user').meta({ example: 1 }),
   ),
   categoryMaxLevel: nullAsAbsent(
     z
       .number()
       .min(1)
       .max(5)
-      .describe('Độ sâu phân cấp tối đa của danh mục hàng hóa (cấp)')
+      .describe('Maximum product category hierarchy depth (levels)')
       .meta({ example: 3 }),
   ),
   maxProductImages: nullAsAbsent(
@@ -55,7 +50,7 @@ const updateSystemSettingsFields = {
       .number()
       .min(1)
       .max(20)
-      .describe('Số lượng ảnh tối đa cho mỗi sản phẩm đăng bán')
+      .describe('Maximum number of images per product listing')
       .meta({ example: 5 }),
   ),
   antiSnipingTriggerMinutes: nullAsAbsent(
@@ -63,7 +58,7 @@ const updateSystemSettingsFields = {
       .number()
       .min(1)
       .max(30)
-      .describe('Ngưỡng đếm ngược kích hoạt gia hạn chống bắn tỉa đấu giá (phút)')
+      .describe('Remaining time threshold that triggers auction anti-sniping extension (minutes)')
       .meta({ example: 2 }),
   ),
   antiSnipingExtendMinutes: nullAsAbsent(
@@ -71,7 +66,7 @@ const updateSystemSettingsFields = {
       .number()
       .min(1)
       .max(30)
-      .describe('Số phút gia hạn cộng thêm khi chống bắn tỉa kích hoạt (phút)')
+      .describe('Extension duration added when anti-sniping triggers (minutes)')
       .meta({ example: 5 }),
   ),
 };

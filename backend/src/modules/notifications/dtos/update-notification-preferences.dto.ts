@@ -4,11 +4,11 @@ import { NotificationChannel } from '@prisma/client';
 const notificationPreferenceItemFields = {
   channel: z
     .enum(NotificationChannel)
-    .describe('Kênh nhận thông báo: EMAIL, PUSH, IN_APP')
+    .describe('Notification channel: EMAIL, PUSH, IN_APP')
     .meta({ example: NotificationChannel.EMAIL }),
   isEnabled: z
     .boolean()
-    .describe('Bật (true) hoặc tắt (false) nhận thông báo qua kênh này')
+    .describe('Enable (true) or disable (false) notifications on this channel')
     .meta({ example: true }),
 };
 
@@ -19,7 +19,7 @@ export type NotificationPreferenceItemInput = z.infer<typeof NotificationPrefere
 const updateNotificationPreferencesFields = {
   preferences: z
     .array(NotificationPreferenceItemSchema)
-    .describe('Danh sách cài đặt bật/tắt nhận thông báo cho từng kênh')
+    .describe('Channel notification preference settings')
     .meta({
       example: [
         { channel: 'IN_APP', isEnabled: true },

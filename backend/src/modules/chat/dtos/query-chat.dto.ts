@@ -2,14 +2,12 @@ import { z } from 'zod';
 import { nullAsAbsent } from '../../../core/validation/query-schemas';
 
 const queryConversationsFields = {
-  page: z.coerce.number().int().min(1).describe('Trang hiện tại (bắt đầu từ 1)').default(1),
-  limit: z.coerce.number().int().min(1).describe('Số lượng mục trên một trang').default(20),
+  page: z.coerce.number().int().min(1).describe('Current page (1-based)').default(1),
+  limit: z.coerce.number().int().min(1).describe('Items per page').default(20),
   type: nullAsAbsent(
-    z.string().describe('Lọc theo loại cuộc trò chuyện: BUYER_SELLER, STAFF_SELLER, STAFF_BUYER'),
+    z.string().describe('Filter by conversation type: BUYER_SELLER, STAFF_SELLER, STAFF_BUYER'),
   ),
-  search: nullAsAbsent(
-    z.string().describe('Tìm kiếm theo tên người tham gia hoặc tiêu đề hội thoại'),
-  ),
+  search: nullAsAbsent(z.string().describe('Search by participant name or conversation title')),
 };
 
 export const QueryConversationsSchema = z.object(queryConversationsFields).strict();
@@ -17,9 +15,9 @@ export const QueryConversationsSchema = z.object(queryConversationsFields).stric
 export type QueryConversationsInput = z.infer<typeof QueryConversationsSchema>;
 
 const queryMessagesFields = {
-  limit: z.coerce.number().int().min(1).describe('Số lượng tin nhắn cần lấy').default(50),
+  limit: z.coerce.number().int().min(1).describe('Number of messages to fetch').default(50),
   before: nullAsAbsent(
-    z.string().describe('Lấy tin nhắn trước mốc thời gian này (ISO string) để phân trang ngược'),
+    z.string().describe('Fetch messages before this ISO timestamp for cursor pagination'),
   ),
 };
 

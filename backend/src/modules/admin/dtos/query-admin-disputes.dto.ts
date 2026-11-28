@@ -7,29 +7,27 @@ const queryAdminDisputesFields = {
     .number()
     .int()
     .min(1)
-    .describe('Trang hiện tại (bắt đầu từ 1)')
+    .describe('Current page (1-based)')
     .meta({ example: 1 })
     .default(1),
   limit: z.coerce
     .number()
     .int()
     .min(1)
-    .describe('Số lượng bản ghi trên mỗi trang (tối đa 100)')
+    .describe('Records per page (max 100)')
     .meta({ example: 10 })
     .default(10),
   status: nullAsAbsent(
     z
       .enum(DisputeStatus)
       .describe(
-        'Lọc theo trạng thái khiếu nại (OPEN, UNDER_REVIEW, RESOLVED_SELLER_FAVOR, RESOLVED_BUYER_FAVOR, CANCELLED)',
+        'Filter by dispute status (OPEN, UNDER_REVIEW, RESOLVED_SELLER_FAVOR, RESOLVED_BUYER_FAVOR, CANCELLED)',
       ),
   ),
   search: nullAsAbsent(
     z
       .string()
-      .describe(
-        'Tìm kiếm theo mã khiếu nại (id), mã đơn hàng (orderId), lý do hoặc thông tin người liên quan',
-      )
+      .describe('Search by dispute ID, orderId, reason, or participant details')
       .meta({ example: 'o1' }),
   ),
 };

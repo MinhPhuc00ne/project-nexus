@@ -4,7 +4,7 @@ import { Role } from '@prisma/client';
 const updateUserRoleFields = {
   role: z
     .enum(Role)
-    .describe('Vai trò mới muốn gán cho tài khoản')
+    .describe('New role to assign to the account')
     .meta({ example: Role.SUPPORT_STAFF }),
 };
 

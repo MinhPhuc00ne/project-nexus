@@ -1,14 +1,14 @@
 import { z } from 'zod';
 
 const verifyEmailFields = {
-  email: z.email().describe('Email cần xác thực').meta({ example: 'user@nexus.com' }),
+  email: z.email().describe('Email address to verify').meta({ example: 'user@nexus.com' }),
   code: z
     .string()
     .trim()
     .min(1)
     .min(6)
     .max(6)
-    .describe('Mã OTP 6 chữ số gửi qua email')
+    .describe('6-digit OTP code sent via email')
     .meta({ example: '123456' }),
 };
 

@@ -13,42 +13,42 @@ const createSellerRequestFields = {
   file: z.any().optional().meta({
     type: 'string',
     format: 'binary',
-    description: 'File chứng minh (ảnh CCCD/CMND, giấy phép kinh doanh, hợp đồng thương nhân...)',
+    description: 'Verification document file (national ID, business license, merchant contract)',
   }),
   storeName: z
     .string()
     .trim()
     .min(1)
-    .describe('Tên gian hàng / thương hiệu của người bán')
-    .meta({ example: 'Cổ Vật Hoàng Gia Store' }),
+    .describe('Seller shop or brand name')
+    .meta({ example: 'Royal Vintage Timepieces Store' }),
   storeDescription: nullAsAbsent(
-    z.string().describe('Mô tả ngắn gọn về gian hàng và sản phẩm dự định kinh doanh').meta({
-      example: 'Chuyên cung cấp đồ cổ sưu tầm, kỷ vật lịch sử và các tác phẩm gốm sứ độc bản.',
+    z.string().describe('Brief description of the shop and planned inventory').meta({
+      example: 'Curated vintage collectibles, mechanical watches, and rare editions.',
     }),
   ),
   phone: z
     .string()
     .trim()
     .min(1)
-    .describe('Số điện thoại liên hệ của cửa hàng / người bán')
+    .describe('Shop or seller contact phone number')
     .meta({ example: '0987654321' }),
   businessEmail: nullAsAbsent(
     z
       .email()
-      .describe('Email liên hệ công việc / cửa hàng (nếu khác email tài khoản)')
+      .describe('Business contact email (if different from account email)')
       .meta({ example: 'shop@hoanggiavintage.com' }),
   ),
   identityCardNumber: nullAsAbsent(
     z
       .string()
-      .describe('Số CMND/CCCD hoặc Mã số định danh doanh nghiệp để xác minh danh tính')
+      .describe('National ID or business registration number')
       .meta({ example: '001202008888' }),
   ),
   attachmentUrl: nullAsAbsent(
     z
       .string()
       .describe(
-        'Đường dẫn file hoặc tài liệu chứng minh đã tải lên (nếu không tải qua multipart form-data)',
+        'Pre-uploaded verification document URL (when not uploading via multipart/form-data)',
       )
       .meta({ example: '/uploads/seller-proofs/proof-1728123456789.png' }),
   ),
@@ -56,39 +56,31 @@ const createSellerRequestFields = {
     .string()
     .trim()
     .min(1)
-    .describe('Địa chỉ cụ thể / số nhà, tên đường của cửa hàng hoặc kho lấy hàng')
-    .meta({ example: '720A Điện Biên Phủ' }),
-  ward: nullAsAbsent(
-    z.string().describe('Phường / Xã của cửa hàng').meta({ example: 'Phường 22' }),
-  ),
+    .describe('Shop or pickup warehouse street address')
+    .meta({ example: '720A Dien Bien Phu' }),
+  ward: nullAsAbsent(z.string().describe('Shop ward').meta({ example: 'Ward 22' })),
   district: nullAsAbsent(
-    z.string().describe('Quận / Huyện của cửa hàng').meta({ example: 'Quận Bình Thạnh' }),
+    z.string().describe('Shop district').meta({ example: 'Binh Thanh District' }),
   ),
   city: z
     .string()
     .trim()
     .min(1)
-    .describe('Tỉnh / Thành phố của cửa hàng')
-    .meta({ example: 'TP. Hồ Chí Minh' }),
+    .describe('Shop province or city')
+    .meta({ example: 'Ho Chi Minh City' }),
   latitude: nullAsAbsent(
-    z.coerce
-      .number()
-      .describe('Vĩ độ GPS (Latitude) định vị gian hàng trên bản đồ')
-      .meta({ example: 10.795 }),
+    z.coerce.number().describe('Map GPS latitude for shop location').meta({ example: 10.795 }),
   ),
   longitude: nullAsAbsent(
-    z.coerce
-      .number()
-      .describe('Kinh độ GPS (Longitude) định vị gian hàng trên bản đồ')
-      .meta({ example: 106.721 }),
+    z.coerce.number().describe('Map GPS longitude for shop location').meta({ example: 106.721 }),
   ),
   formattedAddress: nullAsAbsent(
     z
       .string()
-      .describe('Địa chỉ chuẩn hóa đầy đủ từ bản đồ toàn cầu (Google Maps / OSM)')
-      .meta({ example: 'Landmark 81, 720A Điện Biên Phủ, Phường 22, Bình Thạnh, TP. Hồ Chí Minh' }),
+      .describe('Full standardized address from geocoder (Google Maps or OSM)')
+      .meta({ example: 'Landmark 81, 720A Dien Bien Phu, Ward 22, Binh Thanh, Ho Chi Minh City' }),
   ),
-  placeId: nullAsAbsent(z.string().describe('Place ID bản đồ').meta({ example: 'ChIJw8qV...' })),
+  placeId: nullAsAbsent(z.string().describe('Map Place ID').meta({ example: 'ChIJw8qV...' })),
 };
 
 export const CreateSellerRequestSchema = z.object(createSellerRequestFields).strict();

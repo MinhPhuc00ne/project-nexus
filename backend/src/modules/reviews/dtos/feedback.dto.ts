@@ -20,7 +20,9 @@ const sellerReplyReviewFields = {
     .min(2)
     .max(2000)
     .describe('Seller reply content for a product review')
-    .meta({ example: 'Cảm ơn bạn đã ủng hộ shop! Shop sẽ đóng gói kỹ hơn ở đơn sau ạ.' }),
+    .meta({
+      example: 'Thank you for supporting our shop! We will pack even more carefully next time.',
+    }),
   mediaUrls: mediaUrlList(6).describe('Optional image or video URLs attached to the reply'),
 };
 
@@ -35,7 +37,7 @@ const createReviewReplyFields = {
     .min(1)
     .max(2000)
     .describe('Reply message content between buyer and seller')
-    .meta({ example: 'Cảm ơn bạn đã phản hồi, shop xin hỗ trợ đổi trả ngay ạ.' }),
+    .meta({ example: 'Thank you for your feedback, we will assist with an exchange right away.' }),
   mediaUrls: mediaUrlList(6).describe('Image or video URLs attached to this reply'),
 };
 
@@ -46,20 +48,17 @@ export type CreateReviewReplyInput = z.infer<typeof CreateReviewReplySchema>;
 const adminModerateReviewVisibilityFields = {
   isHidden: z
     .boolean()
-    .describe('true = ẩn đánh giá/phản hồi tiêu cực vi phạm, false = bỏ ẩn')
+    .describe('true = hide violating negative review/reply, false = unhide')
     .meta({ example: true }),
   reason: nullAsAbsent(
-    z
-      .string()
-      .max(1000)
-      .meta({ example: 'Nội dung chứa từ ngữ xúc phạm hoặc tiêu cực không phù hợp.' }),
+    z.string().max(1000).meta({ example: 'Content contains offensive or inappropriate language.' }),
   ),
   pointsToDeduct: nullAsAbsent(
     z.coerce
       .number()
       .int()
       .min(0)
-      .describe('Số điểm uy tín muốn trừ của tác giả khi ẩn (mặc định 0 nếu không trừ)')
+      .describe('Reputation points to deduct from the author when hiding (defaults to 0)')
       .meta({ example: 10 }),
   ),
   targetType: nullAsAbsent(z.enum(['PRODUCT', 'SHOP']).meta({ example: 'PRODUCT' })),
@@ -74,13 +73,13 @@ export type AdminModerateReviewVisibilityInput = z.infer<
 >;
 
 const reportFields = {
-  title: z.string().trim().min(5).max(150).meta({ example: 'Sản phẩm không đúng mô tả' }),
+  title: z.string().trim().min(5).max(150).meta({ example: 'Product does not match description' }),
   description: z
     .string()
     .trim()
     .min(10)
     .max(5000)
-    .meta({ example: 'Nội dung mô tả chi tiết vi phạm cần kiểm tra.' }),
+    .meta({ example: 'Detailed description of the policy violation to investigate.' }),
   evidenceUrls: nullAsAbsent(z.array(httpUrl).max(10)),
 };
 
@@ -97,12 +96,12 @@ const feedbackPageFields = {
       .int()
       .min(1)
       .max(5)
-      .describe('Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá')
+      .describe('Filter by star rating (1 - 5); omit to return all reviews')
       .meta({ example: 5 }),
   ),
   sortBy: z
     .enum(['newest', 'oldest'])
-    .describe('Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)')
+    .describe('Sort reviews by newest or oldest')
     .default('newest'),
 };
 
@@ -115,12 +114,12 @@ const adminDeleteReviewFields = {
     .string()
     .min(5)
     .max(1000)
-    .meta({ example: 'Bình luận dùng ngôn từ thô tục, xúc phạm người bán' }),
+    .meta({ example: 'Review contains profanity or harassment toward the seller' }),
   pointsToDeduct: z
     .number()
     .int()
     .min(1)
-    .describe('Số điểm uy tín muốn trừ của người đánh giá')
+    .describe('Reputation points to deduct from the reviewer')
     .meta({ example: 10 }),
 };
 
@@ -132,18 +131,18 @@ const queryAdminReviewsFields = {
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
   type: nullAsAbsent(z.string()),
-  search: nullAsAbsent(z.string().describe('Từ khóa tìm kiếm theo nội dung bình luận')),
+  search: nullAsAbsent(z.string().describe('Search keyword in review comments')),
   rating: nullAsAbsent(
     z.coerce
       .number()
       .int()
       .min(1)
       .max(5)
-      .describe('Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả'),
+      .describe('Filter by star rating (1 - 5); omit to return all'),
   ),
   sortBy: z
     .enum(['newest', 'oldest'])
-    .describe('Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)')
+    .describe('Sort reviews by newest or oldest')
     .default('newest'),
 };
 

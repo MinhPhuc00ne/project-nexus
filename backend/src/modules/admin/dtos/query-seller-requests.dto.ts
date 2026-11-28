@@ -4,12 +4,10 @@ import { SellerRequestStatus } from '@prisma/client';
 
 const querySellerRequestsFields = {
   status: nullAsAbsent(
-    z
-      .enum(SellerRequestStatus)
-      .describe('Lọc theo trạng thái yêu cầu (PENDING, APPROVED, REJECTED)'),
+    z.enum(SellerRequestStatus).describe('Filter by request status (PENDING, APPROVED, REJECTED)'),
   ),
-  page: z.coerce.number().int().min(1).describe('Trang hiện tại (bắt đầu từ 1)').default(1),
-  limit: z.coerce.number().int().min(1).describe('Số bản ghi trên mỗi trang').default(10),
+  page: z.coerce.number().int().min(1).describe('Current page (1-based)').default(1),
+  limit: z.coerce.number().int().min(1).describe('Records per page').default(10),
 };
 
 export const QuerySellerRequestsSchema = z.object(querySellerRequestsFields).strict();

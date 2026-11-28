@@ -7,35 +7,35 @@ const createShopViolationFields = {
     .string()
     .trim()
     .min(1)
-    .describe('Tiêu đề vi phạm của shop')
-    .meta({ example: 'Bán hàng giả mạo nhãn hiệu đã bảo hộ' }),
-  description: z.string().trim().min(1).describe('Mô tả chi tiết hành vi vi phạm').meta({
+    .describe('Shop violation title')
+    .meta({ example: 'Selling counterfeit trademarked goods' }),
+  description: z.string().trim().min(1).describe('Detailed violation description').meta({
     example:
-      'Shop có hành vi đăng bán sản phẩm vi phạm bản quyền thương hiệu, không xuất trình được hóa đơn nguồn gốc.',
+      'The shop listed trademark-infringing products without providing authentic supplier invoices.',
   }),
   evidenceUrls: nullAsAbsent(
     z
       .array(z.string())
-      .describe('Danh sách URL hình ảnh hoặc tài liệu bằng chứng vi phạm')
+      .describe('List of image or document URLs evidencing the violation')
       .meta({ example: ['https://example.com/evidence1.jpg', 'https://example.com/report.pdf'] }),
   ),
   penaltyLevel: nullAsAbsent(
     z
       .enum(ShopViolationPenaltyLevel)
       .describe(
-        'Mức độ xử lý vi phạm: WARNING, PENALTY_POINTS, TEMPORARY_SUSPENSION, PERMANENT_BAN, MISREPRESENTATION, FRAUD',
+        'Violation penalty level: WARNING, PENALTY_POINTS, TEMPORARY_SUSPENSION, PERMANENT_BAN, MISREPRESENTATION, FRAUD',
       )
       .meta({ example: ShopViolationPenaltyLevel.TEMPORARY_SUSPENSION }),
   ),
   status: z
     .enum(ViolationStatus)
-    .describe('Trạng thái vi phạm: PENDING, INVESTIGATING, CONFIRMED, DISMISSED')
+    .describe('Violation status: PENDING, INVESTIGATING, CONFIRMED, DISMISSED')
     .meta({ example: ViolationStatus.CONFIRMED })
     .default(ViolationStatus.CONFIRMED),
   resolutionNotes: nullAsAbsent(
-    z.string().describe('Ghi chú giải quyết của Quản trị viên').meta({
+    z.string().describe('Administrator resolution notes').meta({
       example:
-        'Đã xác minh đối soát với chủ thương hiệu, tiến hành tạm ẩn sản phẩm và cảnh cáo shop.',
+        'Verified with brand owner, temporarily hid infringing listings, and issued a shop warning.',
     }),
   ),
 };
