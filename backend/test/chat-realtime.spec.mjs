@@ -60,7 +60,7 @@ test(
         ChatGateway,
         {
           provide: ChatService,
-          useValue: {},
+          useValue: { assertConversationAccess: async () => undefined },
         },
         { provide: TokenAuthService, useValue: tokenAuthStub },
         { provide: StaffQueueService, useValue: {} },

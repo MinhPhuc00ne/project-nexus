@@ -10,6 +10,7 @@ import {
   Optional,
 } from '@nestjs/common';
 import { NotificationChannel, NotificationType, Prisma, ProductStatus } from '@prisma/client';
+import { AuditLogService } from '../../../core/audit/audit-log.service';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { ProductTrendingService } from '../../catalog/services/product-trending.service';
 import { QueryAdminProductsInput } from '../dtos/query-admin-products.dto';
@@ -25,6 +26,7 @@ export class AdminProductsService {
     private readonly prisma: PrismaService,
     @Optional() private readonly trendingService?: ProductTrendingService,
     @Optional() private readonly notifications?: NotificationPublisher,
+    @Optional() private readonly auditLog?: AuditLogService,
   ) {}
 
   /**
@@ -264,6 +266,20 @@ export class AdminProductsService {
         },
         this.notifications,
       );
+      await this.auditLog?.record(
+        {
+          eventName: 'admin.product.status_updated',
+          operatorId: adminId,
+          payload: {
+            productId: id,
+            title: product.title,
+            previousStatus: oldStatus,
+            newStatus: dto.status,
+            reason: dto.reason?.trim() || null,
+          },
+        },
+        tx,
+      );
       return result;
     });
 
@@ -353,6 +369,21 @@ export class AdminProductsService {
         );
       }
 
+      await this.auditLog?.record(
+        {
+          eventName: 'admin.product.category_updated',
+          operatorId: adminId,
+          payload: {
+            productId: id,
+            title: product.title,
+            previousCategoryId: product.categoryId,
+            newCategoryId: targetCategory.id,
+            reason: dto.reason?.trim() || null,
+          },
+        },
+        tx,
+      );
+
       return result;
     });
 
@@ -397,6 +428,15 @@ export class AdminProductsService {
         where: { id },
         data: { status: ProductStatus.INACTIVE, hiddenByShopSuspension: false },
       });
+      await this.auditLog?.record({
+        eventName: 'admin.product.archived',
+        operatorId: adminId,
+        payload: {
+          productId: id,
+          title: product.title,
+          sellerId: product.sellerId,
+        },
+      });
       return {
         success: true,
         message:
@@ -414,6 +454,18 @@ export class AdminProductsService {
       }
       await tx.inventory.deleteMany({ where: { productId: id } });
       await tx.product.delete({ where: { id } });
+      await this.auditLog?.record(
+        {
+          eventName: 'admin.product.deleted',
+          operatorId: adminId,
+          payload: {
+            productId: id,
+            title: product.title,
+            sellerId: product.sellerId,
+          },
+        },
+        tx,
+      );
     });
 
     this.logger.log(`Admin (${adminId}) đã xóa vĩnh viễn sản phẩm ${product.title} (${id}).`);
@@ -505,6 +557,19 @@ export class AdminProductsService {
           this.notifications,
         );
       }
+
+      await this.auditLog?.record(
+        {
+          eventName: 'admin.product.trending_removed',
+          operatorId: adminId,
+          payload: {
+            productId: id,
+            title: product.title,
+            reason: dto?.reason?.trim() || null,
+          },
+        },
+        tx,
+      );
 
       return result;
     });

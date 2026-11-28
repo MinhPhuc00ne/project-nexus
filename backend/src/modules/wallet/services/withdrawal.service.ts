@@ -438,14 +438,18 @@ export class WithdrawalService {
       );
 
       const isSeller = userRole === Role.SELLER;
-      await notifyAllAdmins(tx, {
-        title: isSeller ? 'Yêu cầu rút tiền Seller mới' : 'Yêu cầu rút tiền Buyer mới',
-        content: isSeller
-          ? `Gian hàng ${displayName} gửi yêu cầu rút ${formattedAmount} VND về ${bankDetails.bankName} (${bankDetails.accountNumber}).`
-          : `Người dùng ${displayName} gửi yêu cầu rút ${formattedAmount} VND về ${bankDetails.bankName} (${bankDetails.accountNumber}).`,
-        type: NotificationType.PAYMENT,
-        targetUrl: '/admin/finance',
-      });
+      await notifyAllAdmins(
+        tx,
+        {
+          title: isSeller ? 'Yêu cầu rút tiền Seller mới' : 'Yêu cầu rút tiền Buyer mới',
+          content: isSeller
+            ? `Gian hàng ${displayName} gửi yêu cầu rút ${formattedAmount} VND về ${bankDetails.bankName} (${bankDetails.accountNumber}).`
+            : `Người dùng ${displayName} gửi yêu cầu rút ${formattedAmount} VND về ${bankDetails.bankName} (${bankDetails.accountNumber}).`,
+          type: NotificationType.PAYMENT,
+          targetUrl: '/admin/finance',
+        },
+        this.notifications,
+      );
 
       return { req, transaction, updatedWallet };
     });

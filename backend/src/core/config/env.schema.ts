@@ -60,7 +60,7 @@ const baseObjectSchema = z.object({
   ),
   SWAGGER_ENABLED: z.preprocess(parseOptionalBoolean, z.boolean().optional()),
 
-  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  DATABASE_URL: z.string().trim().min(1, 'DATABASE_URL is required'),
   JWT_SECRET: z.string().trim().min(16, 'JWT_SECRET must be at least 16 characters'),
   REFRESH_TOKEN_SECRET: z
     .string()

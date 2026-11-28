@@ -96,6 +96,7 @@ export class AuthController {
   }
 
   @Post('oauth/exchange')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Đổi mã OAuth một lần sang phiên đăng nhập',
@@ -204,6 +205,7 @@ export class AuthController {
   }
 
   @Post('profile/reauthenticate')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.BUYER, Role.SELLER)
   @ApiBearerAuth()
@@ -234,6 +236,7 @@ export class AuthController {
   }
 
   @Post('change-password/confirm-otp')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)

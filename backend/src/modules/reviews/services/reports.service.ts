@@ -3,15 +3,20 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { NotificationType } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { notifyAdminsAndStaff } from '../../../core/notifications/admin-notification.util';
+import { NotificationPublisher } from '../../../core/notifications/notification-publisher.service';
 import { ReportInput } from '../dtos/feedback.dto';
 
 @Injectable()
 export class ReportsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly notifications?: NotificationPublisher,
+  ) {}
 
   async create(
     reporterId: string,
@@ -60,21 +65,25 @@ export class ReportsService {
         },
         select: { id: true, shopId: true, productId: true, status: true, createdAt: true },
       });
-      await notifyAdminsAndStaff(tx, {
-        title:
-          kind === 'product' ? 'Báo cáo vi phạm sản phẩm mới' : 'Báo cáo vi phạm gian hàng mới',
-        content: `Tiêu đề: ${dto.title.trim()} (${kind === 'product' ? 'Sản phẩm' : 'Shop'} #${targetId.slice(0, 8)}).`,
-        type: NotificationType.DISPUTE,
-        adminTargetUrl: '/admin/reports',
-        staffTargetUrl: '/staff/disputes',
-        metadata: {
-          entityType: 'VIOLATION_REPORT',
-          reportId: report.id,
-          shopId,
-          productId,
-          kind,
+      await notifyAdminsAndStaff(
+        tx,
+        {
+          title:
+            kind === 'product' ? 'Báo cáo vi phạm sản phẩm mới' : 'Báo cáo vi phạm gian hàng mới',
+          content: `Tiêu đề: ${dto.title.trim()} (${kind === 'product' ? 'Sản phẩm' : 'Shop'} #${targetId.slice(0, 8)}).`,
+          type: NotificationType.DISPUTE,
+          adminTargetUrl: '/admin/reports',
+          staffTargetUrl: '/staff/disputes',
+          metadata: {
+            entityType: 'VIOLATION_REPORT',
+            reportId: report.id,
+            shopId,
+            productId,
+            kind,
+          },
         },
-      });
+        this.notifications,
+      );
       return report;
     });
   }

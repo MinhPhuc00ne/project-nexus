@@ -1,4 +1,5 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AuctionStatus as NexusAuctionStatus } from '@nexus/contracts';
 import { AuctionAwardStatus, AuctionStatus } from '@prisma/client';
 import { DomainEventsService } from '../../../core/events/domain-events.service';
@@ -8,6 +9,10 @@ import { DistributedLockService } from '../../../core/redis/distributed-lock.ser
 import { AuctionCheckoutService } from './auction-checkout.service';
 import { AuctionGateway } from '../gateways/auction.gateway';
 import { AuctionService } from './auction.service';
+
+const ACTIVE_CACHE_TTL_MS = 15_000;
+const SWEEP_INTERVAL_MS = 30_000;
+const SYNC_INTERVAL_MS = 1_000;
 
 interface CachedActiveAuctionLot {
   id: string;
@@ -36,6 +41,7 @@ export class AuctionLifecycleService implements OnModuleInit, OnModuleDestroy {
   private cachedActiveAuctions: CachedActiveAuction[] = [];
   private cacheLoaded = false;
   private cacheDirty = true;
+  private cacheRefreshedAt = 0;
   private readonly logger = new Logger(AuctionLifecycleService.name);
 
   constructor(
@@ -46,6 +52,7 @@ export class AuctionLifecycleService implements OnModuleInit, OnModuleDestroy {
     private readonly locks: DistributedLockService,
     @Optional() private readonly socketMetrics?: SocketMetricsService,
     @Optional() private readonly domainEvents?: DomainEventsService,
+    @Optional() private readonly configService?: ConfigService,
   ) {}
 
   /** Starts bounded, nonoverlapping deadline sweeps and 1-second WebSocket timer syncs. */
@@ -54,6 +61,11 @@ export class AuctionLifecycleService implements OnModuleInit, OnModuleDestroy {
       this.cacheDirty = true;
       void this.refreshActiveAuctionsCache().catch(() => undefined);
     });
+
+    const nodeEnv = this.configService?.get<string>('NODE_ENV') ?? process.env.NODE_ENV;
+    if (nodeEnv === 'test') {
+      return;
+    }
 
     this.sweepTimer = setInterval(() => {
       if (this.running) return;
@@ -66,7 +78,7 @@ export class AuctionLifecycleService implements OnModuleInit, OnModuleDestroy {
         .finally(() => {
           this.running = undefined;
         });
-    }, 30000);
+    }, SWEEP_INTERVAL_MS);
     this.sweepTimer.unref();
 
     this.syncTimer = setInterval(() => {
@@ -76,14 +88,20 @@ export class AuctionLifecycleService implements OnModuleInit, OnModuleDestroy {
         .finally(() => {
           this.syncing = undefined;
         });
-    }, 1000);
+    }, SYNC_INTERVAL_MS);
     this.syncTimer.unref();
   }
 
   /** Stops timers, unsubscribes from domain events, and allows in-flight work to drain. */
   async onModuleDestroy(): Promise<void> {
-    clearInterval(this.sweepTimer);
-    clearInterval(this.syncTimer);
+    if (this.sweepTimer) {
+      clearInterval(this.sweepTimer);
+      this.sweepTimer = undefined;
+    }
+    if (this.syncTimer) {
+      clearInterval(this.syncTimer);
+      this.syncTimer = undefined;
+    }
     this.unsubscribeStateChanges?.();
     this.unsubscribeStateChanges = undefined;
     await Promise.all([this.running, this.syncing, this.refreshingCache]);
@@ -117,6 +135,7 @@ export class AuctionLifecycleService implements OnModuleInit, OnModuleDestroy {
         this.cachedActiveAuctions = rows;
         this.cacheLoaded = true;
         this.cacheDirty = false;
+        this.cacheRefreshedAt = Date.now();
       })
       .finally(() => {
         this.refreshingCache = undefined;
@@ -162,7 +181,8 @@ export class AuctionLifecycleService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    if (!this.cacheLoaded || this.cacheDirty) {
+    const isCacheExpired = Date.now() - this.cacheRefreshedAt >= ACTIVE_CACHE_TTL_MS;
+    if (!this.cacheLoaded || this.cacheDirty || isCacheExpired) {
       await this.refreshActiveAuctionsCache();
     }
 

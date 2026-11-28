@@ -4,7 +4,7 @@ import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
-import { Roles } from '../../../core/security/roles.decorator';
+import { CurrentUser, Roles } from '../../../core/security/roles.decorator';
 import { AdminService } from '../services/admin.service';
 import { CreateStaffInput, CreateStaffSchema } from '../dtos/create-staff.dto';
 import { AdminInviteStaffInput, AdminInviteStaffSchema } from '../dtos/invite-staff.dto';
@@ -33,8 +33,11 @@ export class AdminStaffController {
   })
   @ApiResponse({ status: 400, description: 'Email address already registered or invalid input' })
   @ApiResponse({ status: 403, description: 'Administrative role required' })
-  async createStaff(@ZodBody(CreateStaffSchema) dto: CreateStaffInput) {
-    return this.adminService.createStaff(dto);
+  async createStaff(
+    @CurrentUser('id') adminId: string,
+    @ZodBody(CreateStaffSchema) dto: CreateStaffInput,
+  ) {
+    return this.adminService.createStaff(dto, adminId);
   }
 
   @Post('staff/invite')
@@ -48,8 +51,11 @@ export class AdminStaffController {
     status: 201,
     description: 'Invitation sent successfully and staff account provisioned',
   })
-  async inviteStaff(@ZodBody(AdminInviteStaffSchema) dto: AdminInviteStaffInput) {
-    return this.adminService.inviteStaff(dto);
+  async inviteStaff(
+    @CurrentUser('id') adminId: string,
+    @ZodBody(AdminInviteStaffSchema) dto: AdminInviteStaffInput,
+  ) {
+    return this.adminService.inviteStaff(dto, adminId);
   }
 
   @Get('staff')

@@ -112,6 +112,71 @@ describe('M7 Deploy, Health Probes, Auction Idle Polling & Demo Seed Guard', () 
         await app.close();
       }
     });
+
+    it('serves /api/v1/health (200 ok, 503 on Redis error or non-PONG reply) and flags degraded >500ms', async () => {
+      let redisReply = 'PONG';
+      let redisShouldThrow = false;
+      const queryRaw = vi.fn(async () => [{ '?column?': 1 }]);
+      const ping = vi.fn(async () => {
+        if (redisShouldThrow) {
+          throw new Error('Redis timeout');
+        }
+        return redisReply;
+      });
+
+      const moduleRef = await Test.createTestingModule({
+        controllers: [HealthController],
+        providers: [
+          HealthService,
+          SocketMetricsService,
+          { provide: PrismaService, useValue: { $queryRaw: queryRaw } },
+          { provide: RedisService, useValue: { ping } },
+        ],
+      }).compile();
+
+      const app = moduleRef.createNestApplication();
+      app.setGlobalPrefix('api/v1');
+      app.useGlobalFilters(new GlobalHttpExceptionFilter());
+      app.useGlobalInterceptors(new TransformResponseInterceptor());
+      await app.init();
+
+      try {
+        const okRes = await request(app.getHttpServer()).get('/api/v1/health');
+        expect(okRes.status).toBe(200);
+        expect(okRes.body.data.status).toBe('ok');
+
+        redisReply = 'LOADING';
+        const nonPongRes = await request(app.getHttpServer()).get('/api/v1/health');
+        expect(nonPongRes.status).toBe(503);
+        expect(nonPongRes.body.data.status).toBe('down');
+        expect(nonPongRes.body.data.redis.message).toContain('unexpected PING reply: LOADING');
+
+        redisShouldThrow = true;
+        const downRes = await request(app.getHttpServer()).get('/api/v1/health');
+        expect(downRes.status).toBe(503);
+        expect(downRes.body.data.status).toBe('down');
+
+        redisShouldThrow = false;
+        redisReply = 'PONG';
+        const healthService = moduleRef.get(HealthService);
+        let tick = 1000;
+        const nowSpy = vi.spyOn(Date, 'now').mockImplementation(() => {
+          const current = tick;
+          tick += 650;
+          return current;
+        });
+        try {
+          const degraded = await healthService.check();
+          expect(degraded.status).toBe('degraded');
+          expect(degraded.db.status).toBe('degraded');
+          expect(degraded.redis.status).toBe('degraded');
+        } finally {
+          nowSpy.mockRestore();
+        }
+      } finally {
+        await app.close();
+      }
+    });
   });
 
   describe('AuctionLifecycleService idle DB polling elimination', () => {
@@ -231,6 +296,45 @@ describe('M7 Deploy, Health Probes, Auction Idle Polling & Demo Seed Guard', () 
         );
       } finally {
         await h.service.onModuleDestroy();
+      }
+    });
+
+    it('skips interval timers when NODE_ENV=test while keeping domain event subscription active', async () => {
+      const setIntervalSpy = vi.spyOn(globalThis, 'setInterval');
+      const h = createLifecycleHarness();
+      try {
+        h.service.onModuleInit();
+        expect(setIntervalSpy).not.toHaveBeenCalled();
+
+        h.setClientsCount(1);
+        h.domainEvents.publishAuctionStateChanged({ auctionId: 'auction-1', reason: 'STARTED' });
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        expect(h.findMany).toHaveBeenCalledTimes(1);
+      } finally {
+        await h.service.onModuleDestroy();
+        setIntervalSpy.mockRestore();
+      }
+    });
+
+    it('refreshes active auction cache after the 15s TTL expires without local domain events', async () => {
+      const h = createLifecycleHarness();
+      h.setClientsCount(1);
+
+      let nowMs = 1_000_000;
+      const nowSpy = vi.spyOn(Date, 'now').mockImplementation(() => nowMs);
+      try {
+        await h.service.syncActiveTimers();
+        expect(h.findMany).toHaveBeenCalledTimes(1);
+
+        nowMs += 5_000;
+        await h.service.syncActiveTimers();
+        expect(h.findMany).toHaveBeenCalledTimes(1);
+
+        nowMs += 15_000;
+        await h.service.syncActiveTimers();
+        expect(h.findMany).toHaveBeenCalledTimes(2);
+      } finally {
+        nowSpy.mockRestore();
       }
     });
   });

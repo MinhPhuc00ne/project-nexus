@@ -20,7 +20,16 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import {
+  WS_CHAT_EVENTS,
+  WsChatSendMessageSchema,
+  WsChatTypingSchema,
+  WsJoinConversationSchema,
+  WsLeaveConversationSchema,
+  WsMarkReadSchema,
+} from '@nexus/contracts';
 import { createCorsOriginCallback } from '../../../core/config/env.schema';
+import { AuthenticatedUserPayload } from '../../../core/security/roles.decorator';
 import { TokenAuthService } from '../../../core/security/token-auth.service';
 import { SocketMetricsService } from '../../../core/realtime/socket-metrics.service';
 import { ChatService, ChatSocketBroadcaster } from '../services/chat.service';
@@ -203,88 +212,159 @@ export class ChatGateway
     this.logger.log(`Socket client disconnected: ${client.id}`);
   }
 
-  @SubscribeMessage('join_conversation')
-  handleJoinConversation(
+  @SubscribeMessage(WS_CHAT_EVENTS.CLIENT.JOIN_CONVERSATION)
+  async handleJoinConversation(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { conversationId: string },
-  ) {
-    if (!data?.conversationId) return;
-    client.join(`conversation:${data.conversationId}`);
-    return { event: 'joined', conversationId: data.conversationId };
+    @MessageBody() data: unknown,
+  ): Promise<{ event?: string; conversationId?: string; status?: string; message?: string }> {
+    const user = (client.data as { user?: AuthenticatedUserPayload }).user;
+    if (!user?.id) {
+      const message = 'Authentication is required.';
+      client.emit(WS_CHAT_EVENTS.SERVER.ERROR, { message });
+      return { status: 'error', message };
+    }
+
+    const parsed = WsJoinConversationSchema.safeParse(data);
+    if (!parsed.success) {
+      const message = 'Invalid conversation payload.';
+      client.emit(WS_CHAT_EVENTS.SERVER.ERROR, { message });
+      return { status: 'error', message };
+    }
+
+    try {
+      await this.chatService.assertConversationAccess(
+        parsed.data.conversationId,
+        user.id,
+        user.role,
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Access denied.';
+      client.emit(WS_CHAT_EVENTS.SERVER.ERROR, { message });
+      return { status: 'error', message };
+    }
+
+    await client.join(`conversation:${parsed.data.conversationId}`);
+    return { event: 'joined', conversationId: parsed.data.conversationId };
   }
 
-  @SubscribeMessage('leave_conversation')
-  handleLeaveConversation(
+  @SubscribeMessage(WS_CHAT_EVENTS.CLIENT.LEAVE_CONVERSATION)
+  async handleLeaveConversation(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { conversationId: string },
-  ) {
-    if (!data?.conversationId) return;
-    client.leave(`conversation:${data.conversationId}`);
-    return { event: 'left', conversationId: data.conversationId };
+    @MessageBody() data: unknown,
+  ): Promise<{ event?: string; conversationId?: string; status?: string; message?: string }> {
+    const parsed = WsLeaveConversationSchema.safeParse(data);
+    if (!parsed.success) {
+      const message = 'Invalid conversation payload.';
+      client.emit(WS_CHAT_EVENTS.SERVER.ERROR, { message });
+      return { status: 'error', message };
+    }
+
+    await client.leave(`conversation:${parsed.data.conversationId}`);
+    return { event: 'left', conversationId: parsed.data.conversationId };
   }
 
-  @SubscribeMessage('send_message')
-  async handleSendMessage(
-    @ConnectedSocket() client: Socket,
-    @MessageBody()
-    data: {
-      conversationId: string;
-      body?: string;
-      content?: string;
-      attachments?: string[];
-    },
-  ) {
-    const user = client.data.user;
-    if (!user || !data?.conversationId) {
-      return { status: 'error', message: 'Dữ liệu tin nhắn không hợp lệ.' };
+  @SubscribeMessage(WS_CHAT_EVENTS.CLIENT.SEND_MESSAGE)
+  async handleSendMessage(@ConnectedSocket() client: Socket, @MessageBody() data: unknown) {
+    const user = (client.data as { user?: AuthenticatedUserPayload }).user;
+    if (!user?.id) {
+      const message = 'Authentication is required.';
+      client.emit(WS_CHAT_EVENTS.SERVER.ERROR, { message });
+      return { status: 'error', message };
+    }
+
+    const parsed = WsChatSendMessageSchema.safeParse(data);
+    if (!parsed.success) {
+      const message = 'Invalid message payload.';
+      client.emit(WS_CHAT_EVENTS.SERVER.ERROR, { message });
+      return { status: 'error', message };
     }
 
     try {
       const message = await this.chatService.sendMessage(user.id, user.role, {
-        conversationId: data.conversationId,
-        content: data.content || data.body,
-        attachments: data.attachments,
+        conversationId: parsed.data.conversationId,
+        content: parsed.data.content || parsed.data.body,
+        attachments: parsed.data.attachments,
       });
 
       return { status: 'ok', data: message };
     } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : 'Lỗi gửi tin nhắn';
+      const errMsg = err instanceof Error ? err.message : 'Failed to send message.';
+      client.emit(WS_CHAT_EVENTS.SERVER.ERROR, { message: errMsg });
       return { status: 'error', message: errMsg };
     }
   }
 
-  @SubscribeMessage('typing')
-  handleTyping(
+  @SubscribeMessage(WS_CHAT_EVENTS.CLIENT.TYPING)
+  async handleTyping(
     @ConnectedSocket() client: Socket,
-    @MessageBody()
-    data: {
-      conversationId: string;
-      isTyping: boolean;
-    },
-  ) {
-    const user = client.data.user;
-    if (!user || !data?.conversationId) return;
+    @MessageBody() data: unknown,
+  ): Promise<{ status?: string; message?: string } | void> {
+    const user = (client.data as { user?: AuthenticatedUserPayload }).user;
+    if (!user?.id) {
+      const message = 'Authentication is required.';
+      client.emit(WS_CHAT_EVENTS.SERVER.ERROR, { message });
+      return { status: 'error', message };
+    }
+
+    const parsed = WsChatTypingSchema.safeParse(data);
+    if (!parsed.success) {
+      const message = 'Invalid typing payload.';
+      client.emit(WS_CHAT_EVENTS.SERVER.ERROR, { message });
+      return { status: 'error', message };
+    }
+
+    try {
+      await this.chatService.assertConversationAccess(
+        parsed.data.conversationId,
+        user.id,
+        user.role,
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Access denied.';
+      client.emit(WS_CHAT_EVENTS.SERVER.ERROR, { message });
+      return { status: 'error', message };
+    }
 
     const isStaff = user.role === 'SUPPORT_STAFF';
-    const userName = isStaff ? 'Nhân viên Hỗ trợ' : user.fullName || user.email || 'Người dùng';
+    const fullName = (user as AuthenticatedUserPayload & { fullName?: string }).fullName;
+    const userName = isStaff ? 'Support Staff' : fullName || user.email || 'User';
 
-    client.to(`conversation:${data.conversationId}`).emit('user_typing', {
-      conversationId: data.conversationId,
-      userId: isStaff ? 'SUPPORT_STAFF_DESK' : user.id,
-      userName,
-      isTyping: data.isTyping,
-    });
+    client
+      .to(`conversation:${parsed.data.conversationId}`)
+      .emit(WS_CHAT_EVENTS.SERVER.USER_TYPING, {
+        conversationId: parsed.data.conversationId,
+        userId: isStaff ? 'SUPPORT_STAFF_DESK' : user.id,
+        userName,
+        isTyping: parsed.data.isTyping,
+      });
   }
 
-  @SubscribeMessage('mark_read')
+  @SubscribeMessage(WS_CHAT_EVENTS.CLIENT.MARK_READ)
   async handleMarkRead(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { conversationId: string },
-  ) {
-    const user = client.data.user;
-    if (!user || !data?.conversationId) return;
+    @MessageBody() data: unknown,
+  ): Promise<{ status: string; message?: string }> {
+    const user = (client.data as { user?: AuthenticatedUserPayload }).user;
+    if (!user?.id) {
+      const message = 'Authentication is required.';
+      client.emit(WS_CHAT_EVENTS.SERVER.ERROR, { message });
+      return { status: 'error', message };
+    }
 
-    await this.chatService.markAsRead(data.conversationId, user.id, user.role);
-    return { status: 'ok' };
+    const parsed = WsMarkReadSchema.safeParse(data);
+    if (!parsed.success) {
+      const message = 'Invalid mark_read payload.';
+      client.emit(WS_CHAT_EVENTS.SERVER.ERROR, { message });
+      return { status: 'error', message };
+    }
+
+    try {
+      await this.chatService.markAsRead(parsed.data.conversationId, user.id, user.role);
+      return { status: 'ok' };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to mark messages as read.';
+      client.emit(WS_CHAT_EVENTS.SERVER.ERROR, { message });
+      return { status: 'error', message };
+    }
   }
 }

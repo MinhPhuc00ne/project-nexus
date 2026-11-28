@@ -61,16 +61,67 @@ export const WS_NOTIFICATION_EVENTS = {
 } as const;
 
 export const WsJoinRoomSchema = z.object({
-  auctionId: z.string().min(1),
+  auctionId: z.string().trim().min(1),
 });
 export type WsJoinRoomDto = z.infer<typeof WsJoinRoomSchema>;
 
+export const WsLeaveRoomSchema = z.object({
+  auctionId: z.string().trim().min(1),
+});
+export type WsLeaveRoomDto = z.infer<typeof WsLeaveRoomSchema>;
+
 export const WsPlaceBidSchema = z.object({
-  auctionId: z.string().min(1),
-  auctionItemId: z.string().min(1).optional(),
+  auctionId: z.string().trim().min(1),
+  auctionItemId: z.string().trim().min(1).optional(),
   bidAmount: z.number().positive(),
 });
 export type WsPlaceBidDto = z.infer<typeof WsPlaceBidSchema>;
+
+export const WsJoinConversationSchema = z.object({
+  conversationId: z.string().trim().min(1),
+});
+export type WsJoinConversationDto = z.infer<typeof WsJoinConversationSchema>;
+
+export const WsLeaveConversationSchema = z.object({
+  conversationId: z.string().trim().min(1),
+});
+export type WsLeaveConversationDto = z.infer<typeof WsLeaveConversationSchema>;
+
+export const WsChatSendMessageSchema = z
+  .object({
+    conversationId: z.string().trim().min(1),
+    content: z.preprocess(
+      (value) => (value === null ? undefined : value),
+      z.string().max(4000).optional(),
+    ),
+    body: z.preprocess(
+      (value) => (value === null ? undefined : value),
+      z.string().max(4000).optional(),
+    ),
+    attachments: z.preprocess(
+      (value) => (value === null ? undefined : value),
+      z.array(z.string().trim().min(1)).max(10).optional(),
+    ),
+  })
+  .refine(
+    (data) =>
+      Boolean(data.content?.trim()) ||
+      Boolean(data.body?.trim()) ||
+      (data.attachments?.length ?? 0) > 0,
+    { message: 'Message content or attachments must not be empty' },
+  );
+export type WsChatSendMessageDto = z.infer<typeof WsChatSendMessageSchema>;
+
+export const WsChatTypingSchema = z.object({
+  conversationId: z.string().trim().min(1),
+  isTyping: z.boolean(),
+});
+export type WsChatTypingDto = z.infer<typeof WsChatTypingSchema>;
+
+export const WsMarkReadSchema = z.object({
+  conversationId: z.string().trim().min(1),
+});
+export type WsMarkReadDto = z.infer<typeof WsMarkReadSchema>;
 
 export const WsBidPlacedPayloadSchema = z.object({
   auctionId: z.string(),
@@ -185,7 +236,7 @@ export const WsAuctionStartedPayloadSchema = z.object({
 export type WsAuctionStartedPayload = z.infer<typeof WsAuctionStartedPayloadSchema>;
 
 export const Ws3dSyncPayloadSchema = z.object({
-  auctionId: z.string().min(1),
+  auctionId: z.string().trim().min(1),
   rotation: z.object({
     x: z.number(),
     y: z.number(),

@@ -3,9 +3,11 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
+import { AuditLogService } from '../../../core/audit/audit-log.service';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { ShopShippingProfileService } from './shop-shipping-profile.service';
 import { SellerPickupInput } from '../dtos/seller-pickup.dto';
@@ -30,6 +32,7 @@ export class SellerPickupService {
     private readonly logistics: GhnLogisticsService,
     private readonly shops: GhnShopApiService,
     private readonly profiles: ShopShippingProfileService,
+    @Optional() private readonly auditLog?: AuditLogService,
   ) {}
 
   /** Reads the carrier environment. @returns Sandbox or production. */
@@ -268,6 +271,19 @@ export class SellerPickupService {
         });
         if (updated.count !== 1)
           throw new ConflictException('Seller vừa thay đổi điểm lấy hàng. Hãy kiểm tra lại.');
+        await this.auditLog?.record(
+          {
+            eventName: 'admin.pickup_point.verified',
+            operatorId: adminId,
+            payload: {
+              pickupPointId: pointId,
+              sellerId: point.sellerId,
+              ghnShopId: shop.id,
+              environment: account.environment,
+            },
+          },
+          tx,
+        );
         return pickupView(
           await tx.sellerGhnAccount.findUniqueOrThrow({ where: { id: pointId } }),
           profile,

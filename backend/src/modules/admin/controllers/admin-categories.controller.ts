@@ -5,7 +5,7 @@ import { ZodBody, ZodParam } from '@nexus/contracts/nest';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
-import { Roles } from '../../../core/security/roles.decorator';
+import { CurrentUser, Roles } from '../../../core/security/roles.decorator';
 
 import { CategoryService } from '../../catalog/services/category.service';
 import { CreateCategoryInput, CreateCategorySchema } from '../../catalog/dtos/create-category.dto';
@@ -30,8 +30,11 @@ export class AdminCategoriesController {
   @ApiResponse({ status: 201, description: 'Category created successfully' })
   @ApiResponse({ status: 400, description: 'Exceeds maximum taxonomy depth or invalid input' })
   @ApiResponse({ status: 409, description: 'Category name already exists' })
-  async createCategory(@ZodBody(CreateCategorySchema) dto: CreateCategoryInput) {
-    return this.categoryService.createCategory(dto);
+  async createCategory(
+    @CurrentUser('id') adminId: string,
+    @ZodBody(CreateCategorySchema) dto: CreateCategoryInput,
+  ) {
+    return this.categoryService.createCategory(dto, adminId);
   }
 
   @Patch('categories/:id')
@@ -47,10 +50,11 @@ export class AdminCategoriesController {
   })
   @ApiResponse({ status: 404, description: 'Category not found' })
   async updateCategory(
+    @CurrentUser('id') adminId: string,
     @ZodParam('id', UuidParamSchema) id: string,
     @ZodBody(UpdateCategorySchema) dto: UpdateCategoryInput,
   ) {
-    return this.categoryService.updateCategory(id, dto);
+    return this.categoryService.updateCategory(id, dto, adminId);
   }
 
   @Delete('categories/:id')
@@ -66,7 +70,10 @@ export class AdminCategoriesController {
     description: 'Category contains active child categories or linked products',
   })
   @ApiResponse({ status: 404, description: 'Category not found' })
-  async deleteCategory(@ZodParam('id', UuidParamSchema) id: string) {
-    return this.categoryService.deleteCategory(id);
+  async deleteCategory(
+    @CurrentUser('id') adminId: string,
+    @ZodParam('id', UuidParamSchema) id: string,
+  ) {
+    return this.categoryService.deleteCategory(id, adminId);
   }
 }
