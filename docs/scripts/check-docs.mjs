@@ -16,11 +16,21 @@ const BANNED_PHRASES = [
   /\bcutting-edge\b/i,
   /\bgame-changer\b/i,
   /\bdocs-site\b/i,
+  /\bplays a crucial role\b/i,
+  /\bheart of the system\b/i,
+  /\bpowerhouse\b/i,
+  /\bin order to\b/i,
+  /\blet['’]?s explore\b/i,
+  /\bdelve into\b/i,
 ];
 
 const EMOJI_PATTERN = /\p{Extended_Pictographic}/u;
 const VIETNAMESE_CHAR_PATTERN =
   /[ăâđêôơưàáảãạằắẳẵặầấẩẫậèéẻẽẹềếểễệìíỉĩịòóỏõọồốổỗộờớởỡợùúủũụừứửữựỳýỷỹỵ]/i;
+const BOLD_COLON_BULLET_PATTERN = /^\s*(?:[-*]|\d+\.)\s+\*\*[^*]+\*\*\s*:/;
+const AMPERSAND_PROSE_PATTERN = /(?:^|\s)&(?:\s|$)/;
+const MID_SENTENCE_BOLD_PATTERN = /[a-z0-9,;:]\s+\*\*[^*]+\*\*/i;
+const SLASH_COMPOUND_PATTERN = /\b[A-Za-z]{2,}\/[A-Za-z]{2,}\b/;
 
 function collectMarkdownFiles(dir, baseDir = dir) {
   const results = [];
@@ -39,6 +49,13 @@ function stripInlineCodeAndLinks(line) {
   return line
     .replace(/`[^`]*`/g, 'CODE')
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/https?:\/\/\S+/g, 'URL');
+}
+
+function stripCodeLinksAndPaths(line) {
+  return line
+    .replace(/`[^`]*`/g, 'CODE')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, 'LINK')
     .replace(/https?:\/\/\S+/g, 'URL');
 }
 
@@ -84,6 +101,27 @@ function validateMarkdownFile(filePath) {
       errors.push(`${relPath}:${lineNo} contains non-English Vietnamese characters`);
     }
 
+    if (BOLD_COLON_BULLET_PATTERN.test(rawLine)) {
+      errors.push(`${relPath}:${lineNo} uses bold-term-colon bullet format`);
+    }
+
+    if (AMPERSAND_PROSE_PATTERN.test(stripped)) {
+      errors.push(`${relPath}:${lineNo} uses "&" in prose instead of "and"`);
+    }
+
+    const slashChecked = stripCodeLinksAndPaths(rawLine);
+    const slashMatch = SLASH_COMPOUND_PATTERN.exec(slashChecked);
+    if (slashMatch) {
+      errors.push(`${relPath}:${lineNo} uses slash-separated compound "${slashMatch[0]}" in prose`);
+    }
+
+    const isHeading = /^\s*#{1,6}\s/.test(rawLine);
+    const isTableRow = /^\s*\|/.test(rawLine);
+    const isAdmonition = /^\s*>/.test(rawLine);
+    if (!isHeading && !isTableRow && !isAdmonition && MID_SENTENCE_BOLD_PATTERN.test(stripped)) {
+      errors.push(`${relPath}:${lineNo} uses mid-sentence bold emphasis`);
+    }
+
     for (const phrase of BANNED_PHRASES) {
       if (phrase.test(stripped)) {
         errors.push(`${relPath}:${lineNo} matches banned phrase ${phrase}`);
@@ -95,7 +133,13 @@ function validateMarkdownFile(filePath) {
 }
 
 const targetFiles = [...collectMarkdownFiles(docsRoot)];
-for (const rootFile of ['README.md', 'CONTRIBUTING.md', 'SECURITY.md', 'infra/README.md']) {
+for (const rootFile of [
+  'AGENTS.md',
+  'README.md',
+  'CONTRIBUTING.md',
+  'SECURITY.md',
+  'infra/README.md',
+]) {
   const fullPath = path.join(repoRoot, rootFile);
   if (fs.existsSync(fullPath)) {
     targetFiles.push(fullPath);

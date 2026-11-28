@@ -13,7 +13,7 @@ Status: Accepted.
 ## Decision
 
 - Remove the runtime `Proxy` from `PrismaService` and introduce an explicit `NotificationPublisher` (`EventsModule`) with `publishNotification` / `publishNotifications` helpers while preserving `AsyncLocalStorage` post-commit batching via `runWithNotificationBatch`.
-- Add `OrderExpirationService` in `OrdersModule` under `DistributedLockService` to atomically cancel overdue `PENDING_PAYMENT` orders, cancel pending payment records/groups, and release expired `PENDING` inventory reservations with `InventoryLedger` entries.
+- Add `OrderExpirationService` in `OrdersModule` under `DistributedLockService` to atomically cancel overdue `PENDING_PAYMENT` orders, cancel pending payment records and groups, and release expired `PENDING` inventory reservations with `InventoryLedger` entries.
 - Add `AuditLogService` (`AuditModule`) and `RequestTrace` middleware (`X-Request-Id`) to emit structured JSON audit records for administrative moderation, finance, and settings actions.
 
 ## Consequences
