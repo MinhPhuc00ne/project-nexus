@@ -4,7 +4,7 @@
 [![Docs](https://github.com/MinhPhuc00ne/project-nexus/actions/workflows/docs-pages.yml/badge.svg)](https://minhphuc00ne.github.io/project-nexus/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Project Nexus is a multi-shop e-commerce platform with real-time 3D live auctions, an internal wallet and escrow ledger, GHN Express logistics integration, multi-tier operational moderation, and a conversational shopping assistant.
+Project Nexus is a multi-shop e-commerce platform with real-time live auctions, an internal wallet and escrow ledger, GHN Express logistics integration, multi-tier operational moderation, and a conversational shopping assistant.
 
 Engineering documentation and the interactive OpenAPI 3.0 reference are published at [minhphuc00ne.github.io/project-nexus](https://minhphuc00ne.github.io/project-nexus/).
 
