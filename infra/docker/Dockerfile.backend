@@ -43,7 +43,7 @@ COPY packages/contracts/package.json ./packages/contracts/
 COPY backend/package.json ./backend/
 COPY frontend/package.json ./frontend/
 COPY docs/package.json ./docs/
-RUN npm ci --omit=dev --ignore-scripts
+RUN npm ci --omit=dev --ignore-scripts --workspace=nexus-backend --workspace=@nexus/contracts && mkdir -p /app/backend/node_modules
 
 # Applies migrations and creates the system rows.
 #

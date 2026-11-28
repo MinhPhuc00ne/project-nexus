@@ -26,7 +26,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `npm run dev --workspace=frontend -- --port ${PORT} --strictPort`,
+    command: `npm run dev --workspace=nexus-frontend -- --port ${PORT} --strictPort`,
     url: ORIGIN,
     // CI always starts its own. Reuse answers whatever is already on the port,
     // and attaching to an unrelated dev server makes every assertion fail

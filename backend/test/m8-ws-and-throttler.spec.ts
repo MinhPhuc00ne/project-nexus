@@ -47,6 +47,8 @@ import type { StaffQueueService } from '../src/modules/chat/services/staff-queue
 import { PayosService } from '../src/modules/payments/services/payos.service';
 import { PayosWebhookController } from '../src/modules/wallet/controllers/payos-webhook.controller';
 import { PayosWebhookService } from '../src/modules/wallet/services/payos-webhook.service';
+import { JwtAuthGuard } from '../src/core/security/jwt-auth.guard';
+import { RolesGuard } from '../src/core/security/roles.guard';
 import { ConfigService } from '@nestjs/config';
 
 function createSocketMock(user?: { id: string; role: string; email?: string; fullName?: string }) {
@@ -494,7 +496,12 @@ describe('M8 WebSocket Zod Validation, PayOS Webhook, OAuth Throttle, RedisThrot
           { provide: PayosWebhookService, useValue: { handle } },
           { provide: PayosService, useValue: { confirmWebhook: vi.fn() } },
         ],
-      }).compile();
+      })
+        .overrideGuard(JwtAuthGuard)
+        .useValue({ canActivate: () => true })
+        .overrideGuard(RolesGuard)
+        .useValue({ canActivate: () => true })
+        .compile();
 
       const app = moduleRef.createNestApplication();
       await app.init();
