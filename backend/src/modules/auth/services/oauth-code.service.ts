@@ -51,10 +51,13 @@ export class OAuthCodeService {
    */
   async redeem(code: string): Promise<OAuthHandoff> {
     const key = codeKey(code);
-    const raw = await this.redis.get(key);
-    // Deleting before returning is what makes the code single-use: a second
-    // exchange with the same code finds nothing.
-    await this.redis.del(key);
+    let raw: string | null;
+    if (typeof this.redis.getDel === 'function') {
+      raw = await this.redis.getDel(key);
+    } else {
+      raw = await this.redis.get(key);
+      await this.redis.del(key);
+    }
 
     if (!raw) {
       throw new UnauthorizedException('Mã đăng nhập không hợp lệ hoặc đã hết hạn.');

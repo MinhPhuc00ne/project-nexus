@@ -5,8 +5,9 @@ test.describe('Auction portal smoke', () => {
     const pageErrors: Error[] = [];
     page.on('pageerror', (err) => pageErrors.push(err));
 
-    await page.goto('/auctions');
+    await page.goto('/auction');
     await expect(page.locator('body')).toBeVisible();
+    await expect(page.getByRole('heading', { name: /404/i })).toHaveCount(0);
     expect(pageErrors).toEqual([]);
   });
 });

@@ -65,7 +65,7 @@ export class MediaController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Không có file hoặc file không đúng định dạng',
   })
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(AnyFilesInterceptor({ limits: { fileSize: 25 * 1024 * 1024, files: 10 } }))
   async uploadMedia(
     @UploadedFiles() files?: Express.Multer.File[],
     @Req() req?: Request,
@@ -124,7 +124,7 @@ export class MediaController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Không có file hoặc file không đúng định dạng',
   })
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(AnyFilesInterceptor({ limits: { fileSize: 25 * 1024 * 1024, files: 10 } }))
   async uploadMultipleMedia(
     @UploadedFiles() files?: Express.Multer.File[],
     @Req() req?: Request,
@@ -166,7 +166,7 @@ export class MediaController {
     description: 'Upload media đánh giá thành công',
     standardSchema: MultipleMediaUploadResponseSchema,
   })
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(AnyFilesInterceptor({ limits: { fileSize: 55 * 1024 * 1024, files: 10 } }))
   async uploadReviewMedia(
     @UploadedFiles() files?: Express.Multer.File[],
     @Req() req?: Request,

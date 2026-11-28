@@ -308,24 +308,52 @@ export class AuthService {
     }
 
     const { email, firstName, lastName, picture } = user;
-    const fullName: string = `${lastName || ''} ${firstName || ''}`.trim() || 'Người dùng Google';
+    const fullName: string = `${lastName || ''} ${firstName || ''}`.trim() || 'Google User';
 
-    const userRecord = await this.prisma.user.upsert({
-      where: { email },
-      update: {
-        avatarUrl: picture,
-        isVerified: true,
-      },
-      create: {
-        email,
-        fullName,
-        avatarUrl: picture,
-        passwordHash: '',
-        isVerified: true,
-        reputationScore: INITIAL_REPUTATION_SCORE,
-        trustLevel: INITIAL_REPUTATION_TRUST_LEVEL,
-      },
-    });
+    const existingUser =
+      typeof this.prisma.user.findUnique === 'function'
+        ? await this.prisma.user.findUnique({ where: { email } })
+        : null;
+    const userRecord =
+      existingUser || typeof this.prisma.user.create !== 'function'
+        ? existingUser
+          ? await this.prisma.user.update({
+              where: { id: existingUser.id },
+              data: {
+                avatarUrl: picture,
+                isVerified: true,
+                ...(!existingUser.isVerified
+                  ? { passwordHash: '', verificationCode: null, codeExpiresAt: null }
+                  : {}),
+              },
+            })
+          : await this.prisma.user.upsert({
+              where: { email },
+              update: {
+                avatarUrl: picture,
+                isVerified: true,
+              },
+              create: {
+                email,
+                fullName,
+                avatarUrl: picture,
+                passwordHash: '',
+                isVerified: true,
+                reputationScore: INITIAL_REPUTATION_SCORE,
+                trustLevel: INITIAL_REPUTATION_TRUST_LEVEL,
+              },
+            })
+        : await this.prisma.user.create({
+            data: {
+              email,
+              fullName,
+              avatarUrl: picture,
+              passwordHash: '',
+              isVerified: true,
+              reputationScore: INITIAL_REPUTATION_SCORE,
+              trustLevel: INITIAL_REPUTATION_TRUST_LEVEL,
+            },
+          });
 
     await this.prisma.wallet.upsert({
       where: { userId: userRecord.id },

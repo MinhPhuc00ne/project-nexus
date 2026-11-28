@@ -1,12 +1,15 @@
-import { Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Role } from '@prisma/client';
 import { ZodBody } from '@nexus/contracts/nest';
-import { PayosWebhookService } from '../services/payos-webhook.service';
+import { Webhook } from '@payos/node';
+import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
+import { Public, Roles } from '../../../core/security/roles.decorator';
+import { RolesGuard } from '../../../core/security/roles.guard';
 import { PayosService } from '../../payments/services/payos.service';
 import { ConfirmWebhookInput, ConfirmWebhookSchema } from '../dtos/confirm-webhook.dto';
 import { PayosWebhookInput, PayosWebhookSchema } from '../dtos/payos-webhook.dto';
-import { Public } from '../../../core/security/roles.decorator';
-import { Webhook } from '@payos/node';
+import { PayosWebhookService } from '../services/payos-webhook.service';
 
 @ApiTags('8. COMMERCE - WEBHOOKS')
 @Controller('commerce/webhooks')
@@ -20,12 +23,12 @@ export class PayosWebhookController {
   @Post('payos')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[PAYOS WEBHOOK] Điểm tiếp nhận Webhook biến động số dư VietQR từ PayOS',
+    summary: '[PAYOS WEBHOOK] Receive VietQR balance-change webhook from PayOS',
     description:
-      'Endpoint công khai để PayOS bắn thông báo khi khách hàng chuyển khoản thành công. Tự động xác minh chữ ký HMAC-SHA256 (Checksum) và cập nhật đơn hàng sang trạng thái PAID.',
+      'Public endpoint called by PayOS when a buyer transfer succeeds. Verifies the HMAC-SHA256 checksum and settles matching orders or wallet deposits.',
   })
-  @ApiResponse({ status: 200, description: 'Xác nhận webhook thành công' })
-  @ApiResponse({ status: 400, description: 'Chữ ký webhook không hợp lệ' })
+  @ApiResponse({ status: 200, description: 'Webhook processed successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid webhook checksum' })
   // `PayosWebhookSchema` uses `z.looseObject(...)` on both the envelope and
   // `data` so structural validation applies without stripping extra fields
   // needed by `PayosWebhookService` for HMAC-SHA256 signature verification.
@@ -33,15 +36,19 @@ export class PayosWebhookController {
     return this.webhooks.handle(webhookBody as unknown as Webhook);
   }
 
-  @Public()
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @Post('payos/confirm')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[UTILITY] Xác nhận và đăng ký Webhook URL với máy chủ PayOS',
+    summary: '[ADMIN] Confirm and register the PayOS webhook URL',
     description:
-      'Gọi API PayOS để tự động xác thực URL Webhook của bạn (tiện lợi khi sử dụng ngrok URL ở môi trường phát triển).',
+      'Calls the PayOS API to verify and register the configured merchant webhook URL. Restricted to platform administrators.',
   })
-  @ApiResponse({ status: 200, description: 'Đăng ký Webhook URL thành công' })
+  @ApiResponse({ status: 200, description: 'Webhook URL registered successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden — Admin role required' })
   async confirmWebhookUrl(@ZodBody(ConfirmWebhookSchema) dto: ConfirmWebhookInput) {
     return this.payosService.confirmWebhook(dto.webhookUrl);
   }
