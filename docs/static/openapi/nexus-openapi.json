@@ -12214,6 +12214,44 @@
         "description": "Endpoint công khai để PayOS bắn thông báo khi khách hàng chuyển khoản thành công. Tự động xác minh chữ ký HMAC-SHA256 (Checksum) và cập nhật đơn hàng sang trạng thái PAID.",
         "operationId": "PayosWebhookController_handlePayosWebhook",
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "desc": {
+                    "type": "string"
+                  },
+                  "success": {
+                    "type": "boolean"
+                  },
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "orderCode": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      }
+                    },
+                    "required": ["orderCode"],
+                    "additionalProperties": {}
+                  },
+                  "signature": {
+                    "type": "string"
+                  }
+                },
+                "required": ["data"],
+                "additionalProperties": {}
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Xác nhận webhook thành công"
