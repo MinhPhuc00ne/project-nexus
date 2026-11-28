@@ -34,7 +34,7 @@ const optionalNonEmptyString = () => z.preprocess(emptyToUndefined, z.string().m
 const optionalUrlString = () => z.preprocess(emptyToUndefined, z.string().url().optional());
 
 const PLACEHOLDER_PATTERN =
-  /^(?:your[-_].*|changeme|replace[-_]?me|placeholder|example[-_]?key|xxx+)$/i;
+  /^(?:(?:your|changeme|replace[-_]?me|placeholder|example[-_]?key)(?:[-_].*)?|xxx+)$/i;
 
 function isPlaceholderValue(value: string | undefined): boolean {
   if (!value) {
@@ -60,7 +60,7 @@ const baseObjectSchema = z.object({
   ),
   SWAGGER_ENABLED: z.preprocess(parseOptionalBoolean, z.boolean().optional()),
 
-  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  DATABASE_URL: z.string().trim().min(1, 'DATABASE_URL is required'),
   JWT_SECRET: z.string().trim().min(16, 'JWT_SECRET must be at least 16 characters'),
   REFRESH_TOKEN_SECRET: z
     .string()
@@ -147,6 +147,19 @@ function validateProductionMode(env: RawBackendEnv, ctx: z.RefinementCtx): void 
 
   if (!env.APP_PUBLIC_URL) {
     addCustomIssue(ctx, 'APP_PUBLIC_URL', 'APP_PUBLIC_URL is required when APP_ENV is production');
+  }
+
+  for (const [name, value] of [
+    ['JWT_SECRET', env.JWT_SECRET],
+    ['REFRESH_TOKEN_SECRET', env.REFRESH_TOKEN_SECRET],
+  ] as const) {
+    if (isPlaceholderValue(value)) {
+      addCustomIssue(
+        ctx,
+        name,
+        `${name} must not use a placeholder value when APP_ENV is production`,
+      );
+    }
   }
 
   // Production never runs on a stub. Naming one is treated as a

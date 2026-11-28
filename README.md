@@ -12,39 +12,56 @@ Engineering documentation and the interactive OpenAPI 3.0 reference are publishe
 
 ```text
 project-nexus/
-├── .github/                           # GitHub Actions CI, GitHub Pages deployment, issue and PR templates
-├── backend/                           # NestJS 12 modular monolith API, Prisma 7 schema, migrations, seed, Vitest
-├── frontend/                          # React 19 SPA, i18n (en/vi), Vitest and React Testing Library
+├── .github/                 # GitHub Actions CI, GitHub Pages deployment, issue and PR templates
+├── .husky/                  # Pre-commit formatting and Conventional Commits hook scripts
+├── backend/                 # NestJS 12 modular monolith API, Prisma 7 schema, migrations, seeds, and Vitest suites
+├── frontend/                # React 19 SPA, react-i18next (en and vi), Vitest, and React Testing Library
 ├── packages/
-│   ├── contracts/                     # @nexus/contracts: Zod 4 schemas, AppErrorCode, enums, and WS event contracts
-│   └── config/                        # @nexus/config shared TypeScript and ESLint configs
-├── docs/                              # Docusaurus v3 engineering portal, Scalar OpenAPI, and style checker
-├── e2e/                               # Playwright end-to-end smoke tests
-├── infra/                             # Docker Compose, production Dockerfiles, and SonarCloud template
-├── package.json                       # npm workspaces and Turborepo task scripts
-└── turbo.json                         # Turborepo pipeline configuration
+│   ├── contracts/           # @nexus/contracts: Zod 4 schemas, AppErrorCode, enums, and WS event contracts
+│   └── config/              # @nexus/config: shared TypeScript configuration
+├── docs/                    # Docusaurus 3 engineering portal, Scalar OpenAPI spec, and writing-style checker
+├── e2e/                     # Playwright end-to-end smoke tests
+├── infra/                   # Docker Compose stacks, Dockerfiles, Railway release scripts, and env sync tooling
+├── scripts/                 # Repository-wide static checks (English-US language guard)
+├── AGENTS.md                # Engineering handbook for AI coding agents and contributors
+├── CONTRIBUTING.md          # Branching workflow, commit rules, and pre-PR verification checklist
+├── package.json             # npm workspaces, Node 24 engines, and Turborepo task scripts
+├── railway.toml             # Railway build, pre-deploy migration, and start configuration
+├── turbo.json               # Turborepo pipeline configuration
+└── vercel.json              # Vercel SPA deployment configuration
 ```
 
-## Technology Stack
+## Technology Stack and Architectural Decisions
 
-| Layer                  | Technology                               | Role                                                                    |
-| :--------------------- | :--------------------------------------- | :---------------------------------------------------------------------- |
-| Monorepo               | npm workspaces and Turborepo             | Workspace orchestration, build caching, and task execution              |
-| Backend                | NestJS 12, TypeScript 5.9, Prisma 7      | Modular monolith REST API, event bus, and ACID transactions             |
-| Database and Cache     | PostgreSQL 17 and Redis 7                | Relational persistence, distributed auction locks, and rate limiting    |
-| Realtime               | Socket.IO 4.8                            | Live auction rooms, chat messaging, and user notifications              |
-| Frontend               | React 19, Vite 8, Tailwind CSS v4        | Five-portal SPA with React Context state management and `react-i18next` |
-| Payments and Logistics | PayOS, NEXUS Pay Wallet, COD, GHN API v2 | Idempotent checkout, 7% escrow ledger, and shipment webhooks            |
-| AI and Media           | Google Gemini and Cloudinary             | Rate-limited conversational assistant, media, and 3D asset storage      |
-| Documentation          | Docusaurus 3 and Scalar OpenAPI          | Static documentation portal with 236 verified API paths                 |
+| Layer                   | Technology                                                   | Architectural Choice and Responsibility                                                                           |
+| :---------------------- | :----------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------- |
+| Runtime and Monorepo    | Node 24, npm workspaces, Turborepo 2.11                      | Targets Node 24 LTS across local `.nvmrc`, Docker images, and CI with cached cross-workspace pipelines            |
+| Modular Monolith        | NestJS 12, TypeScript 5.9 (`@nexus/contracts/nest`)          | Partitions 16 domain modules with acyclic import enforcement (`check:cycles`) inside one ACID process             |
+| Contract Validation     | Zod 4 (`@nexus/contracts`), `StandardSchemaValidationPipe`   | Replaces fragmented types with `@ZodBody`, `@ZodQuery`, `@ZodParam`, WS `safeParse`, and 30 `AppErrorCode` values |
+| Database and Locking    | PostgreSQL 17, Prisma 7 (`@prisma/adapter-pg`)               | Enforces ACID `$transaction` blocks, `SELECT ... FOR UPDATE` row locks, CHECK constraints, and partial indexes    |
+| Cache and Rate Limiting | Redis 7 (`ioredis`), `@nestjs/throttler`                     | Powers distributed auction locks and an atomic Lua `RedisThrottlerStorage` with bounded LRU memory fallback       |
+| Observability and Audit | `nestjs-pino`, `pino-http`, `AuditLogService`                | Propagates `X-Request-Id` via `AsyncLocalStorage`, redacts secrets, and writes structured admin audit logs        |
+| HTTP Hardening          | `helmet`, `trust proxy`, shared CORS callback                | Applies CSP and security headers, graceful `enableShutdownHooks()`, and strict origin checks across HTTP and WS   |
+| Realtime Gateways       | Socket.IO 4.8                                                | Runs isolated `/ws/auctions`, `/ws/chat`, and `/ws/notifications` gateways with explicit `NotificationPublisher`  |
+| Frontend Portal         | React 19, Vite 8, Tailwind CSS v4, `react-i18next`           | Serves five portals using React Context and maps backend `AppErrorCode` responses to `en` and `vi` locales        |
+| Payments and Logistics  | PayOS, NEXUS Pay Wallet, COD, GHN API v2                     | Processes idempotent checkout, `PaymentGroup` links, 7% escrow ledger holds, and GHN shipping webhooks            |
+| AI and Media            | Google Gemini, Cloudinary                                    | Powers the rate-limited shopping assistant alongside Cloudinary and conditional `/uploads` asset storage          |
+| Quality and Testing     | ESLint, `eslint-plugin-sonarjs`, Vitest 5.1, Playwright 1.65 | Runs unified Vitest coverage for both backend and frontend, plus Playwright smoke tests and `lang:check`          |
+| Documentation           | Docusaurus 3, Scalar OpenAPI 3.0, Mermaid                    | Publishes searchable documentation and a controller-derived OpenAPI specification gated by `docs:check`           |
+
+### Key Technical Choices
+
+1. `@nexus/contracts` serves as the single source of truth for compile-time TypeScript types, runtime HTTP and WebSocket Zod validation, Swagger schema metadata, and canonical `AppErrorCode` constants translated by the frontend.
+2. `nestjs-pino`, `RequestTrace` middleware, and `AuditLogService` correlate every HTTP request and administrative action through `X-Request-Id` while redacting authorization tokens and credentials from logs.
+3. Explicit `NotificationPublisher` and `OrderExpirationService` replace implicit Prisma proxy side effects and idle polling loops with traceable post-commit batching and distributed-lock sweeps.
+4. `env.schema.ts` and `npm run env:check` allow zero-secret local startup from `.env.example` while failing fast in production when required secrets or placeholder values remain unconfigured.
 
 ## Quick Start
 
 ### Prerequisites
 
-- Node.js `>= 20.x` (version `22.x` or `24.x` is recommended).
-- npm `>= 10.x`.
-- Docker and Docker Compose.
+- Node.js 24 or later and npm 10 or later.
+- Docker and Docker Compose for local PostgreSQL 17 and Redis 7 containers.
 
 ### Local Setup
 
@@ -89,14 +106,14 @@ npm run docker:down
 npm run verify
 ```
 
-Or run individual checks:
+Individual verification scripts remain available for targeted checks:
 
 ```bash
 npm run format:check
 npm run lint
 npm run i18n:check
 npm run lang:check
-npm run env:check
+npm run env:check -- --env-file .env.example
 npm run docs:check
 npm run check:cycles
 npm run build
@@ -124,25 +141,7 @@ npm run docs:build
 
 Key guides in `docs/docs/`:
 
-- [intro.md](docs/docs/intro.md): platform overview and technology stack.
-- [getting-started/quickstart.md](docs/docs/getting-started/quickstart.md): local and Docker setup guide.
-- [architecture/system-overview.md](docs/docs/architecture/system-overview.md): modular monolith architecture and event flows.
-- [architecture/database-schema.md](docs/docs/architecture/database-schema.md): PostgreSQL 17 and Prisma 7 data model.
-- [architecture/business-rules.md](docs/docs/architecture/business-rules.md): escrow, reputation, and auction rules.
-- [architecture/state-machines.md](docs/docs/architecture/state-machines.md): order, escrow, after-sales, and auction lifecycles.
-- [architecture/realtime-events.md](docs/docs/architecture/realtime-events.md): Socket.IO gateway contracts.
-- [modules/overview.md](docs/docs/modules/overview.md): summary of all backend modules.
-- [modules/chatbot.md](docs/docs/modules/chatbot.md): conversational AI architecture and guardrails.
-- [frontend/architecture.md](docs/docs/frontend/architecture.md): frontend portals, contexts, and API layer.
-- [quality/code-standards.md](docs/docs/quality/code-standards.md): coding standards and three-tier Sonar quality gate.
-- [quality/testing-ci.md](docs/docs/quality/testing-ci.md): unit, integration, and E2E testing pipelines.
-- [operations/runbook.md](docs/docs/operations/runbook.md): troubleshooting and operational procedures.
-
-## Contributing and Security
-
-- Read [CONTRIBUTING.md](CONTRIBUTING.md) for branching, Conventional Commits, and pull request requirements.
-- Read [SECURITY.md](SECURITY.md) for vulnerability disclosure procedures.
-
-## License
-
-Project Nexus is licensed under the [MIT License](LICENSE).
+- [intro.md](docs/docs/intro.md) covers the platform overview and technology stack.
+- [getting-started/quickstart.md](docs/docs/getting-started/quickstart.md) explains local and Docker setup.
+- [architecture/system-overview.md](docs/docs/architecture/system-overview.md) documents the modular monolith architecture and event flows.
+- [architecture/database-schema.md](docs/docs/architecture/database-schema.md) describes the PostgreSQL 17 and Prisma 7 data model.

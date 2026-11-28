@@ -11,6 +11,7 @@ import {
   Optional,
 } from '@nestjs/common';
 import { NotificationChannel, NotificationType, Prisma, ShopViolation } from '@prisma/client';
+import { AuditLogService } from '../../../core/audit/audit-log.service';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { ReputationService } from '../../users/services/reputation.service';
 import { QueryReportsInput, ReviewReportInput } from '../dtos/report-moderation.dto';
@@ -62,6 +63,7 @@ export class ReportModerationService {
     private readonly prisma: PrismaService,
     private readonly reputation: ReputationService,
     @Optional() private readonly notifications?: NotificationPublisher,
+    @Optional() private readonly auditLog?: AuditLogService,
   ) {}
 
   /**
@@ -239,18 +241,34 @@ export class ReportModerationService {
           );
         }
       }
-      await tx.eventLog.create({
-        data: {
-          eventName: 'ReportReviewed',
-          operatorId: actor.id,
-          payload: {
-            reportId,
-            from: report.status,
-            to: dto.status,
-            penaltyType: dto.penaltyType ?? null,
+      if (this.auditLog) {
+        await this.auditLog.record(
+          {
+            eventName: 'ReportReviewed',
+            operatorId: actor.id,
+            payload: {
+              reportId,
+              from: report.status,
+              to: dto.status,
+              penaltyType: dto.penaltyType ?? null,
+            },
           },
-        },
-      });
+          tx,
+        );
+      } else {
+        await tx.eventLog.create({
+          data: {
+            eventName: 'ReportReviewed',
+            operatorId: actor.id,
+            payload: {
+              reportId,
+              from: report.status,
+              to: dto.status,
+              penaltyType: dto.penaltyType ?? null,
+            },
+          },
+        });
+      }
       return result;
     });
   }

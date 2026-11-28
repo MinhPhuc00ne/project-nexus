@@ -1,9 +1,10 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ZodBody } from '@nexus/contracts/nest';
 import { PayosWebhookService } from '../services/payos-webhook.service';
 import { PayosService } from '../../payments/services/payos.service';
 import { ConfirmWebhookInput, ConfirmWebhookSchema } from '../dtos/confirm-webhook.dto';
+import { PayosWebhookInput, PayosWebhookSchema } from '../dtos/payos-webhook.dto';
 import { Public } from '../../../core/security/roles.decorator';
 import { Webhook } from '@payos/node';
 
@@ -25,11 +26,11 @@ export class PayosWebhookController {
   })
   @ApiResponse({ status: 200, description: 'Xác nhận webhook thành công' })
   @ApiResponse({ status: 400, description: 'Chữ ký webhook không hợp lệ' })
-  // The body stays unvalidated on purpose: what makes a PayOS callback
-  // trustworthy is its HMAC signature, which `PayosWebhookService` checks, and
-  // the payload's shape is the gateway's to change, not this platform's.
-  async handlePayosWebhook(@Body() webhookBody: Webhook) {
-    return this.webhooks.handle(webhookBody);
+  // `PayosWebhookSchema` uses `z.looseObject(...)` on both the envelope and
+  // `data` so structural validation applies without stripping extra fields
+  // needed by `PayosWebhookService` for HMAC-SHA256 signature verification.
+  async handlePayosWebhook(@ZodBody(PayosWebhookSchema) webhookBody: PayosWebhookInput) {
+    return this.webhooks.handle(webhookBody as unknown as Webhook);
   }
 
   @Public()

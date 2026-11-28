@@ -1,4 +1,5 @@
 import {
+  NotificationPublisher,
   publishNotification,
   publishNotifications,
 } from '../../../core/notifications/notification-publisher.service';
@@ -133,33 +134,43 @@ export async function notifyDeclinedOfferTx(
     auctionItemId: string | null;
     itemLabel: string;
   },
+  publisher?: NotificationPublisher,
 ): Promise<void> {
-  await publishNotification(tx, {
-    userId: params.buyerId,
-    auctionId: params.auctionId,
-    targetUrl: `/auction/${params.auctionId}`,
-    title: `Cảm ơn bạn đã phản hồi cho ${params.itemLabel}`,
-    content: `Hệ thống đã ghi nhận quyết định từ chối mua ${params.itemLabel}. Không có điểm uy tín nào bị trừ.`,
-    type: NotificationType.AUCTION,
-    channel: NotificationChannel.IN_APP,
-    metadata: {
-      actionType: 'SECOND_CHANCE_DECLINED_BUYER',
+  await publishNotification(
+    tx,
+    {
+      userId: params.buyerId,
       auctionId: params.auctionId,
-      auctionItemId: params.auctionItemId,
+      targetUrl: `/auction/${params.auctionId}`,
+      title: `Cảm ơn bạn đã phản hồi cho ${params.itemLabel}`,
+      content: `Hệ thống đã ghi nhận quyết định từ chối mua ${params.itemLabel}. Không có điểm uy tín nào bị trừ.`,
+      type: NotificationType.AUCTION,
+      channel: NotificationChannel.IN_APP,
+      metadata: {
+        actionType: 'SECOND_CHANCE_DECLINED_BUYER',
+        auctionId: params.auctionId,
+        auctionItemId: params.auctionItemId,
+      },
     },
-  });
+    publisher,
+  );
 
-  await notifyUsersTx(tx, [params.sellerId, params.adminId], {
-    auctionId: params.auctionId,
-    targetUrl: `/auction/${params.auctionId}`,
-    title: `Người mua kế tiếp đã từ chối mua ${params.itemLabel}`,
-    content: `Người mua dự bị đã từ chối tiếp nhận quyền mua ${params.itemLabel}. Lô đấu giá này đã kết thúc.`,
-    metadata: {
-      actionType: 'SECOND_CHANCE_DECLINED_NOTICE',
+  await notifyUsersTx(
+    tx,
+    [params.sellerId, params.adminId],
+    {
       auctionId: params.auctionId,
-      auctionItemId: params.auctionItemId,
+      targetUrl: `/auction/${params.auctionId}`,
+      title: `Người mua kế tiếp đã từ chối mua ${params.itemLabel}`,
+      content: `Người mua dự bị đã từ chối tiếp nhận quyền mua ${params.itemLabel}. Lô đấu giá này đã kết thúc.`,
+      metadata: {
+        actionType: 'SECOND_CHANCE_DECLINED_NOTICE',
+        auctionId: params.auctionId,
+        auctionItemId: params.auctionItemId,
+      },
     },
-  });
+    publisher,
+  );
 }
 
 export async function notifyUsersTx(
@@ -172,6 +183,7 @@ export async function notifyUsersTx(
     targetUrl?: string;
     metadata?: Record<string, unknown>;
   },
+  publisher?: NotificationPublisher,
 ): Promise<void> {
   const uniqueIds = [...new Set(userIds.filter((id): id is string => Boolean(id)))];
   if (!uniqueIds.length) return;
@@ -187,6 +199,7 @@ export async function notifyUsersTx(
       channel: NotificationChannel.IN_APP,
       metadata: payload.metadata as Prisma.InputJsonValue | undefined,
     })),
+    publisher,
   );
 }
 

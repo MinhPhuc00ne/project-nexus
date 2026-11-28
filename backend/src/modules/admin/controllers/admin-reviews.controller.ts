@@ -45,11 +45,12 @@ export class AdminReviewsController {
     summary: 'Admin/Staff xóa bình luận sản phẩm vi phạm, trừ điểm uy tín tác giả và gửi thông báo',
   })
   adminDeleteProductReview(
+    @CurrentUser('id') adminId: string,
     @CurrentUser('role') actorRole: string,
     @ZodParam('id', UuidParamSchema) id: string,
     @ZodBody(AdminDeleteReviewSchema) dto: AdminDeleteReviewInput,
   ): Promise<unknown> {
-    return this.reviews.adminDeleteReview(id, 'product', dto, actorRole);
+    return this.reviews.adminDeleteReview(id, 'product', dto, actorRole, adminId);
   }
 
   @Delete('admin/reviews/product/:id/seller-reply')
@@ -62,11 +63,12 @@ export class AdminReviewsController {
       'Admin/Staff gỡ phản hồi (sellerReply) vi phạm trên đánh giá sản phẩm, trừ điểm uy tín Seller và gửi thông báo',
   })
   adminRemoveSellerReply(
+    @CurrentUser('id') adminId: string,
     @CurrentUser('role') actorRole: string,
     @ZodParam('id', UuidParamSchema) id: string,
     @ZodBody(AdminDeleteReviewSchema) dto: AdminDeleteReviewInput,
   ): Promise<unknown> {
-    return this.reviews.adminRemoveSellerReply(id, dto, actorRole);
+    return this.reviews.adminRemoveSellerReply(id, dto, actorRole, adminId);
   }
 
   @Delete('admin/reviews/shop/:id')
@@ -78,11 +80,12 @@ export class AdminReviewsController {
     summary: 'Admin/Staff xóa đánh giá gian hàng vi phạm, trừ điểm uy tín tác giả và gửi thông báo',
   })
   adminDeleteShopReview(
+    @CurrentUser('id') adminId: string,
     @CurrentUser('role') actorRole: string,
     @ZodParam('id', UuidParamSchema) id: string,
     @ZodBody(AdminDeleteReviewSchema) dto: AdminDeleteReviewInput,
   ): Promise<unknown> {
-    return this.reviews.adminDeleteReview(id, 'shop', dto, actorRole);
+    return this.reviews.adminDeleteReview(id, 'shop', dto, actorRole, adminId);
   }
 
   @Patch('admin/reviews/product/:id/visibility')

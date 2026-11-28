@@ -4,6 +4,7 @@ import {
 } from '../../../core/notifications/notification-publisher.service';
 import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { NotificationChannel, NotificationType, Prisma } from '@prisma/client';
+import { AuditLogService } from '../../../core/audit/audit-log.service';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { ReputationService } from '../../users/services/reputation.service';
 import {
@@ -19,6 +20,7 @@ export class ReviewsModerationHelper {
     private readonly prisma: PrismaService,
     private readonly reputationService: ReputationService,
     @Optional() private readonly notifications?: NotificationPublisher,
+    @Optional() private readonly auditLog?: AuditLogService,
   ) {}
 
   async adminListReviews(query: QueryAdminReviewsInput): Promise<unknown> {
@@ -128,6 +130,7 @@ export class ReviewsModerationHelper {
     type: 'product' | 'shop',
     dto: AdminDeleteReviewInput,
     actorRole?: string,
+    actorId?: string,
   ): Promise<{ success: boolean; message: string }> {
     const actorLabel = actorRole === 'SUPPORT_STAFF' ? 'Nhân viên kiểm duyệt' : 'Admin';
     const refPrefix = actorRole === 'SUPPORT_STAFF' ? 'STAFF_DELETE' : 'ADMIN_DELETE';
@@ -165,6 +168,22 @@ export class ReviewsModerationHelper {
         });
 
         await tx.productReview.delete({ where: { id } });
+
+        await this.auditLog?.record(
+          {
+            eventName: 'admin.review.deleted',
+            operatorId: actorId ?? null,
+            payload: {
+              reviewId: id,
+              targetType: 'product',
+              reviewerId: review.reviewerId,
+              pointsDeducted: dto.pointsToDeduct,
+              reason: dto.reason.trim(),
+              actorRole: actorRole ?? null,
+            },
+          },
+          tx,
+        );
 
         if (typeof tx?.notification?.create === 'function') {
           await publishNotification(
@@ -206,6 +225,22 @@ export class ReviewsModerationHelper {
 
       await tx.review.delete({ where: { id } });
 
+      await this.auditLog?.record(
+        {
+          eventName: 'admin.review.deleted',
+          operatorId: actorId ?? null,
+          payload: {
+            reviewId: id,
+            targetType: 'shop',
+            reviewerId: review.reviewerId,
+            pointsDeducted: dto.pointsToDeduct,
+            reason: dto.reason.trim(),
+            actorRole: actorRole ?? null,
+          },
+        },
+        tx,
+      );
+
       if (typeof tx?.notification?.create === 'function') {
         await publishNotification(
           tx,
@@ -228,6 +263,7 @@ export class ReviewsModerationHelper {
     reviewId: string,
     dto: AdminDeleteReviewInput,
     actorRole?: string,
+    actorId?: string,
   ): Promise<{ success: boolean; message: string }> {
     const actorLabel = actorRole === 'SUPPORT_STAFF' ? 'Nhân viên kiểm duyệt' : 'Admin';
     const refPrefix = actorRole === 'SUPPORT_STAFF' ? 'STAFF_DELETE' : 'ADMIN_DELETE';
@@ -270,6 +306,21 @@ export class ReviewsModerationHelper {
           sellerRepliedAt: null,
         },
       });
+
+      await this.auditLog?.record(
+        {
+          eventName: 'admin.review.seller_reply_removed',
+          operatorId: actorId ?? null,
+          payload: {
+            reviewId,
+            sellerId: review.product.sellerId,
+            pointsDeducted: dto.pointsToDeduct,
+            reason: dto.reason.trim(),
+            actorRole: actorRole ?? null,
+          },
+        },
+        tx,
+      );
 
       if (typeof tx?.notification?.create === 'function') {
         await publishNotification(
@@ -446,6 +497,22 @@ export class ReviewsModerationHelper {
           this.notifications,
         );
       }
+
+      await this.auditLog?.record(
+        {
+          eventName: 'admin.review.visibility_updated',
+          operatorId: adminId,
+          payload: {
+            reviewId: id,
+            targetType,
+            isHidden: dto.isHidden,
+            pointsDeducted: pointsToDeduct,
+            reason,
+            actorRole: actorRole ?? null,
+          },
+        },
+        tx,
+      );
 
       return {
         success: true,

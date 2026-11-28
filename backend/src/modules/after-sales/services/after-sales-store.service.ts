@@ -4,6 +4,7 @@ import {
 } from '../../../core/notifications/notification-publisher.service';
 import { ForbiddenException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { AfterSalesRequest, OrderRefund, Prisma } from '@prisma/client';
+import { AuditLogService } from '../../../core/audit/audit-log.service';
 import { QueryAfterSalesInput, QueryRefundsInput } from '../dtos/after-sales.dto';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { ReputationService } from '../../users/services/reputation.service';
@@ -26,6 +27,7 @@ export class AfterSalesStoreService {
     private readonly prisma: PrismaService,
     private readonly reputation: ReputationService,
     @Optional() private readonly notifications?: NotificationPublisher,
+    @Optional() private readonly auditLog?: AuditLogService,
   ) {}
 
   async lock(tx: Prisma.TransactionClient, orderId: string): Promise<AfterSalesOrder> {
@@ -57,13 +59,24 @@ export class AfterSalesStoreService {
     action: string,
     detail: Prisma.InputJsonObject = {},
   ): Promise<void> {
-    await tx.eventLog.create({
-      data: {
-        eventName: `order.${action}`,
-        operatorId: actor.id,
-        payload: { orderId: order.id, ...detail },
-      },
-    });
+    if (this.auditLog) {
+      await this.auditLog.record(
+        {
+          eventName: `order.${action}`,
+          operatorId: actor.id,
+          payload: { orderId: order.id, ...detail },
+        },
+        tx,
+      );
+    } else {
+      await tx.eventLog.create({
+        data: {
+          eventName: `order.${action}`,
+          operatorId: actor.id,
+          payload: { orderId: order.id, ...detail },
+        },
+      });
+    }
     for (const userId of [order.buyerId, order.sellerId]) {
       await publishNotification(
         tx,

@@ -3,9 +3,11 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { notifyAllAdmins } from '../../../core/notifications/admin-notification.util';
+import { NotificationPublisher } from '../../../core/notifications/notification-publisher.service';
 import { assertCleanContent } from '../../../core/moderation/content-moderation.util';
 import { CreateProductInput } from '../dtos/create-product.dto';
 import { UpdateProductInput } from '../dtos/update-product.dto';
@@ -23,6 +25,7 @@ export class ProductService {
     private readonly prisma: PrismaService,
     private readonly inventoryService: InventoryService,
     private readonly search: ProductSearchService,
+    @Optional() private readonly notifications?: NotificationPublisher,
   ) {}
 
   private async validateSellerActiveShop(
@@ -87,12 +90,16 @@ export class ProductService {
         product.id,
         dto.quantity,
       );
-      await notifyAllAdmins(tx, {
-        title: 'Sản phẩm mới vừa được đăng bán',
-        content: `Sản phẩm "${product.title}" vừa được đăng tải với giá ${Number(dto.basePrice).toLocaleString('vi-VN')} VND.`,
-        type: NotificationType.SYSTEM,
-        targetUrl: '/admin/products',
-      });
+      await notifyAllAdmins(
+        tx,
+        {
+          title: 'Sản phẩm mới vừa được đăng bán',
+          content: `Sản phẩm "${product.title}" vừa được đăng tải với giá ${Number(dto.basePrice).toLocaleString('vi-VN')} VND.`,
+          type: NotificationType.SYSTEM,
+          targetUrl: '/admin/products',
+        },
+        this.notifications,
+      );
       return {
         ...product,
         basePrice: Number(product.basePrice),

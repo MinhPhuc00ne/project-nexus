@@ -1,10 +1,13 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
+  AuctionAwardStatus,
+  AuctionStatus,
   NotificationChannel,
   NotificationType,
   OrderCancellationActor,
   OrderStatus,
+  PaymentProvider,
   PaymentStatus,
   ReservationStatus,
 } from '@prisma/client';
@@ -19,6 +22,7 @@ import { PlatformSettingsService } from '../../../core/settings/platform-setting
 const SWEEP_INTERVAL_MS = 60_000;
 const ORDER_BATCH_SIZE = 25;
 const RESERVATION_BATCH_SIZE = 50;
+const MAX_RESERVATION_SWEEP_BATCHES = 20;
 
 /**
  * Periodically cancels overdue `PENDING_PAYMENT` orders and releases expired
@@ -78,6 +82,8 @@ export class OrderExpirationService implements OnModuleInit, OnModuleDestroy {
     const overdueOrders = await this.prisma.order.findMany({
       where: {
         status: OrderStatus.PENDING_PAYMENT,
+        isAuction: false,
+        payments: { none: { provider: PaymentProvider.COD } },
         createdAt: { lte: orderCutoff },
       },
       take: ORDER_BATCH_SIZE,
@@ -91,23 +97,79 @@ export class OrderExpirationService implements OnModuleInit, OnModuleDestroy {
       if (cancelled) expiredOrders += 1;
     }
 
-    const expiredReservations = await this.prisma.inventoryReservation.findMany({
-      where: {
-        status: ReservationStatus.PENDING,
-        expiresAt: { lte: now },
-      },
-      take: RESERVATION_BATCH_SIZE,
-      orderBy: { expiresAt: 'asc' },
-      select: { id: true },
-    });
-
-    let releasedReservations = 0;
-    for (const reservation of expiredReservations) {
-      const released = await this.releaseStandaloneReservation(reservation.id);
-      if (released) releasedReservations += 1;
-    }
+    const releasedReservations = await this.sweepExpiredReservations(now);
 
     return { expiredOrders, releasedReservations };
+  }
+
+  private async sweepExpiredReservations(now: Date): Promise<number> {
+    let releasedReservations = 0;
+    let cursor: { expiresAt: Date; id: string } | undefined;
+
+    for (let batch = 0; batch < MAX_RESERVATION_SWEEP_BATCHES; batch += 1) {
+      const expiredReservations = await this.prisma.inventoryReservation.findMany({
+        where: {
+          status: ReservationStatus.PENDING,
+          expiresAt: { lte: now },
+          ...(cursor
+            ? {
+                OR: [
+                  { expiresAt: { gt: cursor.expiresAt } },
+                  { expiresAt: cursor.expiresAt, id: { gt: cursor.id } },
+                ],
+              }
+            : {}),
+        },
+        take: RESERVATION_BATCH_SIZE,
+        orderBy: [{ expiresAt: 'asc' }, { id: 'asc' }],
+        select: { id: true, expiresAt: true },
+      });
+
+      if (expiredReservations.length === 0) {
+        break;
+      }
+
+      for (const reservation of expiredReservations) {
+        const released = await this.releaseStandaloneReservation(reservation.id);
+        if (released) releasedReservations += 1;
+      }
+
+      if (
+        expiredReservations.length < RESERVATION_BATCH_SIZE ||
+        releasedReservations >= RESERVATION_BATCH_SIZE
+      ) {
+        break;
+      }
+
+      const nextCursor = this.resolveNextReservationCursor(
+        expiredReservations[expiredReservations.length - 1],
+        cursor,
+      );
+      if (!nextCursor) {
+        break;
+      }
+      cursor = nextCursor;
+    }
+
+    return releasedReservations;
+  }
+
+  private resolveNextReservationCursor(
+    last: { id: string; expiresAt?: Date | string },
+    prevCursor?: { expiresAt: Date; id: string },
+  ): { expiresAt: Date; id: string } | undefined {
+    const lastExpiresAt = last.expiresAt ? new Date(last.expiresAt) : undefined;
+    if (!lastExpiresAt || Number.isNaN(lastExpiresAt.getTime()) || !last.id) {
+      return undefined;
+    }
+    if (
+      prevCursor &&
+      lastExpiresAt.getTime() === prevCursor.expiresAt.getTime() &&
+      last.id === prevCursor.id
+    ) {
+      return undefined;
+    }
+    return { expiresAt: lastExpiresAt, id: last.id };
   }
 
   async expirePendingOrder(orderId: string): Promise<boolean> {
@@ -115,9 +177,16 @@ export class OrderExpirationService implements OnModuleInit, OnModuleDestroy {
       await tx.$queryRaw`SELECT id FROM orders WHERE id = ${orderId} FOR UPDATE`;
       const order = await tx.order.findUnique({
         where: { id: orderId },
-        select: { id: true, buyerId: true, status: true, paymentGroupId: true },
+        select: { id: true, buyerId: true, status: true, isAuction: true, paymentGroupId: true },
       });
-      if (!order || order.status !== OrderStatus.PENDING_PAYMENT) {
+      if (!order || order.isAuction || order.status !== OrderStatus.PENDING_PAYMENT) {
+        return false;
+      }
+
+      const codCount = tx.payment?.count
+        ? await tx.payment.count({ where: { orderId: order.id, provider: PaymentProvider.COD } })
+        : 0;
+      if (codCount > 0) {
         return false;
       }
 
@@ -201,19 +270,93 @@ export class OrderExpirationService implements OnModuleInit, OnModuleDestroy {
 
   async releaseStandaloneReservation(reservationId: string): Promise<boolean> {
     return this.prisma.$transaction(async (tx) => {
+      const reservation = await tx.inventoryReservation.findUnique({
+        where: { id: reservationId },
+        select: { id: true, inventoryId: true, quantity: true, referenceId: true, status: true },
+      });
+      if (
+        !reservation ||
+        (reservation.status !== undefined && reservation.status !== ReservationStatus.PENDING)
+      ) {
+        return false;
+      }
+
+      const activeOrder = tx.order?.findUnique
+        ? await tx.order.findUnique({
+            where: { id: reservation.referenceId },
+            select: { status: true },
+          })
+        : null;
+      if (
+        activeOrder &&
+        activeOrder.status !== OrderStatus.CANCELLED &&
+        activeOrder.status !== OrderStatus.REFUNDED
+      ) {
+        return false;
+      }
+
+      const liveAuctionStatuses = [
+        AuctionStatus.DRAFT,
+        AuctionStatus.SCHEDULED,
+        AuctionStatus.ACTIVE,
+        AuctionStatus.EXTENDED,
+      ];
+      const activeAuction = tx.auction?.findFirst
+        ? await tx.auction.findFirst({
+            where: { id: reservation.referenceId, status: { in: liveAuctionStatuses } },
+            select: { id: true },
+          })
+        : null;
+      if (activeAuction) {
+        return false;
+      }
+
+      const activeLot = tx.auctionItem?.findFirst
+        ? await tx.auctionItem.findFirst({
+            where: {
+              id: reservation.referenceId,
+              OR: [
+                { lotStatus: { in: liveAuctionStatuses } },
+                { auction: { status: { in: liveAuctionStatuses } } },
+              ],
+            },
+            select: { id: true },
+          })
+        : null;
+      if (activeLot) {
+        return false;
+      }
+
+      const activeAward = tx.auctionAward?.findFirst
+        ? await tx.auctionAward.findFirst({
+            where: {
+              status: {
+                in: [
+                  AuctionAwardStatus.AWAITING_ACCEPTANCE,
+                  AuctionAwardStatus.AWAITING_DEPOSIT,
+                  AuctionAwardStatus.AWAITING_CHECKOUT,
+                  AuctionAwardStatus.PAID,
+                ],
+              },
+              OR: [
+                { id: reservation.referenceId },
+                { orderId: reservation.referenceId },
+                { auctionItemId: reservation.referenceId },
+                { auctionId: reservation.referenceId },
+              ],
+            },
+            select: { id: true },
+          })
+        : null;
+      if (activeAward) {
+        return false;
+      }
+
       const claimed = await tx.inventoryReservation.updateMany({
         where: { id: reservationId, status: ReservationStatus.PENDING },
         data: { status: ReservationStatus.RELEASED },
       });
       if (claimed.count !== 1) {
-        return false;
-      }
-
-      const reservation = await tx.inventoryReservation.findUnique({
-        where: { id: reservationId },
-        select: { id: true, inventoryId: true, quantity: true, referenceId: true },
-      });
-      if (!reservation) {
         return false;
       }
 

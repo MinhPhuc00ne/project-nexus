@@ -1,2 +1,0 @@
-include:
-  - path: infra/docker-compose.yml

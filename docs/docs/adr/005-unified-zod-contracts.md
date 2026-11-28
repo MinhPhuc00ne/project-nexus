@@ -12,7 +12,7 @@ Previously, `packages/types` (`@nexus/types`) and `packages/contracts` (`@nexus/
 
 ## Decision
 
-- Consolidate all shared enums, Zod 4 request/query/parameter schemas, response envelopes, and WebSocket event contracts into `@nexus/contracts` (`packages/contracts/`), removing `packages/types/`.
+- Consolidate all shared enums, Zod 4 request, query, and parameter schemas, response envelopes, and WebSocket event contracts into `@nexus/contracts` (`packages/contracts/`), removing `packages/types/`.
 - Enforce `@ZodBody`, `@ZodQuery`, and `@ZodParam` (`@nexus/contracts/nest`) across all 16 backend domain modules via `StandardSchemaValidationPipe`.
 - Define 30 canonical `AppErrorCode` constants in `packages/contracts/src/common/error-codes.ts` and map every code in `frontend/src/i18n/locales/{en,vi}/errors.json` so `GlobalHttpExceptionFilter` emits structured `errorCode`s that the frontend translates dynamically.
 

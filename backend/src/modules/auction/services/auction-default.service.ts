@@ -18,6 +18,7 @@ import {
   WalletTransactionStatus,
   WalletTransactionType,
 } from '@prisma/client';
+import { AuditLogService } from '../../../core/audit/audit-log.service';
 import { DomainEventsService } from '../../../core/events/domain-events.service';
 import {
   NotificationPublisher,
@@ -51,6 +52,7 @@ export class AuctionDefaultService {
     private readonly treasury: TreasuryService,
     @Optional() private readonly domainEvents?: DomainEventsService,
     @Optional() private readonly notifications?: NotificationPublisher,
+    @Optional() private readonly auditLog?: AuditLogService,
   ) {}
 
   /**
@@ -269,6 +271,22 @@ export class AuctionDefaultService {
         this.notifications,
       );
 
+      await this.auditLog?.record(
+        {
+          eventName: 'admin.auction_award.payment_default',
+          operatorId: adminId ?? null,
+          payload: {
+            awardId: current.id,
+            auctionId: current.auctionId,
+            auctionItemId: current.auctionItemId,
+            buyerId,
+            tier: current.tier,
+            note: note ?? null,
+          },
+        },
+        tx,
+      );
+
       if (current.tier === AuctionAwardTier.PRIMARY_WINNER) {
         const secondChance = await this.inviteSecondChanceBuyerTx(tx, {
           auctionId: current.auctionId,
@@ -409,6 +427,22 @@ export class AuctionDefaultService {
             note ?? `Admin (${adminId}) đã xác nhận khách hàng thứ hai không mua nữa.`,
         },
       });
+
+      await this.auditLog?.record(
+        {
+          eventName: 'admin.auction_award.second_chance_withdrawn',
+          operatorId: adminId,
+          payload: {
+            awardId: award.id,
+            auctionId: award.auctionId,
+            auctionItemId: award.auctionItemId,
+            buyerId,
+            refundedDeposit,
+            note: note ?? null,
+          },
+        },
+        tx,
+      );
 
       if (award.auctionItemId) {
         await tx.auctionItem.update({
@@ -606,18 +640,23 @@ export class AuctionDefaultService {
       this.notifications,
     );
 
-    await notifyUsersTx(tx, [params.sellerId, params.adminId], {
-      auctionId: params.auctionId,
-      targetUrl: `/auction/${params.auctionId}`,
-      title: `Đã chuyển quyền mua dự bị cho ${params.itemLabel}`,
-      content: `Sau khi người thắng đầu tiên quá hạn thanh toán, hệ thống đã gửi lời mời mua hàng tới người trả giá cao kế tiếp cho ${params.itemLabel} (${formatVnd(offerAmount)}).`,
-      metadata: {
-        actionType: 'SECOND_CHANCE_SENT',
-        awardId: secondAward.id,
+    await notifyUsersTx(
+      tx,
+      [params.sellerId, params.adminId],
+      {
         auctionId: params.auctionId,
-        auctionItemId: params.auctionItemId,
+        targetUrl: `/auction/${params.auctionId}`,
+        title: `Đã chuyển quyền mua dự bị cho ${params.itemLabel}`,
+        content: `Sau khi người thắng đầu tiên quá hạn thanh toán, hệ thống đã gửi lời mời mua hàng tới người trả giá cao kế tiếp cho ${params.itemLabel} (${formatVnd(offerAmount)}).`,
+        metadata: {
+          actionType: 'SECOND_CHANCE_SENT',
+          awardId: secondAward.id,
+          auctionId: params.auctionId,
+          auctionItemId: params.auctionItemId,
+        },
       },
-    });
+      this.notifications,
+    );
 
     return secondAward;
   }

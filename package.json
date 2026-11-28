@@ -5,6 +5,10 @@
   "license": "MIT",
   "type": "module",
   "packageManager": "npm@11.19.0",
+  "engines": {
+    "node": ">=24",
+    "npm": ">=10"
+  },
   "description": "Project Nexus - Multi-Shop E-Commerce and Real-Time 3D Live Auctions",
   "homepage": "https://minhphuc00ne.github.io/project-nexus/",
   "repository": {
@@ -34,7 +38,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check:cycles": "npm run check:cycles --workspace=nexus-backend",
-    "env:check": "npm run env:check --workspace=nexus-backend",
+    "env:check": "node backend/scripts/check-env.mjs",
     "i18n:check": "node frontend/scripts/check-i18n-parity.mjs",
     "lang:check": "node scripts/check-lang.mjs",
     "test": "turbo test",
@@ -51,12 +55,12 @@
     "admin:create": "npm run admin:create --workspace=nexus-backend",
     "seed:demo": "npm run seed:demo --workspace=nexus-backend",
     "seed:demo:reset": "npm run seed:demo:reset --workspace=nexus-backend",
-    "docker:infra": "docker compose up -d",
-    "docker:full": "docker compose --profile full up --build -d",
+    "docker:infra": "docker compose -f infra/docker-compose.yml up -d",
+    "docker:full": "docker compose -f infra/docker-compose.yml --profile full up --build -d",
     "docker:demo": "docker compose -f infra/docker-compose.yml -f infra/docker-compose.demo.yml --profile full --profile demo up --build -d",
-    "docker:down": "docker compose --profile full down",
-    "docker:clean": "docker compose --profile full down -v",
-    "docker:logs": "docker compose logs -f",
+    "docker:down": "docker compose -f infra/docker-compose.yml --profile full down",
+    "docker:clean": "docker compose -f infra/docker-compose.yml --profile full down -v",
+    "docker:logs": "docker compose -f infra/docker-compose.yml logs -f",
     "docs:openapi": "npm run docs:openapi --workspace=nexus-backend",
     "docs:check": "node docs/scripts/check-docs.mjs",
     "docs:dev": "npm run start --workspace=nexus-docs",
@@ -65,17 +69,17 @@
     "prepare": "husky"
   },
   "devDependencies": {
-    "@commitlint/cli": "^21.2.3",
-    "@commitlint/config-conventional": "^21.2.3",
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
     "@playwright/test": "^1.65.1",
-    "eslint": "^10.12.0",
+    "eslint": "^10.16.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.8",
-    "eslint-plugin-sonarjs": "^4.2.2",
+    "eslint-plugin-sonarjs": "^4.2.3",
     "husky": "^9.1.7",
-    "lint-staged": "^17.6.0",
-    "prettier": "^3.9.10",
-    "turbo": "^2.11.10",
-    "typescript-eslint": "^8.71.1"
+    "lint-staged": "^17.6.2",
+    "prettier": "^3.10.1",
+    "turbo": "^2.11.13",
+    "typescript-eslint": "^8.74.0"
   }
 }

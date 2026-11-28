@@ -168,12 +168,16 @@ export class RefundService {
       this.notifications,
     );
     if (!input.toWallet) {
-      await notifyAllAdmins(tx, {
-        title: 'Khoản hoàn tiền ngoại sàn chờ Admin xác nhận',
-        content: `Đơn #${input.orderId.slice(0, 8)} cần Admin đối soát & xác nhận hoàn ${input.amount.toString()} VND về nguồn thanh toán gốc.`,
-        type: NotificationType.PAYMENT,
-        targetUrl: '/admin/refunds',
-      });
+      await notifyAllAdmins(
+        tx,
+        {
+          title: 'Khoản hoàn tiền ngoại sàn chờ Admin xác nhận',
+          content: `Đơn #${input.orderId.slice(0, 8)} cần Admin đối soát & xác nhận hoàn ${input.amount.toString()} VND về nguồn thanh toán gốc.`,
+          type: NotificationType.PAYMENT,
+          targetUrl: '/admin/refunds',
+        },
+        this.notifications,
+      );
     }
     return refund;
   }
