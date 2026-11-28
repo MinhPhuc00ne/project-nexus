@@ -86,33 +86,33 @@ export class AuctionBiddingHelper {
     ]);
 
     if (!auction) {
-      throw new NotFoundException('Không tìm thấy phòng đấu giá.');
+      throw new NotFoundException('Auction room not found.');
     }
     if (!user) {
-      throw new NotFoundException('Không tìm thấy tài khoản.');
+      throw new NotFoundException('Account not found.');
     }
 
     const introState = computeIntroState(auction.status, auction.startTime, auction.items.length);
     const reasons: string[] = [];
 
     if (user.role === Role.ADMIN || user.role === Role.SUPPORT_STAFF) {
-      reasons.push('Tài khoản Admin / Nhân viên hỗ trợ chỉ có quyền quản lý và quan sát.');
+      reasons.push('Admin and Support Staff accounts only have management and view access.');
     }
     if (user.isSellerActive) {
       reasons.push(
-        'Tài khoản đang ở chế độ Người bán chỉ được xem. Vui lòng chuyển sang chế độ Người mua để đặt giá.',
+        'Your account is in Seller mode (view-only). Please switch to Buyer mode to place bids.',
       );
     }
     if (user.isShopSuspended || user.trustLevel === ReputationTrustLevel.SUSPENDED) {
-      reasons.push('Tài khoản đang bị tạm khóa hoặc bị hạn chế quyền giao dịch.');
+      reasons.push('Account is suspended or restricted from trading.');
     }
     if (user.reputationScore < auction.minBuyerReputation) {
       reasons.push(
-        `Điểm uy tín hiện tại (${user.reputationScore}) thấp hơn mức tối thiểu (${auction.minBuyerReputation}).`,
+        `Current reputation score (${user.reputationScore}) is below the minimum required (${auction.minBuyerReputation}).`,
       );
     }
     if (!wallet) {
-      reasons.push('Bạn chưa khởi tạo ví nền tảng để khóa 100% tiền giữ chỗ khi đặt giá.');
+      reasons.push('You have not initialized a platform wallet to lock 100% bid holds.');
     }
 
     return {
@@ -147,18 +147,18 @@ export class AuctionBiddingHelper {
       },
     });
     if (!bidder) {
-      throw new NotFoundException('Không tìm thấy tài khoản đặt giá.');
+      throw new NotFoundException('Bidder account not found.');
     }
     if (bidder.role === Role.ADMIN || bidder.role === Role.SUPPORT_STAFF) {
-      throw new ForbiddenException('Admin và Nhân viên hỗ trợ không thể tham gia đặt giá.');
+      throw new ForbiddenException('Admin and Support Staff accounts cannot place bids.');
     }
     if (bidder.isSellerActive) {
       throw new ForbiddenException(
-        'Bạn đang ở chế độ Người bán nên chỉ có thể xem phòng đấu giá. Vui lòng chuyển về chế độ Người mua để đặt giá.',
+        'You are in Seller mode and can only view the auction room. Please switch to Buyer mode to bid.',
       );
     }
     if (bidder.isShopSuspended || bidder.trustLevel === ReputationTrustLevel.SUSPENDED) {
-      throw new ForbiddenException('Tài khoản đang bị hạn chế quyền tham gia đấu giá.');
+      throw new ForbiddenException('Your account is restricted from participating in auctions.');
     }
 
     const result = await this.prisma.$transaction(async (tx) => {
@@ -175,13 +175,13 @@ export class AuctionBiddingHelper {
       });
       if (!auction) {
         throw new NotFoundException({
-          message: 'Không tìm thấy phòng đấu giá.',
+          message: 'Auction room not found.',
           errorCode: AppErrorCode.AUCTION_NOT_FOUND,
         });
       }
       if (auction.status !== AuctionStatus.ACTIVE && auction.status !== AuctionStatus.EXTENDED) {
         throw new BadRequestException({
-          message: 'Phòng đấu giá hiện không trong trạng thái mở đặt giá.',
+          message: 'Auction room is not currently open for bidding.',
           errorCode: AppErrorCode.AUCTION_NOT_LIVE,
         });
       }
@@ -189,13 +189,13 @@ export class AuctionBiddingHelper {
       const introState = computeIntroState(auction.status, auction.startTime, auction.items.length);
       if (introState.isIntroActive) {
         throw new BadRequestException(
-          'Phòng đấu giá đang phát đoạn giới thiệu 3D, nút đặt giá sẽ mở sau khi giới thiệu kết thúc.',
+          'The auction room is currently playing the 3D intro; bidding will open once the intro finishes.',
         );
       }
 
       if (bidder.reputationScore < auction.minBuyerReputation) {
         throw new ForbiddenException(
-          `Điểm uy tín tối thiểu để tham gia đấu giá là ${auction.minBuyerReputation}.`,
+          `Minimum reputation score required to bid is ${auction.minBuyerReputation}.`,
         );
       }
 
@@ -205,7 +205,7 @@ export class AuctionBiddingHelper {
           targetItemId = auction.items[0].id;
         } else {
           throw new BadRequestException(
-            'Phòng đấu giá có nhiều lô hàng. Vui lòng chọn đúng lô muốn đặt giá (auctionItemId).',
+            'Auction room has multiple lots. Please select the exact lot to bid on (auctionItemId).',
           );
         }
       }
@@ -215,17 +215,17 @@ export class AuctionBiddingHelper {
         where: { id: targetItemId, auctionId, status: AuctionItemStatus.APPROVED },
       });
       if (!lot) {
-        throw new NotFoundException('Không tìm thấy lô hàng hợp lệ trong phòng đấu giá này.');
+        throw new NotFoundException('Valid lot not found in this auction room.');
       }
       if (lot.sellerId === bidderId) {
         throw new ForbiddenException({
-          message: 'Người bán không thể tự đặt giá cho vật phẩm của chính mình.',
+          message: 'Sellers cannot bid on their own items.',
           errorCode: AppErrorCode.AUCTION_BID_SELF_FORBIDDEN,
         });
       }
       if (lot.lotStatus !== AuctionStatus.ACTIVE && lot.lotStatus !== AuctionStatus.EXTENDED) {
         throw new BadRequestException({
-          message: 'Lô hàng này đã kết thúc nhận lượt đặt giá.',
+          message: 'This lot has closed for bidding.',
           errorCode: AppErrorCode.AUCTION_NOT_LIVE,
         });
       }
@@ -233,7 +233,7 @@ export class AuctionBiddingHelper {
       const now = new Date();
       const effectiveLotEndTime = lot.endTime ?? auction.endTime;
       if (effectiveLotEndTime.getTime() <= now.getTime()) {
-        throw new BadRequestException('Lô hàng này đã hết thời gian đặt giá.');
+        throw new BadRequestException('Bidding time for this lot has expired.');
       }
 
       const startingPrice = Number(lot.startingPrice ?? lot.proposedStartingPrice);
@@ -250,9 +250,7 @@ export class AuctionBiddingHelper {
       const previousBidderId = lot.currentHighestBidderId;
 
       if (previousBidderId === bidderId) {
-        throw new BadRequestException(
-          'Bạn đang là người trả giá cao nhất hiện tại cho lô hàng này.',
-        );
+        throw new BadRequestException('You are already the current highest bidder for this lot.');
       }
 
       const requiredMinimum =
@@ -264,8 +262,8 @@ export class AuctionBiddingHelper {
         throw new BadRequestException({
           message:
             lot.totalBidsCount === 0 && reservePrice && reservePrice > startingPrice
-              ? `Mức giá đặt đầu tiên phải đạt tối thiểu giá sàn (${formatVnd(requiredMinimum)}).`
-              : `Giá đặt tối thiểu cho lượt tiếp theo là ${formatVnd(requiredMinimum)}.`,
+              ? `Opening bid must meet at least the reserve price (${formatVnd(requiredMinimum)}).`
+              : `Minimum bid for the next increment is ${formatVnd(requiredMinimum)}.`,
           errorCode: AppErrorCode.AUCTION_BID_TOO_LOW,
         });
       }
@@ -280,7 +278,7 @@ export class AuctionBiddingHelper {
       const bidderWallet = await tx.wallet.findUnique({ where: { userId: bidderId } });
       if (!bidderWallet || Number(bidderWallet.balance) < dto.bidAmount) {
         throw new BadRequestException({
-          message: `Số dư ví khả dụng không đủ để giữ chỗ 100% mức giá đặt (${formatVnd(dto.bidAmount)}).`,
+          message: `Available wallet balance is insufficient to hold 100% of your bid (${formatVnd(dto.bidAmount)}).`,
           errorCode: AppErrorCode.AUCTION_DEPOSIT_REQUIRED,
         });
       }
@@ -299,7 +297,7 @@ export class AuctionBiddingHelper {
           amount: -dto.bidAmount,
           status: WalletTransactionStatus.SUCCESS,
           referenceId: auctionId,
-          description: `Giữ chỗ 100% giá đặt (${formatVnd(dto.bidAmount)}) cho ${lotDisplayTitle(lot.lotNumber, lot.title)}.`,
+          description: `100% bid hold (${formatVnd(dto.bidAmount)}) for ${lotDisplayTitle(lot.lotNumber, lot.title)}.`,
         },
       });
 
@@ -320,7 +318,7 @@ export class AuctionBiddingHelper {
               amount: currentHighestBid,
               status: WalletTransactionStatus.SUCCESS,
               referenceId: auctionId,
-              description: `Hoàn 100% tiền giữ chỗ (${formatVnd(currentHighestBid)}) do có người trả giá cao hơn tại ${lotDisplayTitle(lot.lotNumber, lot.title)}.`,
+              description: `100% bid hold released (${formatVnd(currentHighestBid)}) after being outbid on ${lotDisplayTitle(lot.lotNumber, lot.title)}.`,
             },
           });
         }
@@ -331,8 +329,8 @@ export class AuctionBiddingHelper {
             userId: previousBidderId,
             auctionId,
             targetUrl: auctionTargetUrl(auctionId),
-            title: `Bạn đã bị vượt giá tại ${lotDisplayTitle(lot.lotNumber, lot.title)}`,
-            content: `Đã có người trả giá ${formatVnd(dto.bidAmount)} cho ${lotDisplayTitle(lot.lotNumber, lot.title)}. Toàn bộ ${formatVnd(currentHighestBid)} giữ chỗ của bạn đã được mở khóa về ví.`,
+            title: `You have been outbid on ${lotDisplayTitle(lot.lotNumber, lot.title)}`,
+            content: `Another bidder placed ${formatVnd(dto.bidAmount)} on ${lotDisplayTitle(lot.lotNumber, lot.title)}. Your entire ${formatVnd(currentHighestBid)} hold has been unlocked back to your wallet.`,
             type: NotificationType.AUCTION,
             channel: NotificationChannel.IN_APP,
             metadata: {
@@ -449,10 +447,10 @@ export class AuctionBiddingHelper {
       where: { id: itemId, auctionId, status: AuctionItemStatus.APPROVED },
     });
     if (!lot) {
-      throw new NotFoundException('Không tìm thấy lô hàng đã duyệt trong phòng đấu giá này.');
+      throw new NotFoundException('Approved lot not found in this auction room.');
     }
     if (lot.lotStatus !== AuctionStatus.ACTIVE && lot.lotStatus !== AuctionStatus.EXTENDED) {
-      throw new BadRequestException('Lô hàng này chưa bắt đầu hoặc đã kết thúc trước đó.');
+      throw new BadRequestException('This lot has not started or has already ended.');
     }
 
     return this.endLotInternal(itemId, adminId);
@@ -521,7 +519,7 @@ export class AuctionBiddingHelper {
         },
       });
       if (!lot) {
-        throw new NotFoundException('Không tìm thấy lô hàng đấu giá.');
+        throw new NotFoundException('Auction lot not found.');
       }
 
       if (lot.lotStatus !== AuctionStatus.ACTIVE && lot.lotStatus !== AuctionStatus.EXTENDED) {
@@ -579,8 +577,8 @@ export class AuctionBiddingHelper {
             userId: lot.sellerId,
             auctionId: lot.auctionId,
             targetUrl: `/seller/auctions/${lot.auctionId}`,
-            title: `${lotDisplayTitle(lot.lotNumber, lot.title)} đã kết thúc`,
-            content: `${lotDisplayTitle(lot.lotNumber, lot.title)} đã có người thắng với giá ${formatVnd(Number(highestBid.bidAmount))}. Người thắng có 24 giờ để hoàn tất thanh toán 70% còn lại và phí vận chuyển.`,
+            title: `${lotDisplayTitle(lot.lotNumber, lot.title)} has ended`,
+            content: `${lotDisplayTitle(lot.lotNumber, lot.title)} was won at ${formatVnd(Number(highestBid.bidAmount))}. The winner has 24 hours to complete payment for the remaining 70% plus shipping.`,
             type: NotificationType.AUCTION,
             channel: NotificationChannel.IN_APP,
             metadata: {
@@ -613,7 +611,7 @@ export class AuctionBiddingHelper {
                 amount,
                 status: WalletTransactionStatus.SUCCESS,
                 referenceId: lot.auctionId,
-                description: `Hoàn 100% tiền giữ chỗ do ${lotDisplayTitle(lot.lotNumber, lot.title)} chưa đạt giá sàn.`,
+                description: `100% bid hold released because ${lotDisplayTitle(lot.lotNumber, lot.title)} did not meet the reserve price.`,
               },
             });
           }
@@ -625,8 +623,8 @@ export class AuctionBiddingHelper {
             userId: lot.sellerId,
             auctionId: lot.auctionId,
             targetUrl: '/seller/auctions',
-            title: `${lotDisplayTitle(lot.lotNumber, lot.title)} kết thúc không có người mua`,
-            content: `${lotDisplayTitle(lot.lotNumber, lot.title)} đã kết thúc mà không có lượt đặt giá đạt giá sàn. Luồng đấu giá cho món hàng này đã đóng.`,
+            title: `${lotDisplayTitle(lot.lotNumber, lot.title)} ended unsold`,
+            content: `${lotDisplayTitle(lot.lotNumber, lot.title)} ended without a bid meeting the reserve price. The auction flow for this item is now closed.`,
             type: NotificationType.AUCTION,
             channel: NotificationChannel.IN_APP,
           },

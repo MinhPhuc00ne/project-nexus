@@ -36,26 +36,26 @@ export class ProductService {
       where: { id: sellerId },
       select: { role: true, isSellerActive: true, isShopSuspended: true, suspensionReason: true },
     });
-    if (!user) throw new NotFoundException('Không tìm thấy thông tin người bán.');
+    if (!user) throw new NotFoundException('Seller information not found.');
     if (user.role === Role.ADMIN) return;
     if (user.role !== Role.SELLER)
-      throw new ForbiddenException('Chỉ Seller được quản lý sản phẩm.');
+      throw new ForbiddenException('Only Sellers may manage products.');
     if (user.isShopSuspended)
       throw new ForbiddenException(
-        `Gian hàng của bạn hiện đang bị Admin đình chỉ hoạt động.${user.suspensionReason ? ` Lý do: ${user.suspensionReason}` : ''} Không thể thực hiện thao tác này.`,
+        `Your store is currently suspended by Admin.${user.suspensionReason ? ` Reason: ${user.suspensionReason}` : ''} Unable to perform this action.`,
       );
     if (!user.isSellerActive)
       throw new ForbiddenException(
-        'Gian hàng chưa được kích hoạt chế độ Người bán. Vui lòng chuyển sang chế độ Người bán trước khi thực hiện.',
+        'Store is not in Seller mode. Please switch to Seller mode before proceeding.',
       );
   }
 
   async createProduct(sellerId: string, dto: CreateProductInput) {
     await this.validateSellerActiveShop(sellerId);
-    assertCleanContent(dto.title, 'Tên sản phẩm');
-    assertCleanContent(dto.description, 'Mô tả sản phẩm');
+    assertCleanContent(dto.title, 'Product title');
+    assertCleanContent(dto.description, 'Product description');
     const category = await this.prisma.category.findUnique({ where: { id: dto.categoryId } });
-    if (!category) throw new BadRequestException('Danh mục sản phẩm không tồn tại.');
+    if (!category) throw new BadRequestException('Product category does not exist.');
     const warehouse = await this.inventoryService.ensureDefaultWarehouse();
     return this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM users WHERE id = ${sellerId} FOR UPDATE`;
@@ -93,8 +93,8 @@ export class ProductService {
       await notifyAllAdmins(
         tx,
         {
-          title: 'Sản phẩm mới vừa được đăng bán',
-          content: `Sản phẩm "${product.title}" vừa được đăng tải với giá ${Number(dto.basePrice).toLocaleString('vi-VN')} VND.`,
+          title: 'New product published',
+          content: `Product "${product.title}" was listed at ${Number(dto.basePrice).toLocaleString('en-US')} VND.`,
           type: NotificationType.SYSTEM,
           targetUrl: '/admin/products',
         },
@@ -135,15 +135,15 @@ export class ProductService {
 
   async updateProduct(sellerId: string, productId: string, dto: UpdateProductInput) {
     await this.validateSellerActiveShop(sellerId);
-    if (dto.title) assertCleanContent(dto.title, 'Tên sản phẩm');
-    if (dto.description) assertCleanContent(dto.description, 'Mô tả sản phẩm');
+    if (dto.title) assertCleanContent(dto.title, 'Product title');
+    if (dto.description) assertCleanContent(dto.description, 'Product description');
     const product = await this.prisma.product.findUnique({
       where: { id: productId },
       include: { inventories: true },
     });
-    if (!product) throw new NotFoundException('Sản phẩm không tồn tại.');
+    if (!product) throw new NotFoundException('Product does not exist.');
     if (product.sellerId !== sellerId)
-      throw new ForbiddenException('Bạn không có quyền chỉnh sửa sản phẩm này.');
+      throw new ForbiddenException('You do not have permission to edit this product.');
     return this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM users WHERE id = ${sellerId} FOR UPDATE`;
       await this.validateSellerActiveShop(sellerId, tx);
@@ -157,7 +157,7 @@ export class ProductService {
         Number(current.salePrice) >= dto.basePrice
       ) {
         throw new BadRequestException(
-          'Hãy điều chỉnh/dừng sale trước khi hạ giá gốc xuống thấp hơn giá sale.',
+          'Please adjust or end the active sale before lowering the base price below the sale price.',
         );
       }
       if (dto.options !== undefined) {
@@ -220,9 +220,9 @@ export class ProductService {
   async deleteProduct(sellerId: string, productId: string) {
     await this.validateSellerActiveShop(sellerId);
     const product = await this.prisma.product.findUnique({ where: { id: productId } });
-    if (!product) throw new NotFoundException('Sản phẩm không tồn tại.');
+    if (!product) throw new NotFoundException('Product does not exist.');
     if (product.sellerId !== sellerId)
-      throw new ForbiddenException('Bạn không có quyền xóa sản phẩm này.');
+      throw new ForbiddenException('You do not have permission to delete this product.');
     await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM users WHERE id = ${sellerId} FOR UPDATE`;
       await this.validateSellerActiveShop(sellerId, tx);
@@ -231,7 +231,7 @@ export class ProductService {
         data: { status: ProductStatus.INACTIVE, hiddenByShopSuspension: false },
       });
     });
-    return { success: true, message: 'Đã ẩn sản phẩm thành công.' };
+    return { success: true, message: 'Product hidden successfully.' };
   }
 
   getProducts(query: QueryProductInput): Promise<PaginatedResult<unknown>> {
@@ -267,11 +267,9 @@ export class ProductService {
       },
     });
     if (!product || product.status !== ProductStatus.ACTIVE)
-      throw new NotFoundException('Sản phẩm không tồn tại.');
+      throw new NotFoundException('Product does not exist.');
     if (product.seller?.isShopSuspended)
-      throw new NotFoundException(
-        'Sản phẩm không tồn tại hoặc gian hàng hiện đang tạm đình chỉ hoạt động.',
-      );
+      throw new NotFoundException('Product does not exist or the store is currently suspended.');
     const availableQty = this.inventoryService.calculateAvailable(product.inventories);
     const totalQty = this.inventoryService.calculateTotal(product.inventories);
     const purchaseMeta = await this.search.getProductPurchaseMeta(

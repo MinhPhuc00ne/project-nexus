@@ -71,7 +71,7 @@ export class CartService {
         },
       },
     });
-    if (!fullCart) throw new NotFoundException('Không tìm thấy giỏ hàng.');
+    if (!fullCart) throw new NotFoundException('Cart not found.');
     const items = fullCart.items.map((item) => formatCartItem(item));
     return {
       cartId: fullCart.id,
@@ -88,11 +88,11 @@ export class CartService {
       include: { inventories: true, options: true, seller: { select: { isShopSuspended: true } } },
     });
     if (!product || product.status !== ProductStatus.ACTIVE || product.seller.isShopSuspended) {
-      throw new BadRequestException('Sản phẩm ngừng bán hoặc shop đang bị đình chỉ.');
+      throw new BadRequestException('Product is unavailable or the store is currently suspended.');
     }
     if (product.sellerId === userId)
       throw new BadRequestException({
-        message: 'Không thể tự mua sản phẩm của mình.',
+        message: 'You cannot purchase your own product.',
         errorCode: AppErrorCode.CANNOT_PURCHASE_OWN_PRODUCT,
       });
     return product;
@@ -106,7 +106,7 @@ export class CartService {
     clamp = false,
   ): Promise<void> {
     if (!Number.isSafeInteger(dto.quantity) || dto.quantity < 1)
-      throw new BadRequestException('Số lượng không hợp lệ.');
+      throw new BadRequestException('Invalid quantity.');
     const product = await this.purchasable(tx, userId, dto.productId);
     const choice = validateSelections(product.options, dto.selections);
     const totalAvailable = product.inventories.reduce((sum, inv) => sum + inv.availableQty, 0);
@@ -118,7 +118,7 @@ export class CartService {
     const quantity = clamp ? Math.min(dto.quantity, room) : dto.quantity;
     if (quantity < 1 || quantity > room)
       throw new BadRequestException({
-        message: 'Tổng số lượng các màu/size trong giỏ vượt tồn kho sản phẩm.',
+        message: 'Total quantity of selected variants in cart exceeds available product stock.',
         errorCode: AppErrorCode.INSUFFICIENT_STOCK,
       });
     await tx.cartItem.upsert({
@@ -155,12 +155,12 @@ export class CartService {
     dto: UpdateCartItemInput,
   ): Promise<CartView> {
     if (!Number.isSafeInteger(dto.quantity) || dto.quantity < 0)
-      throw new BadRequestException('Số lượng không hợp lệ.');
+      throw new BadRequestException('Invalid quantity.');
     await this.prisma.$transaction(async (tx) => {
       const cart = await this.lockedCart(tx, userId);
       const item = await tx.cartItem.findUnique({ where: { id: cartItemId } });
       if (!item || item.cartId !== cart.id)
-        throw new NotFoundException('Món hàng không thuộc giỏ của bạn.');
+        throw new NotFoundException('Item does not belong to your cart.');
       if (dto.quantity === 0) {
         await tx.cartItem.delete({ where: { id: item.id } });
         return;
@@ -173,7 +173,7 @@ export class CartService {
       });
       const available = product.inventories.reduce((sum, inv) => sum + inv.availableQty, 0);
       if (dto.quantity + (other._sum.quantity ?? 0) > available)
-        throw new BadRequestException('Tổng lựa chọn vượt tồn kho sản phẩm.');
+        throw new BadRequestException('Total selected quantity exceeds product stock.');
       await tx.cartItem.update({ where: { id: item.id }, data: { quantity: dto.quantity } });
     });
     return this.getCart(userId);
@@ -183,7 +183,7 @@ export class CartService {
     await this.prisma.$transaction(async (tx) => {
       const cart = await this.lockedCart(tx, userId);
       const result = await tx.cartItem.deleteMany({ where: { id: cartItemId, cartId: cart.id } });
-      if (result.count !== 1) throw new NotFoundException('Món hàng không thuộc giỏ của bạn.');
+      if (result.count !== 1) throw new NotFoundException('Item does not belong to your cart.');
     });
     return this.getCart(userId);
   }

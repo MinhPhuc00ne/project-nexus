@@ -52,7 +52,7 @@ export class AuctionComplaintService {
       select: { id: true, title: true, sellerId: true },
     });
     if (!auction) {
-      throw new NotFoundException('Không tìm thấy phòng đấu giá.');
+      throw new NotFoundException('Auction room not found.');
     }
 
     if (dto.auctionItemId) {
@@ -61,7 +61,7 @@ export class AuctionComplaintService {
         select: { id: true },
       });
       if (!lot) {
-        throw new NotFoundException('Không tìm thấy lô hàng thuộc phòng đấu giá này.');
+        throw new NotFoundException('Lot not found in this auction room.');
       }
     }
 
@@ -94,7 +94,7 @@ export class AuctionComplaintService {
       !isBuyerParticipant
     ) {
       throw new ForbiddenException(
-        'Chỉ người bán có vật phẩm hoặc người mua đã tham gia phiên đấu giá mới được gửi khiếu nại.',
+        'Only sellers with consigned items or buyers who participated in this auction may file a complaint.',
       );
     }
 
@@ -119,8 +119,8 @@ export class AuctionComplaintService {
       await notifyAdminsAndStaff(
         tx,
         {
-          title: `Khiếu nại đấu giá mới từ ${reporterRole === Role.SELLER ? 'Người bán' : 'Người mua'}`,
-          content: `Phiên "${auction.title}": ${dto.reason.trim()}`,
+          title: `New auction complaint from ${reporterRole === Role.SELLER ? 'Seller' : 'Buyer'}`,
+          content: `Auction "${auction.title}": ${dto.reason.trim()}`,
           type: NotificationType.DISPUTE,
           adminTargetUrl: '/admin/auctions',
           staffTargetUrl: auctionTargetUrlForRole(auctionId, Role.SUPPORT_STAFF),
@@ -155,7 +155,7 @@ export class AuctionComplaintService {
   ) {
     const isStaffOrAdmin = role === Role.ADMIN || role === Role.SUPPORT_STAFF;
     if (query.status && !Object.values(AuctionComplaintStatus).includes(query.status)) {
-      throw new BadRequestException('Trạng thái khiếu nại không hợp lệ.');
+      throw new BadRequestException('Invalid complaint status.');
     }
 
     return this.prisma.auctionComplaint.findMany({
@@ -194,10 +194,10 @@ export class AuctionComplaintService {
         include: { auction: { select: { id: true, title: true } } },
       });
       if (!existing) {
-        throw new NotFoundException('Không tìm thấy yêu cầu khiếu nại đấu giá.');
+        throw new NotFoundException('Auction complaint not found.');
       }
       if (existing.status !== AuctionComplaintStatus.OPEN) {
-        throw new ConflictException('Khiếu nại này đã được xử lý trước đó.');
+        throw new ConflictException('This complaint has already been processed.');
       }
 
       const updated = await tx.auctionComplaint.update({
@@ -232,8 +232,8 @@ export class AuctionComplaintService {
       );
 
       const isAccepted = dto.status === ResolveAuctionComplaintDecision.ACCEPTED;
-      const decisionLabel = isAccepted ? 'Đã tiếp nhận / Chấp thuận' : 'Đã từ chối';
-      const noteText = dto.adminNote?.trim() ? ` Ghi chú từ Admin: ${dto.adminNote.trim()}` : '';
+      const decisionLabel = isAccepted ? 'Accepted / Approved' : 'Rejected';
+      const noteText = dto.adminNote?.trim() ? ` Admin note: ${dto.adminNote.trim()}` : '';
 
       await publishNotification(
         tx,
@@ -241,8 +241,8 @@ export class AuctionComplaintService {
           userId: existing.reporterId,
           auctionId: existing.auctionId,
           targetUrl: `/auction/${existing.auctionId}`,
-          title: `Kết quả khiếu nại đấu giá: ${decisionLabel}`,
-          content: `Admin đã phản hồi khiếu nại của bạn tại phiên "${existing.auction.title}": ${decisionLabel}.${noteText}`,
+          title: `Auction complaint outcome: ${decisionLabel}`,
+          content: `Admin has responded to your complaint for auction "${existing.auction.title}": ${decisionLabel}.${noteText}`,
           type: NotificationType.DISPUTE,
           channel: NotificationChannel.IN_APP,
           metadata: {

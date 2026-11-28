@@ -22,56 +22,56 @@ import { dashboardChrome } from '../../dashboard/dashboardChrome';
 import type { AdminTab } from '../shared/adminTypes';
 
 const groupKeys: Record<string, 'operations' | 'members' | 'content' | 'financeTech'> = {
-  'ĐIỀU HÀNH TRỰC TIẾP': 'operations',
-  'THÀNH VIÊN & PHÊ DUYỆT': 'members',
-  'NỘI DUNG & HIỂN THỊ': 'content',
-  'TÀI CHÍNH & KỸ THUẬT': 'financeTech',
+  'LIVE OPERATIONS': 'operations',
+  'MEMBERS & APPROVALS': 'members',
+  'CONTENT & DISPLAY': 'content',
+  'FINANCE & TECH': 'financeTech',
 };
 
-// Cấu hình menu: id phải trùng đường dẫn con trong AppRouter và union AdminTab.
-// label là nhãn tiếng Việt, icon là component của thư viện lucide-react.
-// Muốn đổi thứ tự hoặc nhóm mục sidebar thì sửa mảng này, không cần sửa từng nút JSX.
+// Menu config: id must match the child route in AppRouter and the AdminTab union.
+// label is the English-US fallback label, icon is a lucide-react component.
+// Edit this array to reorder or group sidebar items without touching JSX buttons.
 export const adminNavigation: {
   label: string;
   items: { id: AdminTab; label: string; icon: typeof Gavel }[];
 }[] = [
   {
-    label: 'ĐIỀU HÀNH TRỰC TIẾP',
+    label: 'LIVE OPERATIONS',
     items: [
-      { id: 'overview', label: 'Tổng quan', icon: LayoutDashboard },
-      { id: 'products', label: 'Quản lý sản phẩm', icon: Package },
-      { id: 'orders', label: 'Quản lý đơn hàng', icon: ShoppingBag },
-      { id: 'auctions', label: 'Quản lí đấu giá', icon: Gavel },
-      // Mở trang quản lý danh mục tại /admin/categories.
-      { id: 'categories', label: 'Quản lý danh mục', icon: Layers },
+      { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+      { id: 'products', label: 'Products', icon: Package },
+      { id: 'orders', label: 'Orders', icon: ShoppingBag },
+      { id: 'auctions', label: 'Auctions', icon: Gavel },
+      // Opens category management at /admin/categories.
+      { id: 'categories', label: 'Categories', icon: Layers },
     ],
   },
   {
-    label: 'THÀNH VIÊN & PHÊ DUYỆT',
+    label: 'MEMBERS & APPROVALS',
     items: [
-      { id: 'users', label: 'Quản trị người dùng', icon: Users },
-      { id: 'sellers', label: 'Phê duyệt nâng cấp Seller', icon: Store },
-      { id: 'stores', label: 'Seller & cửa hàng', icon: Store },
-      { id: 'reports', label: 'Khiếu nại & báo cáo', icon: Flag },
-      { id: 'refunds', label: 'Phê duyệt hoàn tiền', icon: ShieldCheck },
+      { id: 'users', label: 'Users', icon: Users },
+      { id: 'sellers', label: 'Seller Approvals', icon: Store },
+      { id: 'stores', label: 'Sellers & Stores', icon: Store },
+      { id: 'reports', label: 'Disputes & Reports', icon: Flag },
+      { id: 'refunds', label: 'Refund Approvals', icon: ShieldCheck },
     ],
   },
   {
-    label: 'NỘI DUNG & HIỂN THỊ',
-    items: [{ id: 'banners', label: 'Quản lý banner', icon: Image }],
+    label: 'CONTENT & DISPLAY',
+    items: [{ id: 'banners', label: 'Banners', icon: Image }],
   },
   {
-    label: 'TÀI CHÍNH & KỸ THUẬT',
+    label: 'FINANCE & TECH',
     items: [
-      { id: 'finance', label: 'Tài chính & phí sàn', icon: Wallet },
-      { id: 'system', label: 'Hệ thống & nhật ký', icon: Activity },
-      { id: 'settings', label: 'Cài đặt & kiểm duyệt', icon: Settings2 },
-      { id: 'chat', label: 'Quản lý Chat', icon: MessageCircle },
+      { id: 'finance', label: 'Finance & Fees', icon: Wallet },
+      { id: 'system', label: 'System & Logs', icon: Activity },
+      { id: 'settings', label: 'Settings & Moderation', icon: Settings2 },
+      { id: 'chat', label: 'Chat Moderation', icon: MessageCircle },
     ],
   },
 ];
 
-// Sidebar nhận số hồ sơ chờ từ trang cha; không tự giữ một bản dữ liệu riêng.
+// Sidebar receives pending counts from the parent page instead of keeping separate state.
 export default function Sidebar({
   open,
   onClose,
@@ -90,7 +90,7 @@ export default function Sidebar({
   const { t } = useTranslation('admin');
   return (
     <>
-      {/* Lớp nền tối chỉ xuất hiện khi mở menu mobile; bấm nền sẽ đóng menu. */}
+      {/* Dark backdrop only shown when mobile menu is open; clicking it closes the menu. */}
       {open && (
         <button
           aria-label={t('sidebar.closeMenu')}
@@ -98,7 +98,7 @@ export default function Sidebar({
           className={dashboardChrome.sidebarBackdrop}
         />
       )}
-      {/* lg:translate-x-0 luôn hiện sidebar trên desktop; mobile dùng open để trượt vào/ra. */}
+      {/* lg:translate-x-0 always shows sidebar on desktop; mobile uses open to slide in/out. */}
       <aside
         className={`${dashboardChrome.sidebar} ${open ? 'translate-x-0' : '-translate-x-full'}`}
       >
@@ -109,7 +109,7 @@ export default function Sidebar({
             aria-label={t('sidebar.overviewAria')}
             className="flex flex-1 items-center"
           >
-            {/* Vite phục vụ public từ gốc URL, nên đường dẫn không có chữ /public. */}
+            {/* Vite serves public from the root URL, so paths omit /public. */}
             <img src="/images/logo.png" alt="NEXUS" className="h-16 w-44 object-contain" />
           </NavLink>
           <button
@@ -145,8 +145,8 @@ export default function Sidebar({
                   }
 
                   return (
-                    // NavLink tự xác định isActive từ URL để tô màu mục đang chọn.
-                    // onClose đóng menu mobile sau khi chọn; không điều khiển URL.
+                    // NavLink sets isActive from the URL to highlight the active item.
+                    // onClose closes the mobile menu after selection without controlling the URL.
                     <NavLink
                       key={id}
                       to={`/admin/${id}`}

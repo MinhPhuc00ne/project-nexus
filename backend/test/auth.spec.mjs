@@ -149,7 +149,7 @@ test('verifyEmail activates account, creates wallet, logs initial reputation, an
   });
 
   const res = await service.verifyEmail({ email: 'otp@nexus.local', code: '123456' });
-  assert.match(res.message, /Xác thực tài khoản thành công/);
+  assert.match(res.message, /Account verified successfully/);
   assert.equal(users.get('otp@nexus.local').isVerified, true);
   assert.equal(tx.wallet.upsert.mock.callCount(), 1);
   assert.equal(tx.reputationLog.create.mock.callCount(), 1);

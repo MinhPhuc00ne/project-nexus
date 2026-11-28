@@ -2,9 +2,9 @@ import { BadRequestException } from '@nestjs/common';
 import { Prisma, ReviewMediaType } from '@prisma/client';
 import { MediaService } from '../../media/services/media.service';
 
-export const EMPTY_COMMENT_FALLBACK = 'Không có bình luận';
-export const PRODUCT_REVIEW_NOT_FOUND = 'Không tìm thấy đánh giá sản phẩm.';
-export const SHOP_REVIEW_NOT_FOUND = 'Không tìm thấy đánh giá gian hàng.';
+export const EMPTY_COMMENT_FALLBACK = 'No comment';
+export const PRODUCT_REVIEW_NOT_FOUND = 'Product review not found.';
+export const SHOP_REVIEW_NOT_FOUND = 'Shop review not found.';
 export const MAX_REVIEW_MEDIA_ITEMS = 6;
 
 export interface UploadedReviewMediaItem {
@@ -43,7 +43,7 @@ export async function prepareReviewMedia(
   const totalCount = normalizedUrls.length + (files?.length ?? 0);
   if (totalCount > MAX_REVIEW_MEDIA_ITEMS) {
     throw new BadRequestException(
-      `Tối đa ${MAX_REVIEW_MEDIA_ITEMS} hình ảnh/video cho mỗi đánh giá hoặc phản hồi.`,
+      `Maximum ${MAX_REVIEW_MEDIA_ITEMS} images/videos allowed per review or reply.`,
     );
   }
 
@@ -54,7 +54,7 @@ export async function prepareReviewMedia(
 
   if (files && files.length > 0) {
     if (!mediaService) {
-      throw new BadRequestException('Dịch vụ upload media hiện chưa sẵn sàng.');
+      throw new BadRequestException('Media upload service is currently unavailable.');
     }
     const uploaded = await mediaService.uploadMultipleMedia(files, undefined, {
       strictReviewPolicy: true,

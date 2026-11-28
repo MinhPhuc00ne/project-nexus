@@ -26,7 +26,7 @@ export default function SellerSession({ children }: { children: ReactNode }) {
     (!user.isSellerActive || user.currentMode !== 'SELLER'),
   );
 
-  // Tự động kích hoạt chế độ Seller khi người bán đang ở trong Dashboard Seller (/seller/*)
+  // Automatically enable Seller mode while the seller is inside the Seller Dashboard (/seller/*)
   useEffect(() => {
     let cancelled = false;
     if (!needsSellerMode || modeError) return;

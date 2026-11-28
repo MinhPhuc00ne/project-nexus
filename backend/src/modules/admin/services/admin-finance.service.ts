@@ -351,7 +351,7 @@ export class AdminFinanceService {
    */
   async depositToAdminWallet(adminId: string, dto: DepositAdminWalletInput) {
     if (dto.amount <= 0) {
-      throw new BadRequestException('Số tiền nạp vào ví phải lớn hơn 0 đồng.');
+      throw new BadRequestException('Wallet deposit amount must be greater than 0 VND.');
     }
 
     let wallet = await this.prisma.wallet.findUnique({
@@ -379,7 +379,8 @@ export class AdminFinanceService {
           type: WalletTransactionType.DEPOSIT,
           status: WalletTransactionStatus.SUCCESS,
           description:
-            dto.description?.trim() || `Admin (${adminId.slice(0, 8)}) nạp tiền vào ví hệ thống`,
+            dto.description?.trim() ||
+            `Admin (${adminId.slice(0, 8)}) deposited funds to system wallet`,
         },
       });
 
@@ -402,12 +403,12 @@ export class AdminFinanceService {
     });
 
     this.logger.log(
-      `Admin (${adminId}) đã nạp ${Number(dto.amount).toLocaleString('vi-VN')} VND vào ví. Số dư mới: ${Number(result.updatedWallet.balance).toLocaleString('vi-VN')} VND`,
+      `Admin (${adminId}) deposited ${Number(dto.amount).toLocaleString('en-US')} VND to wallet. New balance: ${Number(result.updatedWallet.balance).toLocaleString('en-US')} VND`,
     );
 
     return {
       success: true,
-      message: `Nạp thành công ${Number(dto.amount).toLocaleString('vi-VN')} VND vào ví hệ thống.`,
+      message: `Successfully deposited ${Number(dto.amount).toLocaleString('en-US')} VND into system wallet.`,
       wallet: {
         id: result.updatedWallet.id,
         balance: Number(result.updatedWallet.balance),

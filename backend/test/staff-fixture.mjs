@@ -123,4 +123,4 @@ export const staffInput = {
   phoneNumber: '0901234567',
   department: 'Support',
 };
-export const initialPassword = (message) => message.text.match(/Mật khẩu ban đầu: (\S+)/)[1];
+export const initialPassword = (message) => message.text.match(/Initial password: (\S+)/)[1];

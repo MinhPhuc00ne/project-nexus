@@ -135,8 +135,8 @@ export function normalizeText(rawText: string): string {
   return rawText
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D')
+    .replace(/\u0111/g, 'd')
+    .replace(/\u0110/g, 'D')
     .toLowerCase()
     .replace(/\s+/g, ' ')
     .trim();
@@ -207,11 +207,11 @@ export function checkSensitiveContent(text?: string | null): {
  * @param fieldLabel - Human-readable field label for error messages
  * @throws BadRequestException when prohibited keywords match
  */
-export function assertCleanContent(text?: string | null, fieldLabel = 'Nội dung'): void {
+export function assertCleanContent(text?: string | null, fieldLabel = 'Content'): void {
   const result = checkSensitiveContent(text);
   if (result.hasSensitive) {
     throw new BadRequestException({
-      message: `${fieldLabel} không hợp lệ vì chứa từ ngữ nhạy cảm hoặc vi phạm chính sách của sàn ("${result.matchedWord}").`,
+      message: `${fieldLabel} is invalid because it contains prohibited or policy-violating terms ("${result.matchedWord}").`,
       errorCode: AppErrorCode.PROFANITY_DETECTED,
     });
   }

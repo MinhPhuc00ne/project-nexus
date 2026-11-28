@@ -80,7 +80,7 @@ export class AuthService {
     if (existingUser) {
       if (existingUser.isVerified) {
         throw new BadRequestException({
-          message: 'Email này đã được đăng ký và xác thực.',
+          message: 'This email is already registered and verified.',
           errorCode: AppErrorCode.EMAIL_ALREADY_EXISTS,
         });
       }
@@ -91,7 +91,7 @@ export class AuthService {
         if (remainingMs > expiryDurationMs - cooldownMs) {
           const waitSeconds = Math.ceil((remainingMs - (expiryDurationMs - cooldownMs)) / 1000);
           throw new BadRequestException(
-            `Vui lòng đợi ${waitSeconds} giây trước khi yêu cầu gửi lại mã OTP mới.`,
+            `Please wait ${waitSeconds} seconds before requesting a new OTP code.`,
           );
         }
       }
@@ -126,21 +126,22 @@ export class AuthService {
 
     await this.mailService.sendEmail({
       to: email,
-      subject: 'Mã xác thực tài khoản Project Nexus',
+      subject: 'Project Nexus Account Verification Code',
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
-          <h2 style="color: #4F46E5;">Chào mừng bạn đến với Project Nexus!</h2>
-          <p>Mã xác thực tài khoản của bạn là:</p>
+          <h2 style="color: #4F46E5;">Welcome to Project Nexus!</h2>
+          <p>Your account verification code is:</p>
           <h1 style="background: #F3F4F6; padding: 10px; display: inline-block; letter-spacing: 5px; color: #111827;">${verificationCode}</h1>
-          <p>Mã này có hiệu lực trong vòng <b>10 phút</b>.</p>
+          <p>This code is valid for <b>10 minutes</b>.</p>
         </div>
       `,
     });
 
-    this.logger.log(`🔑 [OTP REGISTER] Mã xác thực đăng ký cho ${email} đã được xử lý`);
+    this.logger.log(`🔑 [OTP REGISTER] Registration verification code processed for ${email}`);
 
     return {
-      message: 'Đăng ký thành công! Vui lòng kiểm tra hộp thư Gmail để lấy mã OTP xác thực.',
+      message:
+        'Registration successful! Please check your email inbox for the verification OTP code.',
       email,
     };
   }
@@ -156,16 +157,16 @@ export class AuthService {
     return this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM users WHERE email = ${dto.email} FOR UPDATE`;
       const user = await tx.user.findUnique({ where: { email: dto.email } });
-      if (!user) throw new BadRequestException('Không tìm thấy tài khoản với email này.');
-      if (user.isVerified) return { message: 'Tài khoản này đã được xác thực trước đó rồi.' };
+      if (!user) throw new BadRequestException('No account found with this email.');
+      if (user.isVerified) return { message: 'This account has already been verified.' };
       if (user.verificationCode !== dto.code)
         throw new BadRequestException({
-          message: 'Mã OTP không chính xác.',
+          message: 'Incorrect OTP code.',
           errorCode: AppErrorCode.INVALID_OTP,
         });
       if (!user.codeExpiresAt || user.codeExpiresAt.getTime() <= Date.now())
         throw new BadRequestException({
-          message: 'Mã OTP đã hết hạn.',
+          message: 'OTP code has expired.',
           errorCode: AppErrorCode.OTP_EXPIRED,
         });
       await tx.user.update({
@@ -188,7 +189,7 @@ export class AuthService {
           userId: user.id,
           deltaPoints: 0,
           balanceAfter: INITIAL_REPUTATION_SCORE,
-          reason: `Khởi tạo ${INITIAL_REPUTATION_SCORE} điểm uy tín khi xác thực tài khoản`,
+          reason: `Initialized ${INITIAL_REPUTATION_SCORE} reputation points upon account verification`,
           referenceId: 'REGISTRATION_EMAIL',
         },
       });
@@ -196,14 +197,14 @@ export class AuthService {
         tx,
         {
           userId: user.id,
-          title: 'Chào mừng bạn đến với NEXUS!',
-          content: `Tài khoản của bạn đã kích hoạt thành công qua Email. Điểm uy tín khởi đầu: ${INITIAL_REPUTATION_SCORE} (${INITIAL_REPUTATION_TRUST_LEVEL}).`,
+          title: 'Welcome to NEXUS!',
+          content: `Your account has been activated via email. Starting reputation score: ${INITIAL_REPUTATION_SCORE} (${INITIAL_REPUTATION_TRUST_LEVEL}).`,
           type: 'SYSTEM',
           channel: 'IN_APP',
         },
         this.notifications,
       );
-      return { message: 'Xác thực tài khoản thành công! Bây giờ bạn có thể đăng nhập.' };
+      return { message: 'Account verified successfully! You can now sign in.' };
     });
   }
 
@@ -229,30 +230,28 @@ export class AuthService {
 
     if (!user) {
       throw new UnauthorizedException({
-        message: 'Email hoặc mật khẩu không chính xác.',
+        message: 'Incorrect email or password.',
         errorCode: AppErrorCode.INVALID_CREDENTIALS,
       });
     }
     if (!user.passwordHash) {
-      throw new UnauthorizedException(
-        'Tài khoản này đăng nhập bằng Google. Vui lòng dùng tính năng Google OAuth.',
-      );
+      throw new UnauthorizedException('This account uses Google sign-in. Please use Google OAuth.');
     }
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
       throw new UnauthorizedException({
-        message: 'Email hoặc mật khẩu không chính xác.',
+        message: 'Incorrect email or password.',
         errorCode: AppErrorCode.INVALID_CREDENTIALS,
       });
     }
     if (!user.isVerified) {
       throw new UnauthorizedException(
-        'Tài khoản chưa được xác thực. Vui lòng kiểm tra email để lấy mã OTP.',
+        'Account is not verified yet. Please check your email for the OTP code.',
       );
     }
     if (user.trustLevel === ReputationTrustLevel.SUSPENDED) {
       throw new ForbiddenException({
-        message: 'Tài khoản của bạn đã bị khóa bởi Quản trị viên. Vui lòng liên hệ bộ phận hỗ trợ.',
+        message: 'Your account has been suspended by an Administrator. Please contact support.',
         errorCode: AppErrorCode.ACCOUNT_SUSPENDED,
       });
     }
@@ -277,7 +276,7 @@ export class AuthService {
     }
 
     return {
-      message: 'Đăng nhập thành công!',
+      message: 'Signed in successfully!',
       accessToken,
       refreshToken,
       user: {
@@ -304,7 +303,7 @@ export class AuthService {
    */
   async googleLogin(user?: GoogleUser) {
     if (!user) {
-      throw new BadRequestException('Không nhận được thông tin từ Google.');
+      throw new BadRequestException('No user information received from Google.');
     }
 
     const { email, firstName, lastName, picture } = user;
@@ -366,7 +365,7 @@ export class AuthService {
 
     if (userRecord.trustLevel === ReputationTrustLevel.SUSPENDED) {
       throw new ForbiddenException(
-        'Tài khoản của bạn đã bị khóa bởi Quản trị viên. Vui lòng liên hệ bộ phận hỗ trợ.',
+        'Your account has been suspended by an Administrator. Please contact support.',
       );
     }
 
@@ -390,7 +389,7 @@ export class AuthService {
     });
 
     return {
-      message: 'Đăng nhập bằng Google thành công!',
+      message: 'Signed in with Google successfully!',
       accessToken,
       refreshToken,
       user: {
@@ -423,11 +422,11 @@ export class AuthService {
       },
     });
     if (!user) {
-      throw new BadRequestException('Không tìm thấy tài khoản với email này.');
+      throw new BadRequestException('No account found with this email.');
     }
     if (!user.isVerified) {
       throw new BadRequestException(
-        'Tài khoản chưa được xác thực. Vui lòng xác thực email trước khi đặt lại mật khẩu.',
+        'Account is not verified. Please verify your email before resetting your password.',
       );
     }
 
@@ -438,7 +437,7 @@ export class AuthService {
       if (remainingMs > expiryDurationMs - cooldownMs) {
         const waitSeconds = Math.ceil((remainingMs - (expiryDurationMs - cooldownMs)) / 1000);
         throw new BadRequestException(
-          `Vui lòng đợi ${waitSeconds} giây trước khi yêu cầu gửi lại mã OTP mới.`,
+          `Please wait ${waitSeconds} seconds before requesting a new OTP code.`,
         );
       }
     }
@@ -448,7 +447,7 @@ export class AuthService {
 
     if (user.role === 'SUPPORT_STAFF' && !user.personalEmail) {
       throw new BadRequestException(
-        'Tài khoản Staff chưa có email cá nhân nhận OTP. Vui lòng liên hệ Admin.',
+        'Staff account has no personal email configured to receive OTP. Please contact Admin.',
       );
     }
     const recipientEmail = user.personalEmail || user.email;
@@ -460,7 +459,7 @@ export class AuthService {
     });
 
     return {
-      message: 'Mã OTP đặt lại mật khẩu đã được gửi đến hộp thư Gmail của bạn!',
+      message: 'Password reset OTP code has been sent to your email inbox!',
       email: user.email,
     };
   }
@@ -484,19 +483,19 @@ export class AuthService {
       },
     });
     if (!user || !user.isVerified) {
-      throw new BadRequestException('Không tìm thấy tài khoản hợp lệ với email này.');
+      throw new BadRequestException('No verified account found with this email.');
     }
     if (!user.verificationCode || user.verificationCode !== code) {
-      throw new BadRequestException('Mã OTP không chính xác.');
+      throw new BadRequestException('Incorrect OTP code.');
     }
     if (!user.codeExpiresAt || new Date() > user.codeExpiresAt) {
-      throw new BadRequestException('Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới.');
+      throw new BadRequestException('OTP code has expired. Please request a new code.');
     }
 
     if (user.passwordHash) {
       const isSamePassword = await bcrypt.compare(newPassword, user.passwordHash);
       if (isSamePassword) {
-        throw new BadRequestException('Mật khẩu mới không được trùng với mật khẩu hiện tại.');
+        throw new BadRequestException('New password must be different from your current password.');
       }
     }
 
@@ -509,7 +508,7 @@ export class AuthService {
         data: { passwordHash, verificationCode: null, codeExpiresAt: null },
       });
       if (consumed.count !== 1)
-        throw new BadRequestException('Mã OTP đã hết hạn hoặc đã được sử dụng.');
+        throw new BadRequestException('OTP code has expired or has already been used.');
       await tx.refreshToken.updateMany({
         where: { userId: user.id, isRevoked: false },
         data: { isRevoked: true },
@@ -519,7 +518,7 @@ export class AuthService {
     await this.tokenAuth.revokeAllSessions(user.id);
 
     return {
-      message: 'Đặt lại mật khẩu thành công! Bây giờ bạn có thể đăng nhập bằng mật khẩu mới.',
+      message: 'Password reset successful! You can now sign in with your new password.',
     };
   }
 
@@ -540,11 +539,11 @@ export class AuthService {
         secret: refreshSecret,
       });
     } catch {
-      throw new UnauthorizedException('Refresh token không hợp lệ hoặc đã hết hạn.');
+      throw new UnauthorizedException('Invalid or expired refresh token.');
     }
 
     if (!payload.jti || !payload.sub) {
-      throw new UnauthorizedException('Refresh token không hợp lệ.');
+      throw new UnauthorizedException('Invalid refresh token.');
     }
 
     const tokenRecord = await this.prisma.refreshToken.findUnique({
@@ -558,18 +557,18 @@ export class AuthService {
       tokenRecord.isRevoked ||
       new Date() > tokenRecord.expiresAt
     ) {
-      throw new UnauthorizedException('Refresh token đã bị thu hồi hoặc hết hạn.');
+      throw new UnauthorizedException('Refresh token has been revoked or has expired.');
     }
 
     if (tokenRecord.user.trustLevel === ReputationTrustLevel.SUSPENDED) {
       throw new ForbiddenException(
-        'Tài khoản của bạn đã bị khóa bởi Quản trị viên. Vui lòng liên hệ bộ phận hỗ trợ.',
+        'Your account has been suspended by an Administrator. Please contact support.',
       );
     }
 
     const isTokenMatch = await bcrypt.compare(this.sha256(dto.refreshToken), tokenRecord.tokenHash);
     if (!isTokenMatch) {
-      throw new UnauthorizedException('Refresh token không hợp lệ.');
+      throw new UnauthorizedException('Invalid refresh token.');
     }
 
     const { accessToken, refreshToken } = await this.prisma.$transaction(async (tx) => {
@@ -578,7 +577,7 @@ export class AuthService {
         data: { isRevoked: true },
       });
       if (rotated.count === 0) {
-        throw new UnauthorizedException('Refresh token đã bị thu hồi hoặc hết hạn.');
+        throw new UnauthorizedException('Refresh token has been revoked or has expired.');
       }
 
       return this.generateTokens(
@@ -593,7 +592,7 @@ export class AuthService {
     });
 
     return {
-      message: 'Làm mới token thành công!',
+      message: 'Token refreshed successfully!',
       accessToken,
       refreshToken,
     };
@@ -621,10 +620,10 @@ export class AuthService {
         });
       }
     } catch {
-      // Bỏ qua nếu token sai định dạng để đảm bảo idempotent khi đăng xuất
+      // Ignore malformed token to keep logout idempotent
     }
 
-    return { message: 'Đăng xuất thành công!' };
+    return { message: 'Signed out successfully!' };
   }
 
   private async generateTokens(
@@ -708,7 +707,7 @@ export class AuthService {
    */
   async getStaffInvitationInfo(_token: string): Promise<never> {
     throw new GoneException(
-      'Staff được cấp tài khoản và mật khẩu qua email. Vui lòng đăng nhập hoặc dùng Quên mật khẩu.',
+      'Staff accounts and passwords are provisioned via email. Please sign in or use Forgot Password.',
     );
   }
 
@@ -717,7 +716,7 @@ export class AuthService {
    */
   async activateStaff(_dto: { token: string }): Promise<never> {
     throw new GoneException(
-      'Luồng kích hoạt bằng token đã ngừng. Vui lòng dùng tài khoản được cấp hoặc Quên mật khẩu.',
+      'Token-based activation has been retired. Please use your provisioned account or Forgot Password.',
     );
   }
 
@@ -728,21 +727,21 @@ export class AuthService {
   ): Promise<void> {
     const success = await this.mailService.sendEmail({
       to: email,
-      subject: 'Mã đặt lại mật khẩu Project Nexus',
+      subject: 'Project Nexus Password Reset Code',
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
-          <h2 style="color: #4F46E5;">Yêu cầu đặt lại mật khẩu</h2>
-          <p>Mã OTP để đặt lại mật khẩu tài khoản Project Nexus của bạn là:</p>
+          <h2 style="color: #4F46E5;">Password Reset Request</h2>
+          <p>Your OTP code to reset your Project Nexus account password is:</p>
           <h1 style="background: #F3F4F6; padding: 10px; display: inline-block; letter-spacing: 5px; color: #111827;">${resetCode}</h1>
-          <p>Mã này có hiệu lực trong vòng <b>10 phút</b>.</p>
-          <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
+          <p>This code is valid for <b>10 minutes</b>.</p>
+          <p>If you did not request a password reset, please ignore this email.</p>
         </div>
       `,
       requireDelivery,
     });
     if (!success) {
       throw new BadRequestException(
-        'Không thể gửi email đặt lại mật khẩu. Vui lòng kiểm tra lại cấu hình SMTP.',
+        'Unable to send password reset email. Please verify your SMTP configuration.',
       );
     }
   }

@@ -1,6 +1,6 @@
 /**
- * Bộ tổng hợp hiệu ứng âm thanh Web Audio API thuần (không cần file MP3/WAV ngoài).
- * Phục vụ trình chiếu Bảo Tàng Đấu Giá 3D: tiếng mở đại sảnh, đèn spotlight, laser quét, HUD tick và đếm ngược mở sàn.
+ * Pure Web Audio API sound effect synthesizer (no external MP3/WAV files needed).
+ * Powers the 3D Auction Museum showcase: grand hall doors, spotlight hum, laser scan, HUD ticks, and opening countdown.
  */
 export class AuctionAudioEngine {
   private ctx: AudioContext | null = null;
@@ -31,7 +31,7 @@ export class AuctionAudioEngine {
   }
 
   /**
-   * Tiếng khởi động không gian đại sảnh bảo tàng 3D (Warm Ambient Drone + Gold Shimmer).
+   * 3D museum grand hall ambient drone (Warm Ambient Drone + Gold Shimmer).
    */
   public playMuseumBoot(): void {
     const ctx = this.getContext();
@@ -59,7 +59,7 @@ export class AuctionAudioEngine {
   }
 
   /**
-   * Tiếng bật đèn Spotlight rọi lên bục trưng bày khi camera di chuyển tới lô hàng mới.
+   * Spotlight activation sound sweeping across the display pedestal for a new lot.
    */
   public playSpotlightCue(): void {
     const ctx = this.getContext();
@@ -83,7 +83,7 @@ export class AuctionAudioEngine {
   }
 
   /**
-   * Tiếng tia laser quét hologram & chime xác thực bảo vật.
+   * Hologram laser scan sweep and artifact verification chime.
    */
   public playLaserScan(): void {
     const ctx = this.getContext();
@@ -111,7 +111,7 @@ export class AuctionAudioEngine {
   }
 
   /**
-   * Tiếng tick cơ học khi từng thẻ thông số HUD trượt vào màn hình.
+   * Mechanical tick sound as each HUD spec card slides onto the screen.
    */
   public playHudTick(): void {
     const ctx = this.getContext();
@@ -135,7 +135,7 @@ export class AuctionAudioEngine {
   }
 
   /**
-   * Tiếng đếm ngược 3... 2... 1... và tiếng chuông khai mạc khi phiên đấu giá mở.
+   * 3... 2... 1... countdown beeps and opening bell when the auction session begins.
    */
   public playCountdownTone(isStartBell = false): void {
     const ctx = this.getContext();
@@ -178,7 +178,7 @@ export class AuctionAudioEngine {
   }
 
   /**
-   * Tiếng cánh cửa đồng bảo tàng mở rộng vào đại sảnh (Low Resonant Swell + Chime).
+   * Sound of the museum bronze doors opening into the grand hall (Low Resonant Swell + Chime).
    */
   public playDoorOpen(): void {
     const ctx = this.getContext();
@@ -202,7 +202,7 @@ export class AuctionAudioEngine {
   }
 
   /**
-   * Tiếng búa đấu giá gõ khai mạc trên sân khấu trung tâm.
+   * Opening auction gavel strike on the center stage.
    */
   public playGavelStrike(): void {
     const ctx = this.getContext();
@@ -223,7 +223,7 @@ export class AuctionAudioEngine {
     thump.start(now);
     thump.stop(now + 0.38);
 
-    // Âm vang đồng vàng
+    // Warm brass resonance
     [440, 659.25, 880].forEach((freq, i) => {
       const bell = ctx.createOscillator();
       const bellGain = ctx.createGain();

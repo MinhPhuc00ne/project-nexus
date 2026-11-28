@@ -44,7 +44,7 @@ export class OrderService {
   ) {}
 
   /**
-   * Tạo đơn hàng từ giỏ hàng hiện tại (Price Revalidation + Anti-Self-Purchase)
+   * Create orders from the current cart (Price Revalidation + Anti-Self-Purchase).
    */
   async checkout(buyerId: string, dto: CheckoutInput, idempotencyKey?: string, quoteOnly = false) {
     if (idempotencyKey && !quoteOnly) {
@@ -93,23 +93,23 @@ export class OrderService {
     });
 
     if (!cart || cart.items.length === 0) {
-      throw new BadRequestException('Giỏ hàng trống, không thể tiến hành đặt hàng');
+      throw new BadRequestException('Cart is empty, cannot proceed with checkout');
     }
 
-    // Lọc các item được chọn để checkout
+    // Filter items selected for checkout
     const itemsToCheckout =
       dto.itemIds && dto.itemIds.length > 0
         ? cart.items.filter((item) => dto.itemIds!.includes(item.id))
         : cart.items;
 
     if (itemsToCheckout.length === 0) {
-      throw new BadRequestException('Không tìm thấy sản phẩm hợp lệ trong giỏ hàng để đặt hàng');
+      throw new BadRequestException('No valid cart items found to place an order');
     }
     if (dto.itemIds?.length && new Set(dto.itemIds).size !== itemsToCheckout.length) {
-      throw new BadRequestException('Có sản phẩm không thuộc giỏ hàng được chọn.');
+      throw new BadRequestException('Some selected items do not belong to your cart.');
     }
 
-    // 1. Kiểm tra trạng thái sản phẩm, tồn kho và quy tắc Anti-Self-Purchase
+    // 1. Validate product status, inventory, and Anti-Self-Purchase rule
     const quantityByProduct = new Map<string, number>();
     for (const item of itemsToCheckout) {
       const product = item.product;
@@ -117,35 +117,35 @@ export class OrderService {
 
       if (product.seller?.isShopSuspended) {
         throw new BadRequestException(
-          `Sản phẩm "${product.title}" thuộc gian hàng đang bị tạm đình chỉ hoạt động, không thể đặt mua.`,
+          `Product "${product.title}" belongs to a suspended shop and cannot be purchased.`,
         );
       }
 
       if (product.status !== ProductStatus.ACTIVE) {
         throw new BadRequestException(
-          `Sản phẩm "${product.title}" hiện không còn mở bán công khai`,
+          `Product "${product.title}" is no longer available for purchase`,
         );
       }
 
-      // Rule 6.3: Anti-Self-Purchase - Chặn tự mua hàng của chính mình
+      // Rule 6.3: Anti-Self-Purchase - Prevent purchasing from one's own shop
       if (product.sellerId === buyerId) {
         throw new BadRequestException(
-          `CANNOT_PURCHASE_OWN_PRODUCT: Bạn không thể tự mua sản phẩm "${product.title}" từ gian hàng của chính mình`,
+          `CANNOT_PURCHASE_OWN_PRODUCT: You cannot purchase your own product "${product.title}" from your own shop`,
         );
       }
 
-      // Kiểm tra tồn kho khả dụng
+      // Check available inventory
       const totalAvailable = product.inventories.reduce((acc, inv) => acc + inv.availableQty, 0);
       const selectedQty = (quantityByProduct.get(item.productId) ?? 0) + item.quantity;
       quantityByProduct.set(item.productId, selectedQty);
       if (selectedQty > totalAvailable) {
         throw new BadRequestException(
-          `Sản phẩm "${product.title}" chỉ còn lại ${totalAvailable} sản phẩm trong kho`,
+          `Product "${product.title}" only has ${totalAvailable} unit(s) left in stock`,
         );
       }
     }
 
-    // 2. Nhóm sản phẩm theo từng Shop / Seller (Hỗ trợ mô hình Multi-vendor)
+    // 2. Group products by Shop / Seller (Multi-vendor support)
     const itemsBySeller = new Map<string, typeof itemsToCheckout>();
     for (const item of itemsToCheckout) {
       const sellerId = item.product.sellerId;
@@ -176,7 +176,7 @@ export class OrderService {
     if (quoteOnly) {
       const quotes = [...itemsBySeller].map(([sellerId, items]) => {
         const quote = shippingBySeller.get(sellerId);
-        if (!quote) throw new BadRequestException('Chưa lấy được báo giá GHN.');
+        if (!quote) throw new BadRequestException('Unable to retrieve GHN shipping quote.');
         const subtotal = items.reduce(
           (sum, item) => sum + effectivePrice(item.product, pricedAt) * item.quantity,
           0,
@@ -197,7 +197,7 @@ export class OrderService {
       };
     }
 
-    // 3. Khởi tạo đơn hàng trong Transaction an toàn
+    // 3. Create orders inside an atomic transaction
     const createdOrders = await this.prisma.$transaction(async (tx) => {
       await validateQuotedCheckout(
         tx,
@@ -229,7 +229,7 @@ export class OrderService {
       for (const [sellerId, sellerItems] of itemsBySeller.entries()) {
         const shippingQuote = shippingBySeller.get(sellerId);
         if (!shippingQuote) {
-          throw new BadRequestException('Chưa lấy được báo giá GHN cho người bán.');
+          throw new BadRequestException('Unable to retrieve GHN shipping quote for seller.');
         }
         const shippingPerShop = shippingQuote.fee.total;
         const subtotal = sellerItems.reduce(
@@ -274,7 +274,7 @@ export class OrderService {
                       provider: PaymentProvider.COD,
                       amount: totalAmount,
                       status: PaymentStatus.PENDING,
-                      metadata: { note: 'Thanh toán tiền mặt khi nhận hàng (COD)' },
+                      metadata: { note: 'Cash on Delivery (COD)' },
                     },
                   }
                 : undefined,
@@ -291,7 +291,7 @@ export class OrderService {
           },
         });
 
-        // Khóa / Đặt chỗ tồn kho cho từng sản phẩm trong đơn hàng
+        // Reserve stock for each item in the order
         if (this.inventoryService) {
           for (const item of sellerItems) {
             await this.inventoryService.reserveStock(tx, item.productId, item.quantity, order.id);
@@ -301,7 +301,7 @@ export class OrderService {
         orders.push(order);
       }
 
-      // Xóa các sản phẩm đã đặt mua khỏi giỏ hàng
+      // Remove ordered items from the cart
       await tx.cartItem.deleteMany({
         where: { id: { in: itemsToCheckout.map((i) => i.id) } },
       });
@@ -309,7 +309,7 @@ export class OrderService {
       return orders;
     });
 
-    // 4. Khởi tạo thanh toán cho các đơn vừa tạo.
+    // 4. Initialize payments for the newly created orders.
     //
     // This step used to be wrapped in `createdOrders.length === 1`, so a cart
     // holding items from two shops — which becomes one order per shop, because
@@ -348,7 +348,7 @@ export class OrderService {
           })) as PayosPaymentResponse;
         } catch (err: unknown) {
           const message = err instanceof Error ? err.message : String(err);
-          this.logger.warn(`Tạo link PayOS ngay khi checkout thất bại: ${message}`);
+          this.logger.warn(`Failed to create PayOS link during checkout: ${message}`);
         }
       } else if (method === PaymentProvider.WALLET) {
         walletPayment = (await this.initializePayment(orderIds[0], buyerId, {
@@ -358,7 +358,7 @@ export class OrderService {
         codPayment = {
           orderId: orderIds[0],
           success: true,
-          message: 'Phương thức thanh toán COD đã được ghi nhận thành công.',
+          message: 'COD payment method recorded successfully.',
           provider: PaymentProvider.COD,
         };
       }
@@ -373,7 +373,7 @@ export class OrderService {
         // As with a single order, the orders stand and the buyer can ask for a
         // link again; losing the gateway must not lose the checkout.
         const message = err instanceof Error ? err.message : String(err);
-        this.logger.warn(`Tạo link PayOS cho nhóm đơn ngay khi checkout thất bại: ${message}`);
+        this.logger.warn(`Failed to create PayOS group link during checkout: ${message}`);
       }
     } else if (method === PaymentProvider.WALLET) {
       walletPayments = await this.paymentHelper.payOrdersByWallet(orderIds, buyerId);
@@ -381,7 +381,7 @@ export class OrderService {
       codPayments = orderIds.map((orderId) => ({
         orderId,
         success: true,
-        message: 'Phương thức thanh toán COD đã được ghi nhận thành công.',
+        message: 'COD payment method recorded successfully.',
         provider: PaymentProvider.COD,
       }));
     }
@@ -398,7 +398,7 @@ export class OrderService {
   }
 
   /**
-   * Xem chi tiết đơn hàng (kèm trạng thái Payment)
+   * View order details (including payment status).
    */
   async getOrderById(orderId: string, userId: string) {
     const order = await this.prisma.order.findUnique({
@@ -427,18 +427,18 @@ export class OrderService {
     });
 
     if (!order) {
-      throw new NotFoundException('Không tìm thấy đơn hàng');
+      throw new NotFoundException('Order not found');
     }
 
     if (order.buyerId !== userId && order.sellerId !== userId) {
-      throw new ForbiddenException('Bạn không có quyền xem thông tin đơn hàng này');
+      throw new ForbiddenException('You do not have permission to view this order');
     }
 
     return order;
   }
 
   /**
-   * Xem danh sách các đơn hàng đã đặt của người dùng
+   * List orders placed by the user.
    */
   async getUserOrders(userId: string) {
     return this.prisma.order.findMany({

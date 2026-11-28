@@ -29,28 +29,29 @@ export class OrderCodPaymentService {
 
     if (!order) {
       throw new NotFoundException({
-        message: 'Không tìm thấy đơn hàng tương ứng',
+        message: 'Order not found',
         errorCode: AppErrorCode.ORDER_NOT_FOUND,
       });
     }
 
     if (order.isAuction) {
       throw new BadRequestException({
-        message: 'Đơn đấu giá phải thanh toán qua quyền mua, để sử dụng đúng tiền cọc.',
+        message:
+          'Auction orders must be paid through claim checkout to apply the deposit correctly.',
         errorCode: AppErrorCode.BAD_REQUEST,
       });
     }
 
     if (order.buyerId !== buyerId) {
       throw new ForbiddenException({
-        message: 'Bạn không có quyền thao tác trên đơn hàng này',
+        message: 'You do not have permission to act on this order',
         errorCode: AppErrorCode.FORBIDDEN,
       });
     }
 
     if (order.status !== OrderStatus.PENDING_PAYMENT) {
       throw new BadRequestException({
-        message: `Không thể ghi nhận thanh toán COD cho đơn hàng ở trạng thái '${order.status}'.`,
+        message: `Cannot record COD payment for an order in '${order.status}' status.`,
         errorCode: AppErrorCode.ORDER_INVALID_STATE,
       });
     }
@@ -58,7 +59,7 @@ export class OrderCodPaymentService {
     const hasSuccessfulPayment = order.payments.some((p) => p.status === PaymentStatus.SUCCESS);
     if (hasSuccessfulPayment) {
       throw new BadRequestException({
-        message: 'Đơn hàng đã được thanh toán thành công trước đó.',
+        message: 'This order has already been paid successfully.',
         errorCode: AppErrorCode.BAD_REQUEST,
       });
     }
@@ -71,7 +72,7 @@ export class OrderCodPaymentService {
           provider: PaymentProvider.COD,
           amount: order.totalAmount,
           status: PaymentStatus.PENDING,
-          metadata: { note: 'Thanh toán tiền mặt khi nhận hàng (COD)' },
+          metadata: { note: 'Cash on Delivery (COD)' },
         },
       });
     }
@@ -79,7 +80,7 @@ export class OrderCodPaymentService {
     return {
       orderId,
       success: true,
-      message: 'Phương thức thanh toán COD đã được ghi nhận thành công.',
+      message: 'COD payment method recorded successfully.',
       provider: PaymentProvider.COD,
     };
   }

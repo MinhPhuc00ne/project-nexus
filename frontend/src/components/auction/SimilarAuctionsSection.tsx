@@ -29,7 +29,7 @@ export const SimilarAuctionsSection: React.FC<SimilarAuctionsSectionProps> = ({
         </div>
 
         <Link
-          to="/search?floor=Sàn+Đấu+Giá+Live"
+          to="/search?floor=Live+Auction+Floor"
           className="text-[13px] font-bold text-blue-600 no-underline inline-flex items-center gap-1 transition-all hover:gap-2 hover:underline"
         >
           <span>{t('similar.viewAll', { count: watches.length })}</span>
@@ -77,7 +77,7 @@ export const SimilarAuctionsSection: React.FC<SimilarAuctionsSectionProps> = ({
                 <Heart className={`w-3.5 h-3.5 ${liked ? 'fill-red-500 text-red-500' : ''}`} />
               </button>
 
-              {/* Card Image Area: Thật hoặc Placeholder Waiting Stage */}
+              {/* Card Image Area: Real image or Waiting Stage Placeholder */}
               <div className="relative w-full aspect-square bg-slate-50 overflow-hidden flex items-center justify-center">
                 {hasImage ? (
                   <img
@@ -97,7 +97,7 @@ export const SimilarAuctionsSection: React.FC<SimilarAuctionsSectionProps> = ({
                   </div>
                 )}
 
-                {/* Video Indicator nếu có */}
+                {/* Video Indicator if present */}
                 {item.hasVideo && (
                   <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 bg-black/80 text-white backdrop-blur-xs border border-white/20 px-2 py-0.5 rounded text-[10px] font-bold shadow-xs">
                     <Film className="w-3 h-3 text-rose-400" />

@@ -53,7 +53,7 @@ export class AdminShopsModerationHelper {
     });
 
     if (!seller || seller.role !== Role.SELLER) {
-      throw new NotFoundException('Không tìm thấy gian hàng của người bán này.');
+      throw new NotFoundException('Seller store not found.');
     }
 
     const isSuspending = !dto.isSellerActive;
@@ -61,8 +61,8 @@ export class AdminShopsModerationHelper {
     const actionReason =
       dto.reason?.trim() ||
       (isSuspending
-        ? 'Gian hàng bị Quản trị viên tạm đình chỉ hoạt động'
-        : 'Gian hàng được Quản trị viên khôi phục hoạt động');
+        ? 'Store temporarily suspended by Administrator'
+        : 'Store restored by Administrator');
 
     const result = await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM users WHERE id = ${sellerId} FOR UPDATE`;
@@ -101,11 +101,11 @@ export class AdminShopsModerationHelper {
         {
           userId: sellerId,
           title: isSuspending
-            ? 'Gian hàng của bạn đã bị tạm đình chỉ hoạt động ⚠️'
-            : 'Gian hàng của bạn đã được mở lại 🎉',
+            ? 'Your store has been temporarily suspended ⚠️'
+            : 'Your store has been reopened 🎉',
           content: isSuspending
-            ? `Gian hàng "${storeName}" đã bị Quản trị viên tạm đình chỉ. Lý do: ${actionReason}. Toàn bộ sản phẩm của gian hàng đã được tạm ẩn. Bạn vẫn có thể sử dụng tài khoản để mua sắm bình thường.`
-            : `Gian hàng "${storeName}" đã được khôi phục. Sản phẩm bị ẩn do đình chỉ đã được hiển thị lại; sản phẩm bị ẩn riêng vẫn giữ nguyên.`,
+            ? `Your store "${storeName}" was temporarily suspended by an Administrator. Reason: ${actionReason}. All store products have been temporarily hidden. You can still use your account for regular shopping.`
+            : `Your store "${storeName}" has been restored. Products hidden due to suspension are visible again; individually hidden products remain unchanged.`,
           type: NotificationType.SYSTEM,
         },
         this.notifications,
@@ -124,14 +124,14 @@ export class AdminShopsModerationHelper {
     });
 
     this.logger.log(
-      `Admin (${adminId}) đã chuyển trạng thái gian hàng ${storeName} (${sellerId}) thành ${dto.isSellerActive ? 'ACTIVE' : 'SUSPENDED'}.`,
+      `Admin (${adminId}) changed store ${storeName} (${sellerId}) status to ${dto.isSellerActive ? 'ACTIVE' : 'SUSPENDED'}.`,
     );
 
     return {
       success: true,
       message: isSuspending
-        ? `Đã tạm đình chỉ hoạt động gian hàng "${storeName}". Sản phẩm của shop đã được ẩn khỏi sàn.`
-        : `Đã mở lại hoạt động cho gian hàng "${storeName}".`,
+        ? `Store "${storeName}" has been suspended. Store products have been hidden from the marketplace.`
+        : `Store "${storeName}" has been reopened.`,
       shop: {
         id: result.id,
         storeName,
@@ -168,7 +168,7 @@ export class AdminShopsModerationHelper {
     });
 
     if (!seller || seller.role !== Role.SELLER) {
-      throw new NotFoundException('Không tìm thấy gian hàng của người bán này.');
+      throw new NotFoundException('Seller store not found.');
     }
 
     const storeName = seller.sellerUpgradeRequests[0]?.storeName || seller.fullName;
@@ -180,7 +180,7 @@ export class AdminShopsModerationHelper {
           {
             userId: sellerId,
             deltaPoints: -penaltyPoints,
-            reason: `Cảnh cáo vi phạm gian hàng: ${dto.reason.trim()}`,
+            reason: `Store policy warning: ${dto.reason.trim()}`,
             skipNotification: true,
           },
           tx,
@@ -203,10 +203,10 @@ export class AdminShopsModerationHelper {
         tx,
         {
           userId: sellerId,
-          title: 'Cảnh cáo vi phạm quy định gian hàng ⚠️',
-          content: `Gian hàng "${storeName}" đã nhận cảnh cáo từ Quản trị viên. Lý do: ${dto.reason.trim()}.${
-            penaltyPoints > 0 ? ` Tài khoản bị trừ ${penaltyPoints} điểm uy tín.` : ''
-          } Vui lòng rà soát lại thông tin và hoạt động kinh doanh để tránh bị tạm đình chỉ.`,
+          title: 'Store policy violation warning ⚠️',
+          content: `Your store "${storeName}" received a warning from an Administrator. Reason: ${dto.reason.trim()}.${
+            penaltyPoints > 0 ? ` ${penaltyPoints} reputation points were deducted.` : ''
+          } Please review your store details and business operations to avoid temporary suspension.`,
           type: NotificationType.SYSTEM,
         },
         this.notifications,
@@ -226,7 +226,7 @@ export class AdminShopsModerationHelper {
 
     return {
       success: true,
-      message: `Đã gửi văn bản cảnh cáo tới gian hàng "${storeName}" thành công.`,
+      message: `Warning notice sent to store "${storeName}" successfully.`,
       warning: {
         id: log.id,
         action: log.action,
@@ -259,7 +259,7 @@ export class AdminShopsModerationHelper {
     });
 
     if (!seller || seller.role !== Role.SELLER) {
-      throw new NotFoundException('Không tìm thấy gian hàng của người bán này.');
+      throw new NotFoundException('Seller store not found.');
     }
 
     const storeName = seller.sellerUpgradeRequests[0]?.storeName || seller.fullName;
@@ -286,10 +286,10 @@ export class AdminShopsModerationHelper {
         tx,
         {
           userId: sellerId,
-          title: 'Xác nhận vi phạm quy chế sàn thương mại điện tử ⚠️',
-          content: `Gian hàng "${storeName}" vừa bị lập biên bản vi phạm: "${dto.title}". Mức xử lý: ${
-            dto.penaltyLevel || 'Cảnh cáo'
-          }.${dto.resolutionNotes ? ` Hướng giải quyết: ${dto.resolutionNotes}` : ''}`,
+          title: 'Confirmed marketplace policy violation ⚠️',
+          content: `A violation report was recorded for store "${storeName}": "${dto.title}". Penalty level: ${
+            dto.penaltyLevel || 'Warning'
+          }.${dto.resolutionNotes ? ` Resolution notes: ${dto.resolutionNotes}` : ''}`,
           type: NotificationType.SYSTEM,
         },
         this.notifications,
@@ -300,7 +300,7 @@ export class AdminShopsModerationHelper {
 
     return {
       success: true,
-      message: `Đã ghi nhận hồ sơ vi phạm của gian hàng "${storeName}" thành công.`,
+      message: `Violation record created for store "${storeName}".`,
       violation,
     };
   }
@@ -370,7 +370,7 @@ export class AdminShopsModerationHelper {
     });
 
     if (!seller || seller.role !== Role.SELLER) {
-      throw new NotFoundException('Không tìm thấy gian hàng của người bán này.');
+      throw new NotFoundException('Seller store not found.');
     }
 
     const storeName = seller.sellerUpgradeRequests[0]?.storeName || seller.fullName;
@@ -401,7 +401,7 @@ export class AdminShopsModerationHelper {
           userId: sellerId,
           deltaPoints,
           balanceAfter: targetScore,
-          reason: `Chấp thuận giải trình kháng cáo gian hàng: ${dto.reason.trim()}`,
+          reason: `Store appeal approved: ${dto.reason.trim()}`,
         },
       });
 
@@ -421,8 +421,8 @@ export class AdminShopsModerationHelper {
         tx,
         {
           userId: sellerId,
-          title: 'Tài khoản gian hàng đã được khôi phục!',
-          content: `Giải trình của bạn đã được Ban Quản Trị chấp thuận. Gian hàng "${storeName}" đã được mở khóa và khôi phục điểm uy tín lên ${targetScore} (${newTrustLevel}). Danh sách sản phẩm của bạn đã hoạt động trở lại.`,
+          title: 'Your store account has been restored!',
+          content: `Your appeal was approved by Administration. Store "${storeName}" has been unlocked and your reputation score has been restored to ${targetScore} (${newTrustLevel}). Your product listings are active again.`,
           type: NotificationType.SYSTEM,
         },
         this.notifications,
@@ -446,7 +446,7 @@ export class AdminShopsModerationHelper {
 
     return {
       success: true,
-      message: `Đã chấp thuận giải trình và khôi phục hoạt động cho gian hàng "${storeName}".`,
+      message: `Approved appeal and restored operations for store "${storeName}".`,
       shop: {
         id: seller.id,
         storeName,

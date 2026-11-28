@@ -26,13 +26,13 @@ export async function toggleSellerState(
   return prisma.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT id FROM users WHERE id = ${userId} FOR UPDATE`;
     const user = await tx.user.findUnique({ where: { id: userId } });
-    if (!user) throw new NotFoundException('Không tìm thấy tài khoản.');
+    if (!user) throw new NotFoundException('Account not found.');
     if (!['SELLER', 'ADMIN', 'SUPPORT_STAFF'].includes(user.role)) {
-      throw new ForbiddenException('Tài khoản chưa được cấp quyền Seller.');
+      throw new ForbiddenException('Account does not have Seller permissions.');
     }
     const active = requested ?? !user.isSellerActive;
     if (active && user.isShopSuspended)
-      throw new ForbiddenException('Shop đang bị đình chỉ, không thể bật chế độ Seller.');
+      throw new ForbiddenException('Shop is suspended; cannot enable Seller mode.');
     return tx.user.update({ where: { id: userId }, data: { isSellerActive: active } });
   });
 }

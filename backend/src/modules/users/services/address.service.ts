@@ -40,7 +40,7 @@ export class AddressService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Lấy danh sách địa chỉ nhận hàng của Buyer
+   * List buyer shipping addresses.
    */
   async getAddresses(userId: string) {
     return this.prisma.userAddress.findMany({
@@ -50,7 +50,7 @@ export class AddressService {
   }
 
   /**
-   * Thêm mới địa chỉ nhận hàng (kèm tọa độ bản đồ nếu có)
+   * Create a new shipping address (with optional map coordinates).
    */
   async createAddress(userId: string, dto: CreateAddressInput) {
     if (dto.isDefault) {
@@ -84,14 +84,14 @@ export class AddressService {
   }
 
   /**
-   * Cập nhật thông tin địa chỉ và tọa độ ghim bản đồ
+   * Update shipping address details and map pin coordinates.
    */
   async updateAddress(userId: string, addressId: string, dto: UpdateAddressInput) {
     const address = await this.prisma.userAddress.findUnique({
       where: { id: addressId },
     });
     if (!address || address.userId !== userId) {
-      throw new NotFoundException('Địa chỉ không tồn tại hoặc không thuộc quyền sở hữu.');
+      throw new NotFoundException('Address does not exist or does not belong to you.');
     }
 
     if (dto.isDefault) {
@@ -122,7 +122,7 @@ export class AddressService {
   }
 
   /**
-   * Tìm kiếm địa chỉ toàn cầu (Geocoding Autocomplete qua OpenStreetMap Nominatim)
+   * Search addresses globally (Geocoding Autocomplete via OpenStreetMap Nominatim).
    */
   async searchAddress(query: string) {
     if (!query || !query.trim()) {
@@ -155,7 +155,7 @@ export class AddressService {
   }
 
   /**
-   * Dịch ngược tọa độ ghim bản đồ thành địa chỉ chi tiết (Reverse Geocoding)
+   * Reverse geocode map coordinates into a detailed address.
    */
   async reverseGeocode(latitude: number, longitude: number) {
     try {
@@ -182,14 +182,14 @@ export class AddressService {
   }
 
   /**
-   * Đặt làm địa chỉ mặc định
+   * Set as default address.
    */
   async setDefaultAddress(userId: string, addressId: string) {
     const address = await this.prisma.userAddress.findUnique({
       where: { id: addressId },
     });
     if (!address || address.userId !== userId) {
-      throw new NotFoundException('Địa chỉ không tồn tại.');
+      throw new NotFoundException('Address not found.');
     }
 
     await this.prisma.userAddress.updateMany({
@@ -204,17 +204,17 @@ export class AddressService {
   }
 
   /**
-   * Xóa địa chỉ nhận hàng
+   * Delete shipping address.
    */
   async deleteAddress(userId: string, addressId: string) {
     const address = await this.prisma.userAddress.findUnique({
       where: { id: addressId },
     });
     if (!address || address.userId !== userId) {
-      throw new NotFoundException('Địa chỉ không tồn tại.');
+      throw new NotFoundException('Address not found.');
     }
 
     await this.prisma.userAddress.delete({ where: { id: addressId } });
-    return { success: true, message: 'Đã xóa địa chỉ thành công.' };
+    return { success: true, message: 'Address deleted successfully.' };
   }
 }

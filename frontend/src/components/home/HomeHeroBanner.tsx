@@ -78,14 +78,14 @@ export function HomeHeroBanner({ slides = [], loading = false }: HomeHeroBannerP
             to={currentSlide.targetUrl || '/search'}
             className="group relative flex h-full w-full items-center justify-center overflow-hidden bg-slate-950"
           >
-            {/* Lớp nền ambient blur lấy màu ảnh lấp đầy khung hình tự nhiên, tránh viền trống */}
+            {/* Ambient blur background matching banner colors to naturally fill container without blank margins */}
             <img
               src={currentSlide.image}
               alt=""
               aria-hidden="true"
               className="absolute inset-0 h-full w-full object-cover blur-2xl opacity-40 scale-110 pointer-events-none select-none"
             />
-            {/* Ảnh banner chính hiển thị trọn vẹn 100% theo chiều dọc, không bị crop mất chi tiết */}
+            {/* Main banner image rendered cleanly at 100% vertical height without cropping details */}
             <img
               src={currentSlide.image}
               alt={currentSlide.title || 'Event Banner'}

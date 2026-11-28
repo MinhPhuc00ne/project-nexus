@@ -237,7 +237,7 @@ function mapProduct(product: CatalogProduct): ProductDetail {
       id: product?.seller?.id,
       name: product?.seller?.fullName ?? i18n.t('errors:services.unknownSeller'),
       verified: Boolean(product?.seller?.reputationScore && product.seller.reputationScore >= 80),
-      // Tách riêng hoàn toàn Avatar của Shop và Avatar của Seller
+      // Keep Shop avatar strictly separate from Seller avatar
       avatarUrl: product?.seller?.shopAvatarUrl ?? undefined,
       trustScore: product?.seller?.reputationScore,
       trustLevel: product?.seller?.trustLevel,
@@ -427,11 +427,11 @@ export async function getRecommendationsApi(limit = 12): Promise<Recommendations
         return res;
       }
     } catch {
-      // Fallback nếu token hết hạn hoặc lỗi mạng
+      // Fallback if token is expired or network error occurs
     }
   }
 
-  // Fallback danh sách sản phẩm phổ biến cho khách vãng lai hoặc chưa có lịch sử mua hàng
+  // Fallback popular product list for guest visitors or buyers without purchase history
   const fallback = await getProductsCatalog({ limit, page: 1 });
   return {
     items: fallback.map((p) => ({
@@ -502,7 +502,7 @@ export async function getTrendingProducts(
       total: res?.total ?? 0,
     };
   } catch (error) {
-    console.warn('Không thể tải danh sách sản phẩm xu hướng:', error);
+    console.warn('Unable to load trending products:', error);
     return { items: [], total: 0 };
   }
 }

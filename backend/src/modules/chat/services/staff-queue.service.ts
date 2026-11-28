@@ -56,7 +56,7 @@ export class StaffQueueService {
       // does not send this member of staff to the back of the queue.
       const added = await client.zadd(ONLINE_KEY, 'NX', Date.now(), staffId);
       if (added === 1) {
-        this.logger.log(`Staff ${staffId} đã ONLINE.`);
+        this.logger.log(`Staff ${staffId} is now ONLINE.`);
       }
     } catch (error) {
       this.logger.error(
@@ -86,7 +86,7 @@ export class StaffQueueService {
       await client.zrem(ONLINE_KEY, staffId);
       await client.del(sockets);
       await client.del(ticketsKey(staffId));
-      this.logger.log(`Staff ${staffId} đã OFFLINE hoàn toàn khỏi hệ thống.`);
+      this.logger.log(`Staff ${staffId} is now completely OFFLINE from the system.`);
     } catch (error) {
       this.logger.error(
         `Could not unregister staff ${staffId}: ${

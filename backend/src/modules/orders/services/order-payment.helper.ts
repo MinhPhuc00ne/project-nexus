@@ -108,7 +108,7 @@ export class OrderPaymentHelper {
 
     if (provider !== PaymentProvider.PAYOS) {
       throw new BadRequestException({
-        message: `Cổng thanh toán ${provider} hiện chưa được kích hoạt`,
+        message: `Payment provider ${provider} is currently not enabled`,
         errorCode: AppErrorCode.BAD_REQUEST,
       });
     }

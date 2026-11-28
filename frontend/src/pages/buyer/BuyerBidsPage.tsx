@@ -602,7 +602,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
         </div>
       )}
 
-      {/* SECTION 3: DEFAULTED AWARDS (PAYMENT_DEFAULT: QUÁ HẠN 24H) */}
+      {/* SECTION 3: DEFAULTED AWARDS (PAYMENT_DEFAULT: PAST 24H DEADLINE) */}
       {!purchasesOnly && defaultedAwards.length > 0 && (
         <div className="bg-rose-50/70 border border-rose-200 rounded-2xl p-4 shadow-xs space-y-3">
           <div className="flex items-center gap-2">

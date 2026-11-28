@@ -100,19 +100,19 @@ export class SellerPickupService {
             ))
         ) {
           throw new BadRequestException(
-            'Điểm lấy hàng phải dùng địa chỉ hồ sơ gian hàng. Hãy cập nhật hồ sơ trước.',
+            'Pickup point must use the shop profile address. Please update your shop profile first.',
           );
         }
         if ((dto.latitude !== undefined) !== (dto.longitude !== undefined)) {
-          throw new BadRequestException('Phải cung cấp cả vĩ độ và kinh độ hoặc bỏ trống cả hai.');
+          throw new BadRequestException(
+            'Both latitude and longitude must be provided or both omitted.',
+          );
         }
         if (
           !/^(0|\+?84)\d{9,10}$/.test(dto.phone.replace(/[\s.-]/g, '')) ||
           [dto.name, dto.street, dto.city, dto.district, dto.ward].some((value) => !value.trim())
         ) {
-          throw new BadRequestException(
-            'Thiếu địa chỉ lấy hàng hoặc số điện thoại Việt Nam hợp lệ.',
-          );
+          throw new BadRequestException('Missing pickup address or valid Vietnam phone number.');
         }
         const location = await this.logistics.resolveDistrictAndWard(
           dto.city,
@@ -120,7 +120,7 @@ export class SellerPickupService {
           dto.ward,
         );
         if (!location?.districtId || !location.wardCode)
-          throw new BadRequestException('GHN không xác định được địa chỉ lấy hàng.');
+          throw new BadRequestException('GHN could not resolve the pickup address.');
         const environment = ghnEnvironment(this.config);
         const data = {
           profileFingerprint: pickupFingerprint(dto),
@@ -176,7 +176,9 @@ export class SellerPickupService {
           shop.wardCode !== data.wardCode ||
           phoneKey(shop.phone) !== phoneKey(dto.phone)
         ) {
-          throw new BadRequestException('GHN trả điểm lấy hàng không khớp địa chỉ đã lưu.');
+          throw new BadRequestException(
+            'GHN returned a pickup point that does not match the saved address.',
+          );
         }
         const updated = await tx.sellerGhnAccount.update({
           where: { id: point.id },
@@ -211,7 +213,7 @@ export class SellerPickupService {
   async verify(pointId: string, shopId: number, adminId: string): Promise<SellerPickupView> {
     const account = await this.prisma.sellerGhnAccount.findUnique({ where: { id: pointId } });
     if (!account || account.environment !== ghnEnvironment(this.config))
-      throw new NotFoundException('Không tìm thấy điểm lấy hàng trong môi trường hiện tại.');
+      throw new NotFoundException('Pickup point not found in the current environment.');
     const point = pickupView(account, await this.profiles.read(account.sellerId));
     const expectedFingerprint = pickupFingerprint(point);
     const location = await this.logistics.resolveDistrictAndWard(
@@ -220,14 +222,14 @@ export class SellerPickupService {
       point.ward,
     );
     if (!location?.districtId || !location.wardCode)
-      throw new BadRequestException('GHN không xác định được địa chỉ lấy hàng.');
+      throw new BadRequestException('GHN could not resolve the pickup address.');
     const shop = await this.shops.find(shopId);
     const addressKey = (value: string): string =>
       value
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
-        .replace(/đ/g, 'd')
+        .replace(/\u0111/g, 'd')
         .replace(/[^a-z0-9]/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
@@ -238,12 +240,12 @@ export class SellerPickupService {
       phoneKey(shop.phone) !== phoneKey(point.phone)
     ) {
       throw new BadRequestException(
-        'Điểm GHN phải đang hoạt động, khớp quận/phường và số điện thoại đã khai báo.',
+        'GHN point must be active and match the declared district/ward and phone number.',
       );
     }
     if (!` ${addressKey(shop.address)} `.includes(` ${addressKey(point.street)} `)) {
       throw new BadRequestException(
-        'Địa chỉ đường/số nhà không khớp điểm GHN. Hãy đối chiếu lại trước khi xác minh.',
+        'Street/house address does not match the GHN point. Please reconcile before verifying.',
       );
     }
     try {
@@ -251,7 +253,7 @@ export class SellerPickupService {
         await tx.$queryRaw`SELECT id FROM users WHERE id = ${point.sellerId} FOR UPDATE`;
         const profile = await this.profiles.read(point.sellerId, tx);
         if (pickupFingerprint(profile) !== expectedFingerprint)
-          throw new ConflictException('Điểm lấy hàng không còn khớp hồ sơ gian hàng.');
+          throw new ConflictException('Pickup point no longer matches the shop profile.');
         const updated = await tx.sellerGhnAccount.updateMany({
           where: { id: pointId, version: point.version },
           data: {
@@ -270,7 +272,7 @@ export class SellerPickupService {
           },
         });
         if (updated.count !== 1)
-          throw new ConflictException('Seller vừa thay đổi điểm lấy hàng. Hãy kiểm tra lại.');
+          throw new ConflictException('Seller just updated the pickup point. Please verify again.');
         await this.auditLog?.record(
           {
             eventName: 'admin.pickup_point.verified',
@@ -292,7 +294,7 @@ export class SellerPickupService {
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new ConflictException(
-          'Shop ID GHN đã được gắn với seller khác trong môi trường này.',
+          'This GHN Shop ID is already linked to another seller in this environment.',
         );
       }
       throw error;
@@ -311,7 +313,7 @@ export class SellerPickupService {
       !point.carrierPhone
     ) {
       throw new BadRequestException(
-        'Chưa thiết lập điểm lấy hàng GHN. Vui lòng lưu địa chỉ lấy hàng trong cài đặt vận chuyển.',
+        'GHN pickup point has not been set up. Please save a pickup address in shipping settings.',
       );
     }
     return point;

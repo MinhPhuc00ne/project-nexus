@@ -5,11 +5,11 @@ import type { BuyerOrder } from '@/features/orders/services/orders';
 import type { BuyerDisputeReason } from '../../pages/buyer/BuyerDisputesPage';
 
 export const reasonLabels: Record<BuyerDisputeReason, string> = {
-  NOT_RECEIVED: 'Không nhận được hàng',
-  ITEM_DEFECTIVE: 'Sản phẩm bị lỗi / hư hỏng',
-  WRONG_ITEM: 'Nhận sai sản phẩm',
-  COUNTERFEIT: 'Nghi ngờ hàng giả',
-  OTHER: 'Lý do khác',
+  NOT_RECEIVED: 'Item not received',
+  ITEM_DEFECTIVE: 'Defective / damaged product',
+  WRONG_ITEM: 'Wrong item received',
+  COUNTERFEIT: 'Suspected counterfeit',
+  OTHER: 'Other reason',
 };
 
 interface CreateDisputeModalProps {

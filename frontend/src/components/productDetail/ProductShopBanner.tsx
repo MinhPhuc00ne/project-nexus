@@ -58,7 +58,7 @@ export const ProductShopBanner: React.FC<ProductShopBannerProps> = ({ product, o
   }, [sellerId]);
 
   const shopName = shopProfile?.name || fallbackShop?.name || t('product.defaultShopName');
-  // Avatar của Shop độc lập hoàn toàn với Avatar của Seller
+  // Shop avatar is completely independent from Seller personal avatar
   const shopAvatarUrl = shopProfile?.avatarUrl ?? fallbackShop?.avatarUrl;
   const isOnline = Boolean(shopProfile?.isSellerActive ?? fallbackShop?.isSellerActive);
   const totalReviews = shopProfile?.stats?.totalReviews ?? product.reviewsCount ?? 0;

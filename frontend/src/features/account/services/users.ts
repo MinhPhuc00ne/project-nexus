@@ -16,7 +16,7 @@ export type {
 };
 
 /**
- * 1. Lấy thông tin cá nhân của người dùng đang đăng nhập (kèm số dư ví, điểm uy tín, role)
+ * 1. Get the currently signed-in user's profile (including wallet balance, reputation score, and role)
  */
 export function getMe(): Promise<UserProfile> {
   return apiRequest<UserProfile>('/users/me', {
@@ -26,7 +26,7 @@ export function getMe(): Promise<UserProfile> {
 }
 
 /**
- * 2. Chuyển đổi trạng thái Seller Mode (bật / tắt bán hàng) cho tài khoản đã có quyền Seller
+ * 2. Toggle Seller Mode (enable/disable selling view) for Seller-eligible accounts
  */
 export function toggleSellerMode(isSellerActive?: boolean): Promise<ToggleSellerResponse> {
   return apiRequest<ToggleSellerResponse>('/users/toggle-seller', {
@@ -37,7 +37,7 @@ export function toggleSellerMode(isSellerActive?: boolean): Promise<ToggleSeller
 }
 
 /**
- * 3. Gửi yêu cầu nâng cấp tài khoản lên Seller (kèm file tài liệu chứng minh hoặc attachmentUrl)
+ * 3. Submit a Seller upgrade request (with verification document file or attachmentUrl)
  */
 export function createSellerRequest(
   payload: FormData | CreateSellerRequestDto,
@@ -53,7 +53,7 @@ export function createSellerRequest(
 }
 
 /**
- * 4. Xem lịch sử và trạng thái yêu cầu nâng cấp Seller của tài khoản hiện tại
+ * 4. View history and status of the current account's Seller upgrade requests
  */
 export function getMySellerRequests(): Promise<{
   total: number;

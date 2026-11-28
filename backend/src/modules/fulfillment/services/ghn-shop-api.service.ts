@@ -53,14 +53,16 @@ export class GhnShopApiService {
       }
       offset = result.nextOffset;
     }
-    throw new BadGatewayException('Chưa kiểm tra hết điểm GHN. Vui lòng thử lại sau.');
+    throw new BadGatewayException(
+      'Unable to finish scanning GHN pickup points. Please try again later.',
+    );
   }
 
   private async register(input: GhnShopInput): Promise<GhnShop> {
     const token = this.config.get<string>('GHN_TOKEN');
     const parentShop = Number(this.config.get<string>('GHN_SHOP_ID'));
     if (!token?.trim() || !Number.isSafeInteger(parentShop) || parentShop <= 0)
-      throw new BadGatewayException('Chưa cấu hình tài khoản và shop GHN của sàn.');
+      throw new BadGatewayException('Marketplace GHN account and shop are not configured.');
     const raw = (
       this.config.get<string>('GHN_API_URL') || 'https://online-gateway.ghn.vn/shiip/public-api/v2'
     ).replace(/\/+$/, '');
@@ -82,13 +84,13 @@ export class GhnShopApiService {
       const id = objectValue(body.data).shop_id;
       if (!response.ok || body.code !== 200 || !Number.isSafeInteger(id) || Number(id) <= 0)
         throw new BadGatewayException(
-          'GHN chưa xác nhận điểm lấy hàng. Kiểm tra địa chỉ và thử lưu lại.',
+          'GHN did not confirm the pickup point. Check the address and try saving again.',
         );
       return this.find(Number(id));
     } catch (error) {
       if (error instanceof BadGatewayException) throw error;
       throw new BadGatewayException(
-        'Kết nối GHN gián đoạn. Hãy lưu lại để hệ thống kiểm tra điểm đã tạo.',
+        'GHN connection was interrupted. Save again so the system can check the created point.',
       );
     }
   }
@@ -101,10 +103,10 @@ export class GhnShopApiService {
       limit < 1 ||
       limit > 100
     ) {
-      throw new BadRequestException('Tham số phân trang GHN không hợp lệ.');
+      throw new BadRequestException('Invalid GHN pagination parameters.');
     }
     const token = this.config.get<string>('GHN_TOKEN');
-    if (!token?.trim()) throw new BadGatewayException('Chưa cấu hình GHN_TOKEN.');
+    if (!token?.trim()) throw new BadGatewayException('GHN_TOKEN is not configured.');
     const raw = (
       this.config.get<string>('GHN_API_URL') || 'https://online-gateway.ghn.vn/shiip/public-api/v2'
     ).replace(/\/+$/, '');
@@ -128,7 +130,7 @@ export class GhnShopApiService {
         !Number.isSafeInteger(data.last_offset) ||
         Number(data.last_offset) < 0
       ) {
-        throw new BadGatewayException('GHN chưa trả danh sách điểm lấy hàng hợp lệ.');
+        throw new BadGatewayException('GHN did not return a valid pickup point list.');
       }
       const shops: GhnShop[] = [];
       for (const entry of rawShops) {
@@ -159,7 +161,7 @@ export class GhnShopApiService {
       return { shops, nextOffset: Number(data.last_offset) };
     } catch (error) {
       if (error instanceof BadGatewayException) throw error;
-      throw new BadGatewayException('Không kết nối được danh sách điểm lấy hàng GHN.');
+      throw new BadGatewayException('Unable to connect to the GHN pickup point list.');
     }
   }
 
@@ -170,12 +172,12 @@ export class GhnShopApiService {
       const found = result.shops.find((shop) => shop.id === shopId);
       if (found) return found;
       if (!result.shops.length || result.nextOffset === 0 || result.nextOffset <= offset) {
-        throw new NotFoundException('Điểm GHN không thuộc tài khoản của sàn.');
+        throw new NotFoundException('GHN pickup point does not belong to the marketplace account.');
       }
       offset = result.nextOffset;
     }
     throw new BadGatewayException(
-      'Chưa duyệt hết danh sách GHN. Hãy kiểm tra điểm lấy hàng trực tiếp trên GHN.',
+      'Unable to scan the entire GHN list. Please check the pickup point directly on GHN.',
     );
   }
 }

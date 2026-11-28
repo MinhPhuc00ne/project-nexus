@@ -51,7 +51,7 @@ export default function CartPage() {
         const fetched = await fetchCart();
         if (isMounted) setItems(fetched);
       } catch (err) {
-        console.error('Lỗi tải giỏ hàng:', err);
+        console.error('Failed to load cart:', err);
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -84,7 +84,7 @@ export default function CartPage() {
         }
       })
       .catch((err: unknown) => {
-        console.error('Lỗi tải địa chỉ mặc định để báo giá vận chuyển:', err);
+        console.error('Failed to load default address for shipping quote:', err);
       });
     return () => {
       isMounted = false;
@@ -124,7 +124,7 @@ export default function CartPage() {
         if (isCurrent) setShippingQuote(quote.totalShippingFee);
       })
       .catch((err: unknown) => {
-        console.error('Lỗi tính phí vận chuyển trong giỏ hàng:', err);
+        console.error('Failed to calculate shipping fee in cart:', err);
         if (isCurrent) setShippingQuoteFailed(true);
       })
       .finally(() => {

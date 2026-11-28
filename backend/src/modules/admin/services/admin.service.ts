@@ -227,7 +227,7 @@ export class AdminService {
     });
 
     if (!request) {
-      throw new NotFoundException('Không tìm thấy yêu cầu nâng cấp với ID đã cung cấp.');
+      throw new NotFoundException('Upgrade request with the provided ID was not found.');
     }
 
     return request;
@@ -249,12 +249,12 @@ export class AdminService {
     });
 
     if (!request) {
-      throw new NotFoundException('Không tìm thấy yêu cầu nâng cấp.');
+      throw new NotFoundException('Upgrade request not found.');
     }
 
     if (request.status !== SellerRequestStatus.PENDING) {
       throw new BadRequestException(
-        `Yêu cầu này đã được xử lý trước đó với trạng thái: ${request.status}.`,
+        `This request has already been processed with status: ${request.status}.`,
       );
     }
 
@@ -299,8 +299,8 @@ export class AdminService {
         tx,
         {
           userId: request.userId,
-          title: 'Yêu cầu nâng cấp Người bán (Seller) đã được phê duyệt! 🎉',
-          content: `Chúc mừng bạn! Yêu cầu đăng ký gian hàng "${request.storeName}" đã được Quản trị viên phê duyệt. Bạn hiện đã trở thành Người bán chính thức trên Project Nexus và có toàn quyền chuyển đổi giữa giao diện Người bán và Người mua.`,
+          title: 'Seller upgrade request approved! 🎉',
+          content: `Congratulations! Your store registration for "${request.storeName}" has been approved by an Administrator. You are now an official Seller on Project Nexus and can switch seamlessly between Seller and Buyer views.`,
           type: NotificationType.SYSTEM,
         },
         this.notifications,
@@ -310,7 +310,7 @@ export class AdminService {
     });
 
     return {
-      message: 'Phê duyệt yêu cầu nâng cấp thành công! Người dùng đã được cấp quyền SELLER.',
+      message: 'Upgrade request approved successfully! User has been granted SELLER role.',
       request: result.updatedRequest,
       user: {
         id: result.updatedUser.id,
@@ -339,12 +339,12 @@ export class AdminService {
     });
 
     if (!request) {
-      throw new NotFoundException('Không tìm thấy yêu cầu nâng cấp.');
+      throw new NotFoundException('Upgrade request not found.');
     }
 
     if (request.status !== SellerRequestStatus.PENDING) {
       throw new BadRequestException(
-        `Yêu cầu này đã được xử lý trước đó với trạng thái: ${request.status}.`,
+        `This request has already been processed with status: ${request.status}.`,
       );
     }
 
@@ -363,8 +363,8 @@ export class AdminService {
         tx,
         {
           userId: request.userId,
-          title: 'Yêu cầu nâng cấp Người bán (Seller) bị từ chối',
-          content: `Yêu cầu đăng ký gian hàng "${request.storeName}" của bạn không được phê duyệt. Lý do: ${dto.rejectionReason.trim()}. Bạn có thể chuẩn bị lại thông tin và gửi lại yêu cầu mới.`,
+          title: 'Seller upgrade request rejected',
+          content: `Your store registration for "${request.storeName}" was not approved. Reason: ${dto.rejectionReason.trim()}. You may update your information and submit a new request.`,
           type: NotificationType.SYSTEM,
         },
         this.notifications,
@@ -374,7 +374,7 @@ export class AdminService {
     });
 
     return {
-      message: 'Đã từ chối yêu cầu nâng cấp người bán.',
+      message: 'Seller upgrade request rejected.',
       request: updatedRequest,
     };
   }
@@ -471,16 +471,16 @@ export class AdminService {
     });
 
     if (!req) {
-      throw new NotFoundException('Không tìm thấy yêu cầu rút tiền.');
+      throw new NotFoundException('Withdrawal request not found.');
     }
 
     if (req.status !== WithdrawalStatus.PENDING) {
-      throw new BadRequestException('Yêu cầu rút tiền này đã được xử lý trước đó.');
+      throw new BadRequestException('This withdrawal request has already been processed.');
     }
 
     const wallet = req.user.wallet;
     if (!wallet) {
-      throw new BadRequestException('Người dùng này không có ví.');
+      throw new BadRequestException('This user does not have a wallet.');
     }
 
     const amount = req.amount;
@@ -488,7 +488,9 @@ export class AdminService {
     await this.prisma.$transaction(async (tx) => {
       if (dto.status === WithdrawalStatus.REJECTED) {
         if (!dto.rejectionReason?.trim()) {
-          throw new BadRequestException('Vui lòng nhập lý do từ chối yêu cầu rút tiền.');
+          throw new BadRequestException(
+            'Please provide a rejection reason for the withdrawal request.',
+          );
         }
 
         await tx.wallet.update({
@@ -503,7 +505,7 @@ export class AdminService {
           where: { referenceId: req.id },
           data: {
             status: WalletTransactionStatus.FAILED,
-            description: `Từ chối rút tiền: ${dto.rejectionReason.trim()}`,
+            description: `Withdrawal rejected: ${dto.rejectionReason.trim()}`,
           },
         });
       } else {
@@ -518,7 +520,7 @@ export class AdminService {
           where: { referenceId: req.id },
           data: {
             status: WalletTransactionStatus.SUCCESS,
-            description: dto.adminNote?.trim() || 'Rút tiền về tài khoản ngân hàng thành công',
+            description: dto.adminNote?.trim() || 'Bank withdrawal completed successfully',
           },
         });
       }
@@ -540,12 +542,12 @@ export class AdminService {
           userId: req.userId,
           title:
             dto.status === WithdrawalStatus.REJECTED
-              ? 'Yêu cầu rút tiền của bạn bị từ chối ⚠️'
-              : 'Yêu cầu rút tiền đã được phê duyệt thành công 🎉',
+              ? 'Your withdrawal request was rejected ⚠️'
+              : 'Withdrawal request approved successfully 🎉',
           content:
             dto.status === WithdrawalStatus.REJECTED
-              ? `Yêu cầu rút ${Number(amount).toLocaleString('vi-VN')} VND về ${req.bankName} (${req.accountNumber}) đã bị từ chối. Lý do: ${dto.rejectionReason}. Số tiền đã được hoàn trả lại ví của bạn.`
-              : `Yêu cầu rút ${Number(amount).toLocaleString('vi-VN')} VND về ${req.bankName} (${req.accountNumber}) đã được xử lý thành công. Tiền sẽ về tài khoản ngân hàng của bạn trong ít phút.`,
+              ? `Your withdrawal request of ${Number(amount).toLocaleString('en-US')} VND to ${req.bankName} (${req.accountNumber}) was rejected. Reason: ${dto.rejectionReason}. The funds have been returned to your wallet.`
+              : `Your withdrawal request of ${Number(amount).toLocaleString('en-US')} VND to ${req.bankName} (${req.accountNumber}) has been processed successfully. Funds will arrive in your bank account shortly.`,
           type: NotificationType.PAYMENT,
           targetUrl: req.user.role === 'SELLER' ? '/seller/finance' : '/buyer/wallet',
         },
@@ -570,7 +572,7 @@ export class AdminService {
 
     return {
       success: true,
-      message: `Đã cập nhật yêu cầu rút tiền thành ${dto.status}.`,
+      message: `Withdrawal request updated to ${dto.status}.`,
     };
   }
 }

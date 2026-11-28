@@ -8,7 +8,7 @@ interface SettingsField {
   max: number;
 }
 
-// Giới hạn và đơn vị khớp UpdateSystemSettingsDto của backend.
+// Limits and units match backend UpdateSystemSettingsDto.
 export const settingsGroups: { id: SettingsGroupId; fields: SettingsField[] }[] = [
   {
     id: 'fees',

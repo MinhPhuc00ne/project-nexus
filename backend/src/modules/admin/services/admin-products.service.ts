@@ -170,7 +170,7 @@ export class AdminProductsService {
     });
 
     if (!product) {
-      throw new NotFoundException('Không tìm thấy sản phẩm.');
+      throw new NotFoundException('Product not found.');
     }
 
     const availableQty = product.inventories.reduce((acc, curr) => acc + curr.availableQty, 0);
@@ -228,18 +228,18 @@ export class AdminProductsService {
     });
 
     if (!product) {
-      throw new NotFoundException('Không tìm thấy sản phẩm.');
+      throw new NotFoundException('Product not found.');
     }
 
     if (dto.status === ProductStatus.ACTIVE && product.seller?.isShopSuspended) {
       throw new BadRequestException(
-        'Không thể kích hoạt sản phẩm vì gian hàng của người bán này đang bị đình chỉ hoạt động.',
+        'Cannot activate product because this seller store is currently suspended.',
       );
     }
 
     const oldStatus = product.status;
     const isHidden = dto.status === ProductStatus.INACTIVE;
-    const actionText = isHidden ? 'đã bị tạm ẩn/khóa' : 'đã được chuyển sang trạng thái hoạt động';
+    const actionText = isHidden ? 'has been temporarily hidden/locked' : 'has been set to active';
 
     const updated = await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM users WHERE id = ${product.sellerId} FOR UPDATE`;
@@ -248,7 +248,7 @@ export class AdminProductsService {
         select: { isShopSuspended: true },
       });
       if (!seller || (dto.status === ProductStatus.ACTIVE && seller.isShopSuspended)) {
-        throw new BadRequestException('Không thể kích hoạt sản phẩm của shop đang bị đình chỉ.');
+        throw new BadRequestException('Cannot activate product for a suspended store.');
       }
       const result = await tx.product.update({
         where: { id },
@@ -259,9 +259,9 @@ export class AdminProductsService {
         {
           userId: product.sellerId,
           title: isHidden
-            ? 'Sản phẩm của bạn đã bị ẩn bởi Quản trị viên ⚠️'
-            : 'Sản phẩm đã được kích hoạt 🎉',
-          content: `Sản phẩm "${product.title}" của bạn ${actionText}.${dto.reason ? ` Lý do: ${dto.reason}` : ''}`,
+            ? 'Your product was hidden by an Administrator ⚠️'
+            : 'Product activated 🎉',
+          content: `Your product "${product.title}" ${actionText}.${dto.reason ? ` Reason: ${dto.reason}` : ''}`,
           type: NotificationType.SYSTEM,
         },
         this.notifications,
@@ -284,12 +284,12 @@ export class AdminProductsService {
     });
 
     this.logger.log(
-      `Admin (${adminId}) đã đổi trạng thái sản phẩm ${product.title} (${product.id}) từ ${oldStatus} sang ${dto.status}.`,
+      `Admin (${adminId}) changed product ${product.title} (${product.id}) status from ${oldStatus} to ${dto.status}.`,
     );
 
     return {
       success: true,
-      message: `Đã cập nhật trạng thái sản phẩm thành ${dto.status} thành công.`,
+      message: `Product status successfully updated to ${dto.status}.`,
       product: {
         id: updated.id,
         title: updated.title,
@@ -322,17 +322,17 @@ export class AdminProductsService {
     ]);
 
     if (!product) {
-      throw new NotFoundException('Không tìm thấy sản phẩm.');
+      throw new NotFoundException('Product not found.');
     }
 
     if (!targetCategory) {
-      throw new NotFoundException('Không tìm thấy danh mục cần gắn cho sản phẩm.');
+      throw new NotFoundException('Target category not found.');
     }
 
     if (product.categoryId === targetCategory.id) {
       return {
         success: true,
-        message: `Sản phẩm đã thuộc danh mục "${targetCategory.name}".`,
+        message: `Product is already in category "${targetCategory.name}".`,
         product: {
           id: product.id,
           title: product.title,
@@ -342,8 +342,8 @@ export class AdminProductsService {
       };
     }
 
-    const oldCategoryName = product.category?.name || 'Chưa phân loại';
-    const note = dto.reason?.trim() ? ` Ghi chú: ${dto.reason.trim()}` : '';
+    const oldCategoryName = product.category?.name || 'Uncategorized';
+    const note = dto.reason?.trim() ? ` Note: ${dto.reason.trim()}` : '';
 
     const updated = await this.prisma.$transaction(async (tx) => {
       const result = await tx.product.update({
@@ -359,8 +359,8 @@ export class AdminProductsService {
           tx,
           {
             userId: product.sellerId,
-            title: 'Sản phẩm đã được cập nhật danh mục 🏷️',
-            content: `Sản phẩm "${product.title}" của bạn đã được Quản trị viên phân loại lại từ danh mục "${oldCategoryName}" sang "${targetCategory.name}".${note}`,
+            title: 'Product category updated 🏷️',
+            content: `Your product "${product.title}" was recategorized by an Administrator from "${oldCategoryName}" to "${targetCategory.name}".${note}`,
             targetUrl: '/seller/products',
             type: NotificationType.SYSTEM,
             channel: NotificationChannel.IN_APP,
@@ -388,12 +388,12 @@ export class AdminProductsService {
     });
 
     this.logger.log(
-      `Admin (${adminId}) đã gắn danh mục "${targetCategory.name}" (${targetCategory.id}) cho sản phẩm ${product.title} (${product.id}).`,
+      `Admin (${adminId}) assigned category "${targetCategory.name}" (${targetCategory.id}) to product ${product.title} (${product.id}).`,
     );
 
     return {
       success: true,
-      message: `Đã gắn danh mục "${targetCategory.name}" cho sản phẩm thành công.`,
+      message: `Category "${targetCategory.name}" assigned to product successfully.`,
       product: {
         id: updated.id,
         title: updated.title,
@@ -420,7 +420,7 @@ export class AdminProductsService {
     });
 
     if (!product) {
-      throw new NotFoundException('Không tìm thấy sản phẩm.');
+      throw new NotFoundException('Product not found.');
     }
 
     if (product.orderItems.length > 0) {
@@ -440,7 +440,7 @@ export class AdminProductsService {
       return {
         success: true,
         message:
-          'Sản phẩm đã phát sinh đơn hàng trong quá khứ nên hệ thống đã chuyển sang trạng thái ẨN (INACTIVE) để bảo toàn lịch sử giao dịch.',
+          'Product has historical orders, so it was set to INACTIVE to preserve transaction history.',
       };
     }
 
@@ -468,11 +468,11 @@ export class AdminProductsService {
       );
     });
 
-    this.logger.log(`Admin (${adminId}) đã xóa vĩnh viễn sản phẩm ${product.title} (${id}).`);
+    this.logger.log(`Admin (${adminId}) permanently deleted product ${product.title} (${id}).`);
 
     return {
       success: true,
-      message: `Đã xóa vĩnh viễn sản phẩm "${product.title}" thành công.`,
+      message: `Permanently deleted product "${product.title}".`,
     };
   }
 
@@ -521,18 +521,18 @@ export class AdminProductsService {
     });
 
     if (!product) {
-      throw new NotFoundException('Không tìm thấy sản phẩm.');
+      throw new NotFoundException('Product not found.');
     }
 
     if (product.trendingExcluded) {
       return {
         success: true,
-        message: `Sản phẩm "${product.title}" đã được gỡ khỏi Xu hướng trước đó.`,
+        message: `Product "${product.title}" was already removed from Trending.`,
         product: { id: product.id, title: product.title, trendingExcluded: true },
       };
     }
 
-    const note = dto?.reason?.trim() ? ` Lý do: ${dto.reason.trim()}` : '';
+    const note = dto?.reason?.trim() ? ` Reason: ${dto.reason.trim()}` : '';
     const updated = await this.prisma.$transaction(async (tx) => {
       const result = await tx.product.update({
         where: { id },
@@ -548,8 +548,8 @@ export class AdminProductsService {
           tx,
           {
             userId: product.sellerId,
-            title: 'Sản phẩm đã bị gỡ khỏi Xu hướng',
-            content: `Sản phẩm "${product.title}" của bạn đã bị Quản trị viên gỡ khỏi danh sách Xu hướng trên trang chủ.${note}`,
+            title: 'Product removed from Trending',
+            content: `Your product "${product.title}" was removed from the homepage Trending list by an Administrator.${note}`,
             targetUrl: '/seller/products',
             type: NotificationType.SYSTEM,
             channel: NotificationChannel.IN_APP,
@@ -575,7 +575,7 @@ export class AdminProductsService {
     });
 
     this.logger.log(
-      `Admin (${adminId}) đã gỡ sản phẩm ${product.title} (${product.id}) khỏi Xu hướng.`,
+      `Admin (${adminId}) removed product ${product.title} (${product.id}) from Trending.`,
     );
 
     if (this.trendingService) {
@@ -584,7 +584,7 @@ export class AdminProductsService {
 
     return {
       success: true,
-      message: `Đã gỡ sản phẩm "${product.title}" khỏi danh sách Xu hướng.`,
+      message: `Removed "${product.title}" from the Trending list.`,
       product: updated,
     };
   }

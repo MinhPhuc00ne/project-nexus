@@ -59,8 +59,8 @@ export class InventoryService {
       update: {},
       create: {
         code: 'WH_001',
-        name: 'Sổ tồn kho mặc định NEXUS',
-        address: 'Kho logic; địa điểm lấy hàng thực tế theo pickup point của từng Seller',
+        name: 'NEXUS Default Inventory Ledger',
+        address: 'Logical warehouse; physical pickup address follows each Seller pickup point',
       },
     });
   }
@@ -156,7 +156,7 @@ export class InventoryService {
 
       if (adjusted.count !== 1) {
         throw new BadRequestException(
-          `Không thể giảm tồn kho xuống ${newQuantity}: số lượng chênh lệch đang được giữ cho đơn hàng chưa hoàn tất.`,
+          `Cannot reduce stock to ${newQuantity}: the difference is currently reserved for uncompleted orders.`,
         );
       }
 
@@ -208,7 +208,7 @@ export class InventoryService {
     orderId: string,
   ) {
     if (quantity <= 0) {
-      throw new BadRequestException('Số lượng đặt hàng phải lớn hơn 0');
+      throw new BadRequestException('Order quantity must be greater than 0.');
     }
 
     let inventory = await tx.inventory.findFirst({
@@ -249,7 +249,7 @@ export class InventoryService {
         select: { availableQty: true },
       });
       throw new BadRequestException(
-        `Số lượng tồn kho không đủ (còn ${current?.availableQty ?? 0}, yêu cầu ${quantity})`,
+        `Insufficient stock (${current?.availableQty ?? 0} remaining, ${quantity} requested)`,
       );
     }
 
@@ -324,8 +324,8 @@ export class InventoryService {
   }
 
   /**
-   * Hoàn trả tồn kho khi đơn hàng bị hủy hoặc thanh toán thất bại
-   * Tăng availableQty, giảm reservedQty, chuyển trạng thái đặt chỗ sang RELEASED
+   * Restores inventory when an order is cancelled or payment fails:
+   * increments availableQty, decrements reservedQty, and marks reservation status as RELEASED.
    */
   async releaseReservation(tx: Prisma.TransactionClient, orderId: string) {
     const reservations = await tx.inventoryReservation.findMany({

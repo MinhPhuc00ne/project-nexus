@@ -290,7 +290,7 @@ test('Chat Module: Chặn hoàn toàn việc người dùng nhắn tin trực ti
 
   await assert.rejects(
     async () => chatService.createOrGetConversation('buyer-1', 'BUYER', dto),
-    (err) => err instanceof BadRequestException && err.message.includes('Quản trị viên'),
+    (err) => err instanceof BadRequestException && err.message.includes('Administrators'),
   );
 });
 
@@ -313,7 +313,7 @@ test('Chat Module: Chặn Staff tự ý tạo hội thoại trực tiếp với 
 
   await assert.rejects(
     async () => chatService.createOrGetConversation('staff-1', 'SUPPORT_STAFF', dto),
-    (err) => err instanceof ForbiddenException && err.message.includes('chỉ có thể phản hồi'),
+    (err) => err instanceof ForbiddenException && err.message.includes('can only respond'),
   );
 });
 
@@ -343,7 +343,11 @@ test('Chat Module: Chặn gửi tin nhắn chứa từ ngữ cấm hoặc nhạy
 
   await assert.rejects(
     async () => chatService.sendMessage('buyer-1', 'BUYER', sendDto),
-    (err) => err instanceof BadRequestException && err.message.includes('nhạy cảm'),
+    (err) =>
+      err instanceof BadRequestException &&
+      (err.message.toLowerCase().includes('sensitive') ||
+        err.message.toLowerCase().includes('prohibited') ||
+        err.message.toLowerCase().includes('restricted')),
   );
 });
 
@@ -487,7 +491,7 @@ test('Chat Module: Ẩn danh nhân viên với User thành "Nhân viên Hỗ tr�
   // 1. Buyer đọc tin nhắn -> Thấy tên hiển thị là "Nhân viên Hỗ trợ", ID là "SUPPORT_STAFF_DESK"
   const buyerMessages = await chatService.listMessages(conv.id, 'buyer-1', 'BUYER', {});
   assert.equal(buyerMessages.messages.length, 1);
-  assert.equal(buyerMessages.messages[0].sender.fullName, 'Nhân viên Hỗ trợ');
+  assert.equal(buyerMessages.messages[0].sender.fullName, 'Support Staff');
   assert.equal(buyerMessages.messages[0].senderId, 'SUPPORT_STAFF_DESK');
 
   // 2. Admin đọc Audit -> Thấy chính xác tên thật của Staff A

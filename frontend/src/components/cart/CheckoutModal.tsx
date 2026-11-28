@@ -128,12 +128,12 @@ export default function CheckoutModal({
 
     getCheckoutQuoteApi({
       shippingAddress: {
-        recipientName: currentAddress.recipientName || 'Người nhận',
+        recipientName: currentAddress.recipientName || 'Recipient',
         phone: currentAddress.phone || '0901234567',
         city: currentAddress.city.trim(),
         district: currentAddress.district?.trim(),
         ward: currentAddress.ward?.trim(),
-        street: currentAddress.street.trim() || 'Địa chỉ',
+        street: currentAddress.street.trim() || 'Address',
       },
       itemIds: selectedItems.map((it) => String(it.id)),
     })

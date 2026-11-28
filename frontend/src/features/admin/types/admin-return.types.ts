@@ -36,10 +36,10 @@ export type ReturnAction =
   | { type: 'receive'; reason: string; restock: boolean };
 
 export const returnStatusLabels: Record<ReturnStatus, string> = {
-  REQUESTED: 'Chờ duyệt',
-  APPROVING: 'Đang xử lý chuyển hoàn',
-  APPROVED: 'Đã duyệt · Chờ nhận hàng',
-  RECEIVED: 'Đã nhận hàng',
-  COMPLETED: 'Hoàn tất',
-  REJECTED: 'Đã từ chối',
+  REQUESTED: 'Pending Approval',
+  APPROVING: 'Processing Return',
+  APPROVED: 'Approved · Awaiting Item',
+  RECEIVED: 'Item Received',
+  COMPLETED: 'Completed',
+  REJECTED: 'Rejected',
 };

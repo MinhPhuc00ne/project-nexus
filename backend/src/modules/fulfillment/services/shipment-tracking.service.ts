@@ -54,13 +54,13 @@ export class ShipmentTrackingService {
       where: { id: orderId },
       include: { shipment: true },
     });
-    if (!order) throw new NotFoundException('Không tìm thấy đơn hàng.');
+    if (!order) throw new NotFoundException('Order not found.');
     if (
       actor.id !== order.buyerId &&
       actor.id !== order.sellerId &&
       !['ADMIN', 'SUPPORT_STAFF'].includes(actor.role)
     ) {
-      throw new ForbiddenException('Bạn không có quyền xem vận đơn này.');
+      throw new ForbiddenException('You do not have permission to view this waybill.');
     }
     return { orderId, orderStatus: order.status, shipment: order.shipment };
   }
@@ -74,17 +74,17 @@ export class ShipmentTrackingService {
       where: { id: orderId },
       include: { shipment: true },
     });
-    if (!order) throw new NotFoundException('Không tìm thấy đơn hàng.');
+    if (!order) throw new NotFoundException('Order not found.');
     if (
       actor &&
       actor.id !== order.buyerId &&
       actor.id !== order.sellerId &&
       !['ADMIN', 'SUPPORT_STAFF'].includes(actor.role)
     ) {
-      throw new ForbiddenException('Bạn không có quyền xem vận đơn này.');
+      throw new ForbiddenException('You do not have permission to view this waybill.');
     }
     const waybill = order.shipment?.waybillCode;
-    if (!waybill) throw new BadRequestException('Đơn chưa có vận đơn GHN được xác nhận.');
+    if (!waybill) throw new BadRequestException('Order does not have a confirmed GHN waybill yet.');
     const context = shipmentGhnContext(order.shipment?.metadata);
     // Simulated tracking is a sandbox feature, named in the environment,
     // rather than something every non-production deployment inherits.
@@ -123,7 +123,7 @@ export class ShipmentTrackingService {
     const mapped = mapGhnStatus(String(detail.status));
     const timestamp = Date.parse(String(detail.updated_date));
     if (!Number.isFinite(timestamp) || timestamp > Date.now() + 60000) {
-      throw new BadGatewayException('Thời gian cập nhật GHN không hợp lệ.');
+      throw new BadGatewayException('Invalid GHN update timestamp.');
     }
     let carrierFee: { total: number; detail: Record<string, unknown> } | null = null;
     try {
@@ -138,10 +138,10 @@ export class ShipmentTrackingService {
         include: { shipment: true },
       });
       if (!current.shipment || current.shipment.waybillCode !== waybill)
-        throw new BadRequestException('Vận đơn đã thay đổi.');
+        throw new BadRequestException('Waybill has changed.');
       const metadata = objectValue(current.shipment.metadata);
       if (metadata.clientOrderCode && detail.client_order_code !== metadata.clientOrderCode) {
-        throw new BadGatewayException('Vận đơn GHN không khớp đơn nội bộ.');
+        throw new BadGatewayException('GHN waybill does not match the internal order.');
       }
       const previous = objectValue(metadata.tracking);
       if (
@@ -230,10 +230,8 @@ export class ShipmentTrackingService {
             type: NotificationType.ORDER,
             channel: NotificationChannel.IN_APP,
             title:
-              mapped.shipment === 'DELIVERED'
-                ? 'GHN xác nhận đã giao hàng'
-                : 'Cập nhật vận chuyển GHN',
-            content: `Đơn #${orderId.slice(0, 8)}: ${detail.status}. Mã vận đơn: ${waybill}.`,
+              mapped.shipment === 'DELIVERED' ? 'GHN confirmed delivery' : 'GHN shipping update',
+            content: `Order #${orderId.slice(0, 8)}: ${detail.status}. Waybill code: ${waybill}.`,
           },
           this.notifications,
         );

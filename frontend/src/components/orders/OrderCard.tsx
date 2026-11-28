@@ -30,49 +30,49 @@ export const statusConfig: Record<
   { label: string; icon: React.ReactNode; cls: string; dot: string }
 > = {
   PENDING_PAYMENT: {
-    label: 'Chờ thanh toán',
+    label: 'Pending payment',
     icon: <Clock size={11} />,
     cls: 'bg-amber-50 text-amber-700 border-amber-200',
     dot: 'bg-amber-400',
   },
   PAID: {
-    label: 'Đã thanh toán',
+    label: 'Paid',
     icon: <CheckCircle size={11} />,
     cls: 'bg-sky-50 text-sky-700 border-sky-200',
     dot: 'bg-sky-400',
   },
   PREPARING: {
-    label: 'Đang chuẩn bị',
+    label: 'Preparing',
     icon: <Package size={11} />,
     cls: 'bg-indigo-50 text-indigo-700 border-indigo-200',
     dot: 'bg-indigo-400',
   },
   SHIPPING: {
-    label: 'Đang giao hàng',
+    label: 'Shipping',
     icon: <Truck size={11} />,
     cls: 'bg-blue-50 text-blue-700 border-blue-200',
     dot: 'bg-blue-500',
   },
   DELIVERED: {
-    label: 'Đã giao hàng',
+    label: 'Delivered',
     icon: <CheckCircle size={11} />,
     cls: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     dot: 'bg-emerald-500',
   },
   CONFIRMED: {
-    label: 'Hoàn thành',
+    label: 'Completed',
     icon: <CheckCircle size={11} />,
     cls: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     dot: 'bg-emerald-500',
   },
   COMPLETED: {
-    label: 'Hoàn thành',
+    label: 'Completed',
     icon: <CheckCircle size={11} />,
     cls: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     dot: 'bg-emerald-500',
   },
   CANCELLED: {
-    label: 'Đã huỷ',
+    label: 'Cancelled',
     icon: <XCircle size={11} />,
     cls: 'bg-red-50 text-red-700 border-red-200',
     dot: 'bg-red-400',

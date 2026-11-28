@@ -40,7 +40,7 @@ export const ShopReviewsSection: React.FC<ShopReviewsSectionProps> = ({ shop }) 
         }
       })
       .catch((err) => {
-        console.warn('Không thể tải đánh giá gian hàng:', err);
+        console.warn('Unable to load shop reviews:', err);
         if (isMounted) {
           setReviews([]);
           setTotal(0);
@@ -57,7 +57,7 @@ export const ShopReviewsSection: React.FC<ShopReviewsSectionProps> = ({ shop }) 
 
   const filteredReviews = selectedStar ? reviews.filter((r) => r.rating === selectedStar) : reviews;
 
-  // Tính điểm trung bình từ danh sách
+  // Calculate average rating from the list
   const averageRating =
     reviews.length > 0
       ? (reviews.reduce((acc, curr) => acc + curr.rating, 0) / reviews.length).toFixed(1)

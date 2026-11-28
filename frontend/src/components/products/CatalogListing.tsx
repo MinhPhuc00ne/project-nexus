@@ -377,7 +377,7 @@ function CatalogProductCard({ product }: { product: ProductDetail }) {
           <span className="text-xs text-slate-400">{t('catalog.noImage')}</span>
         )}
 
-        {/* Top-Left Shopee Mall / Yêu thích Badge */}
+        {/* Top-Left Mall / Favorite Badge */}
         <div className="absolute top-2 left-2 flex flex-col gap-1 items-start">
           <span className="rounded-md bg-gradient-to-r from-red-600 to-rose-600 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-xs">
             NEXUS MALL

@@ -49,24 +49,24 @@ export class AuctionAdminHelper {
     const startTime = new Date(dto.startTime);
     const endTime = new Date(dto.endTime);
     if (Number.isNaN(startTime.getTime()) || Number.isNaN(endTime.getTime())) {
-      throw new BadRequestException('Thời gian bắt đầu hoặc kết thúc không hợp lệ.');
+      throw new BadRequestException('Invalid start or end time.');
     }
     if (endTime.getTime() <= startTime.getTime()) {
-      throw new BadRequestException('Thời gian kết thúc phải sau thời gian bắt đầu.');
+      throw new BadRequestException('End time must be after start time.');
     }
 
     let consignmentDeadline: Date | null = null;
     if (dto.consignmentDeadline) {
       consignmentDeadline = new Date(dto.consignmentDeadline);
       if (Number.isNaN(consignmentDeadline.getTime())) {
-        throw new BadRequestException('Hạn chót ký gửi sản phẩm không hợp lệ.');
+        throw new BadRequestException('Invalid consignment deadline.');
       }
       if (
         consignmentDeadline.getTime() <= startTime.getTime() ||
         consignmentDeadline.getTime() >= endTime.getTime()
       ) {
         throw new BadRequestException(
-          'Hạn chót ký gửi phải nằm sau thời điểm mở phiên và trước thời điểm kết thúc phiên.',
+          'Consignment deadline must be after the auction start time and before the end time.',
         );
       }
     }
@@ -133,8 +133,8 @@ export class AuctionAdminHelper {
             userId: seller.id,
             auctionId: created.id,
             targetUrl: auctionTargetUrl(created.id),
-            title: `Phiên đấu giá mới vừa mở ký gửi: ${created.title}`,
-            content: `Phòng đấu giá được Admin tạo lúc ${createdAtLabel}. Người bán đủ điều kiện có thể gửi vật phẩm ký gửi trước ${deadlineLabel}.`,
+            title: `New auction open for consignment: ${created.title}`,
+            content: `Auction room created by Admin at ${createdAtLabel}. Eligible sellers may submit consigned items before ${deadlineLabel}.`,
             type: NotificationType.AUCTION,
             channel: NotificationChannel.IN_APP,
             metadata: {
@@ -158,10 +158,10 @@ export class AuctionAdminHelper {
   async adminUpdateAuction(auctionId: string, dto: AdminUpdateAuctionInput) {
     const existing = await this.prisma.auction.findUnique({ where: { id: auctionId } });
     if (!existing) {
-      throw new NotFoundException('Không tìm thấy phòng đấu giá.');
+      throw new NotFoundException('Auction room not found.');
     }
     if (existing.status !== AuctionStatus.SCHEDULED && existing.status !== AuctionStatus.DRAFT) {
-      throw new BadRequestException('Chỉ có thể chỉnh sửa phòng đấu giá khi chưa bắt đầu.');
+      throw new BadRequestException('Auction room can only be edited before it starts.');
     }
 
     const startTime = dto.startTime ? new Date(dto.startTime) : existing.startTime;
@@ -174,7 +174,7 @@ export class AuctionAdminHelper {
         : existing.consignmentDeadline;
 
     if (endTime.getTime() <= startTime.getTime()) {
-      throw new BadRequestException('Thời gian kết thúc phải sau thời gian bắt đầu.');
+      throw new BadRequestException('End time must be after start time.');
     }
     if (
       consignmentDeadline &&
@@ -182,7 +182,7 @@ export class AuctionAdminHelper {
         consignmentDeadline.getTime() >= endTime.getTime())
     ) {
       throw new BadRequestException(
-        'Hạn chót ký gửi phải nằm sau thời gian bắt đầu và trước thời gian kết thúc.',
+        'Consignment deadline must be after the start time and before the end time.',
       );
     }
 
@@ -223,8 +223,8 @@ export class AuctionAdminHelper {
             userId: s.sellerId,
             auctionId: updated.id,
             targetUrl: auctionTargetUrl(updated.id),
-            title: `Thay đổi lịch phiên đấu giá: ${updated.title} ⏰`,
-            content: `Phiên đấu giá "${updated.title}" mà bạn tham gia ký gửi vừa được Admin điều chỉnh thời gian. Hạn chót ký gửi: ${deadlineLabel}, kết thúc lúc: ${endTimeLabel}. Vui lòng kiểm tra lại lịch trình.`,
+            title: `Auction schedule updated: ${updated.title} ⏰`,
+            content: `Auction "${updated.title}" that you consigned to has been rescheduled by Admin. Consignment deadline: ${deadlineLabel}, ends at: ${endTimeLabel}. Please check the updated schedule.`,
             type: NotificationType.AUCTION,
             channel: NotificationChannel.IN_APP,
             metadata: {
@@ -249,7 +249,7 @@ export class AuctionAdminHelper {
       });
     } catch (err) {
       this.logger.error(
-        `Đồng bộ notification / banner khi update auction thất bại: ${(err as Error).message}`,
+        `Failed to sync notification/banner during auction update: ${(err as Error).message}`,
       );
     }
 
@@ -262,7 +262,7 @@ export class AuctionAdminHelper {
   async adminLockConsignment(auctionId: string) {
     const existing = await this.prisma.auction.findUnique({ where: { id: auctionId } });
     if (!existing) {
-      throw new NotFoundException('Không tìm thấy phòng đấu giá.');
+      throw new NotFoundException('Auction room not found.');
     }
     if (existing.isConsignmentLocked) {
       return existing;
@@ -301,15 +301,13 @@ export class AuctionAdminHelper {
         },
       });
       if (!existing) {
-        throw new NotFoundException('Không tìm thấy phòng đấu giá.');
+        throw new NotFoundException('Auction room not found.');
       }
       if (existing.status !== AuctionStatus.SCHEDULED) {
-        throw new BadRequestException('Chỉ có thể bắt đầu phiên đấu giá đang ở trạng thái chờ.');
+        throw new BadRequestException('Can only start an auction room in scheduled state.');
       }
       if (existing.items.length === 0) {
-        throw new BadRequestException(
-          'Phiên đấu giá chưa có vật phẩm nào được duyệt (APPROVED) để bắt đầu.',
-        );
+        throw new BadRequestException('Auction room has no approved (APPROVED) items to start.');
       }
 
       const plannedDuration = existing.endTime.getTime() - existing.startTime.getTime();
@@ -411,13 +409,15 @@ export class AuctionAdminHelper {
       include: { _count: { select: { bids: true, awards: true } } },
     });
     if (!existing) {
-      throw new NotFoundException('Không tìm thấy phòng đấu giá.');
+      throw new NotFoundException('Auction room not found.');
     }
     if (existing.status === AuctionStatus.ACTIVE || existing.status === AuctionStatus.EXTENDED) {
-      throw new BadRequestException('Không thể xóa phòng đấu giá đang diễn ra.');
+      throw new BadRequestException('Cannot delete an active auction room.');
     }
     if (existing._count.bids > 0 || existing._count.awards > 0) {
-      throw new BadRequestException('Không thể xóa phòng đấu giá đã phát sinh lượt đặt giá.');
+      throw new BadRequestException(
+        'Cannot delete an auction room that already has bids or awards.',
+      );
     }
 
     try {
@@ -432,8 +432,8 @@ export class AuctionAdminHelper {
           this.prisma,
           consignedItems.map((s) => ({
             userId: s.sellerId,
-            title: `Phiên đấu giá đã bị hủy: ${existing.title} ⚠️`,
-            content: `Phiên đấu giá "${existing.title}" đã bị Admin hủy bỏ. Các vật phẩm bạn đã gửi ký gửi vào phiên này đã được hoàn trả về kho của bạn.`,
+            title: `Auction cancelled: ${existing.title} ⚠️`,
+            content: `Auction "${existing.title}" has been cancelled by Admin. Items you consigned to this auction have been returned to your inventory.`,
             type: NotificationType.AUCTION,
             channel: NotificationChannel.IN_APP,
             metadata: {
@@ -451,7 +451,7 @@ export class AuctionAdminHelper {
       });
     } catch (err) {
       this.logger.error(
-        `Xử lý notification / banner khi xóa auction thất bại: ${(err as Error).message}`,
+        `Failed to process notifications/banners when deleting auction: ${(err as Error).message}`,
       );
     }
 
@@ -488,8 +488,8 @@ export class AuctionAdminHelper {
         userId,
         auctionId: auction.id,
         targetUrl: auctionTargetUrl(auction.id),
-        title: `Phiên đấu giá "${auction.title}" đã bắt đầu!`,
-        content: `Phiên đấu giá đã chính thức mở cửa xem trực tiếp 3D và đặt giá ngay bây giờ.`,
+        title: `Auction "${auction.title}" has started!`,
+        content: 'The auction room is now live for 3D viewing and bidding.',
         type: NotificationType.AUCTION,
         channel: NotificationChannel.IN_APP,
         metadata: {
@@ -506,8 +506,9 @@ export class AuctionAdminHelper {
         userId: sellerId,
         auctionId: auction.id,
         targetUrl: `/seller/auctions/${auction.id}`,
-        title: `Phiên "${auction.title}" có vật phẩm của bạn đã bắt đầu!`,
-        content: `Phiên đấu giá chứa lô hàng ký gửi của bạn đã chính thức lên sóng. Bạn có thể theo dõi diễn biến trong phòng đấu giá.`,
+        title: `Auction "${auction.title}" featuring your item has started!`,
+        content:
+          'The auction containing your consigned lot is now live. You can follow the room progress directly.',
         type: NotificationType.AUCTION,
         channel: NotificationChannel.IN_APP,
         metadata: {

@@ -134,7 +134,7 @@ test('ReputationService.adjustScore increments score without a 100-point cap, lo
   assert.equal(f.logs[0].deltaPoints, 5);
   assert.equal(f.logs[0].balanceAfter, 93);
   assert.equal(f.notifications.length, 1);
-  assert.match(f.notifications[0].title, /Điểm uy tín tăng/);
+  assert.match(f.notifications[0].title, /Reputation score increased/);
 });
 
 test('ReputationService.adjustScore decrements score and clamps to 0 minimum without negative balances', async () => {
@@ -172,7 +172,7 @@ test('ReputationService.adjustScore automatically suspends seller shop and hides
     true,
   );
   assert.equal(f.notifications.length, 1);
-  assert.match(f.notifications[0].content, /tạm khóa/);
+  assert.match(f.notifications[0].content, /suspended/);
 });
 
 test('ReputationService.adjustScore bypasses staff and admin accounts without modifying scores', async () => {

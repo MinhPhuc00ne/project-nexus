@@ -15,7 +15,7 @@ export default function AdminDashboardPage() {
   const { actions } = useAdminContext();
   const { data, loading, errors, refresh } = useOverviewData();
   const monthlyRevenue = data.analytics?.revenuePeriods.find(
-    (period) => period.unit === 'this month' || period.unit === 'tháng này',
+    (period) => period.unit === 'this month',
   );
   return (
     <div className="space-y-5">

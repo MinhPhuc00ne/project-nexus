@@ -190,7 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUserState(profile);
         return profile;
       } catch (error) {
-        console.warn('[AuthContext] Không thể lấy thông tin profile người dùng:', error);
+        console.warn('[AuthContext] Unable to fetch user profile:', error);
         return null;
       } finally {
         if (isCurrent()) setIsLoading(false);

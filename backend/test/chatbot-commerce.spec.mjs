@@ -110,10 +110,10 @@ test('purchase history filters and paginates the same ownership scope', async ()
   });
   const outside = await f.bot.reply('me', { message: 'Lịch sử đặt hàng trang 99', limit: 1 });
   assert.equal(outside.orders.items.length, 0);
-  assert.match(outside.reply, /Trang này không có/);
+  assert.match(outside.reply, /No orders on this page/);
   const empty = await f.bot.reply('me', { message: 'Lịch sử đặt hàng', status: 'CANCELLED' });
   assert.equal(empty.orders.total, 0);
-  assert.match(empty.reply, /chưa có đơn mua/);
+  assert.match(empty.reply, /no purchase orders/);
 });
 
 test('sales require seller privileges and stay scoped even for admins', async () => {
@@ -173,8 +173,8 @@ test('cart lookup revalidates all totals and warnings while returning a bounded 
   assert.equal(result.cart.hasUnavailableItems, true);
   assert.equal(result.cart.isExpired, true);
   assert.equal(result.cart.items[0].isStockInsufficient, true);
-  assert.match(result.reply, /chưa gồm phí giao hàng/);
-  assert.match(result.reply, /quá hạn/);
+  assert.match(result.reply, /excluding shipping/);
+  assert.match(result.reply, /expired/);
   assert.deepEqual(f.prisma.cart.findUnique.mock.calls[0].arguments[0].where, { userId: 'me' });
   assert.equal(f.ai.answer.mock.callCount(), 0);
   assert.equal(result.cart.userId, undefined);
@@ -182,7 +182,7 @@ test('cart lookup revalidates all totals and warnings while returning a bounded 
   const empty = await fixture().bot.reply('me', { message: 'Giỏ hàng của tôi' });
   assert.equal(empty.cart.totalCount, 0);
   assert.equal(empty.cart.expiresAt, null);
-  assert.match(empty.reply, /trống/);
+  assert.match(empty.reply, /empty/);
 });
 
 test('unavailable variants and products are reported without changing quantities', async () => {
@@ -196,7 +196,7 @@ test('unavailable variants and products are reported without changing quantities
   assert.equal(result.cart.items[0].isUnavailable, true);
   assert.equal(result.cart.items[0].isOutOfStock, true);
   assert.equal(result.cart.items[0].quantity, 2);
-  assert.doesNotMatch(result.reply, /Trang 1\/1/);
+  assert.doesNotMatch(result.reply, /Page 1\/1/);
 });
 
 test('guest history, sales and cart queries never reach database or Gemini', async () => {
@@ -258,7 +258,7 @@ test('ambiguous and negated order filters ask for clarification without querying
     const result = await f.bot.reply('me', { message });
     assert.equal(result.engine, 'FAQ', message);
     assert.equal(result.topic, 'ORDER');
-    assert.match(result.reply, /chưa áp dụng bộ lọc/);
+    assert.match(result.reply, /no filter has been applied yet/);
     assert.equal(f.prisma.$transaction.mock.callCount(), 0);
     assert.equal(f.ai.answer.mock.callCount(), 0);
   }
@@ -358,7 +358,7 @@ test('order status follow-up after cart asks for scope instead of returning the 
   assert.equal(result.topic, 'ORDER');
   assert.equal(result.cart, undefined);
   assert.equal(result.orders, undefined);
-  assert.match(result.reply, /đơn mua hay đơn bán/);
+  assert.match(result.reply, /purchase orders or sales orders/);
 });
 
 test('standalone status queries, extended follow-ups, trailing yes/no questions and inline UUID policy lookups work safely', async () => {
@@ -435,8 +435,8 @@ test('purchase queries like "Tôi đã mua gì?" show readable product names and
     const result = await f.bot.reply('me', { message: question });
     assert.equal(result.engine, 'ORDER', question);
     assert.equal(result.orders.scope, 'PURCHASES', question);
-    assert.match(result.reply, /Áo khoác gió \(Đen\) × 2, Mũ lưỡi trai × 1 \(\+1 sản phẩm khác\)/);
-    assert.match(result.reply, /Đã giao hàng\) — 250\.000 đ/);
+    assert.match(result.reply, /Áo khoác gió \(Đen\) × 2, Mũ lưỡi trai × 1 \(\+1 more items\)/);
+    assert.match(result.reply, /Delivered\) — 250,000 VND/);
     assert.equal(result.orders.items[0].items.length, 3);
   }
   f.prisma.order.findFirst.mock.mockImplementation(async () => ({
@@ -449,8 +449,8 @@ test('purchase queries like "Tôi đã mua gì?" show readable product names and
   }));
   const detail = await f.bot.reply('me', { message: 'Xem đơn', orderId: 'order-with-items' });
   assert.match(detail.reply, /Áo khoác gió \(Đen\) × 2/);
-  assert.match(detail.reply, /250\.000 đ/);
-  assert.match(detail.reply, /Vận đơn GHN: GHN123456 \(DELIVERED\)/);
+  assert.match(detail.reply, /250,000 VND/);
+  assert.match(detail.reply, /GHN waybill: GHN123456 \(DELIVERED\)/);
 });
 
 test('latest order defaults limit to 1, clear-filter resets status, and guest follow-ups prompt login', async () => {
@@ -539,23 +539,23 @@ test('buying prompts search active products and auctions or explicitly state non
 
   const both = await f.bot.reply('me', { message: 'Tôi muốn mua đồng hồ' });
   assert.equal(both.engine, 'ORDER');
-  assert.match(both.reply, /Sản phẩm đang bán:/);
+  assert.match(both.reply, /Active products:/);
   assert.match(both.reply, /Đồng hồ Rolex Submariner/);
-  assert.match(both.reply, /Đấu giá:/);
+  assert.match(both.reply, /Auctions:/);
   assert.match(both.reply, /Đồng hồ cơ Patek Philippe Skeleton/);
-  assert.match(both.reply, /92\.000\.000 đ/);
+  assert.match(both.reply, /92,000,000 VND/);
 
   const onlyProduct = await f.bot.reply('me', { message: 'Cần mua tai nghe' });
   assert.match(onlyProduct.reply, /Tai nghe có dây Extra Bass/);
-  assert.match(onlyProduct.reply, /Đấu giá: Không có phiên đấu giá phù hợp\./);
+  assert.match(onlyProduct.reply, /Auctions: No matching auctions found\./);
 
   const onlyAuction = await f.bot.reply('me', { message: 'Có đấu giá kim cương không?' });
-  assert.match(onlyAuction.reply, /Sản phẩm đang bán: Không có sản phẩm phù hợp\./);
+  assert.match(onlyAuction.reply, /Active products: No matching products found\./);
   assert.match(onlyAuction.reply, /Viên Kim Cương GIA 5\.2 Carat/);
 
   const missing = await f.bot.reply('me', { message: 'Tôi muốn mua tủ lạnh' });
   assert.equal(missing.engine, 'ORDER');
-  assert.match(missing.reply, /không có sản phẩm hay phiên đấu giá nào phù hợp/i);
+  assert.match(missing.reply, /no products or auctions matching/i);
 
   const guestBuy = await f.bot.replyGuest('peer', { message: 'Có bán đồng hồ không' });
   assert.match(guestBuy.reply, /Đồng hồ Rolex Submariner/);
@@ -577,7 +577,7 @@ test('buying prompts search active products and auctions or explicitly state non
   assert.deepEqual(navOrders.actions[0], {
     type: 'NAVIGATE',
     path: '/buyer/orders',
-    label: 'Mở Đơn hàng của tôi',
+    label: 'Open My Orders',
     auto: true,
   });
 
@@ -613,21 +613,21 @@ test('account eligibility, wallet balance and reputation queries return real acc
 
   const eligible = await f.bot.reply('me', { message: 'tài khoản tôi đủ điều kiện chưa' });
   assert.equal(eligible.engine, 'ORDER');
-  assert.match(eligible.reply, /Đủ điều kiện tham gia đấu giá/);
-  assert.match(eligible.reply, /Điểm uy tín của bạn: 95 \(STANDARD\)/);
-  assert.match(eligible.reply, /1\.000\.000\.000 đ/);
+  assert.match(eligible.reply, /Eligible to participate/);
+  assert.match(eligible.reply, /Your reputation score: 95 \(STANDARD\)/);
+  assert.match(eligible.reply, /1,000,000,000 VND/);
   assert.ok(eligible.actions.some((a) => a.type === 'NAVIGATE' && a.path === '/auction'));
 
   const followUp = await f.bot.reply('me', {
     message: 'được không',
     history: [{ role: 'user', content: 'tôi muốn đấu giá' }],
   });
-  assert.match(followUp.reply, /Đủ điều kiện tham gia đấu giá/);
+  assert.match(followUp.reply, /Eligible to participate/);
 
   const walletCheck = await f.bot.reply('me', { message: 'Số dư ví của tôi' });
   assert.equal(walletCheck.topic, 'WALLET');
-  assert.match(walletCheck.reply, /1\.000\.000\.000 đ/);
-  assert.doesNotMatch(walletCheck.reply, /Điểm uy tín|đấu giá/i);
+  assert.match(walletCheck.reply, /1,000,000,000 VND/);
+  assert.doesNotMatch(walletCheck.reply, /reputation|auction/i);
   assert.ok(walletCheck.actions.some((a) => a.type === 'NAVIGATE' && a.path === '/buyer/wallet'));
   assert.equal(
     walletCheck.actions.some((a) => a.path?.startsWith('/auction')),
@@ -637,7 +637,7 @@ test('account eligibility, wallet balance and reputation queries return real acc
   const repCheck = await f.bot.reply('me', { message: 'Điểm uy tín của tôi bao nhiêu?' });
   assert.equal(repCheck.topic, 'REPUTATION');
   assert.match(repCheck.reply, /95/);
-  assert.doesNotMatch(repCheck.reply, /Ví NEXUS Pay|đấu giá/i);
+  assert.doesNotMatch(repCheck.reply, /NEXUS Pay Wallet|auction/i);
   assert.ok(repCheck.actions.some((a) => a.type === 'NAVIGATE' && a.path === '/buyer/reputation'));
   assert.equal(
     repCheck.actions.some((a) => a.path?.startsWith('/auction')),
@@ -654,10 +654,10 @@ test('account eligibility, wallet balance and reputation queries return real acc
     wallet: null,
   };
   const ineligible = await f.bot.reply('me', { message: 'tài khoản tôi đủ điều kiện chưa' });
-  assert.match(ineligible.reply, /Chưa đủ điều kiện/);
-  assert.match(ineligible.reply, /chế độ Người bán/);
-  assert.match(ineligible.reply, /thấp hơn mức tối thiểu \(40\)/);
-  assert.match(ineligible.reply, /Chưa khởi tạo ví/);
+  assert.match(ineligible.reply, /Not eligible/);
+  assert.match(ineligible.reply, /Seller mode/);
+  assert.match(ineligible.reply, /below the minimum requirement \(40\)/);
+  assert.match(ineligible.reply, /not been initialized/);
 
   const guestCheck = await f.bot.replyGuest('peer', {
     message: 'tài khoản tôi đủ điều kiện chưa',
@@ -717,10 +717,10 @@ test('per-auction reputation eligibility lists eligible rooms, filters by name a
   const all = await f.bot.reply('me', {
     message: 'Tài khoản tôi đủ điều kiện tham gia phiên đấu giá nào?',
   });
-  assert.match(all.reply, /ĐỦ điều kiện tham gia \(2\)/);
+  assert.match(all.reply, /Auctions you ARE eligible to join \(2\)/);
   assert.match(all.reply, /Phiên Bảo Vật NEXUS/);
   assert.match(all.reply, /Tuyệt Tác Kim Cương Hoàng Gia/);
-  assert.match(all.reply, /CHƯA đủ điều kiện \(1\)/);
+  assert.match(all.reply, /Auctions you are NOT YET eligible for \(1\)/);
   assert.match(all.reply, /Siêu Xe Sưu Tầm VIP/);
   assert.match(all.reply, /95.*120/);
   assert.ok(all.actions.some((a) => a.type === 'NAVIGATE' && a.path === '/auction/auc-1'));
@@ -733,7 +733,7 @@ test('per-auction reputation eligibility lists eligible rooms, filters by name a
   const byNameEligible = await f.bot.reply('me', {
     message: 'Tôi có đủ điều kiện tham gia phiên kim cương không?',
   });
-  assert.match(byNameEligible.reply, /ĐỦ điều kiện tham gia \(1\)/);
+  assert.match(byNameEligible.reply, /Auctions you ARE eligible to join \(1\)/);
   assert.match(byNameEligible.reply, /Tuyệt Tác Kim Cương Hoàng Gia/);
   assert.doesNotMatch(byNameEligible.reply, /Siêu Xe Sưu Tầm VIP/);
   assert.ok(
@@ -743,14 +743,14 @@ test('per-auction reputation eligibility lists eligible rooms, filters by name a
   const byNameIneligible = await f.bot.reply('me', {
     message: 'Kiểm tra điều kiện phiên siêu xe',
   });
-  assert.match(byNameIneligible.reply, /CHƯA đủ điều kiện/);
+  assert.match(byNameIneligible.reply, /NOT YET eligible/);
   assert.match(byNameIneligible.reply, /Siêu Xe Sưu Tầm VIP/);
   assert.doesNotMatch(byNameIneligible.reply, /Phiên Bảo Vật NEXUS/);
 
   const byMissingName = await f.bot.reply('me', {
     message: 'Đủ điều kiện phiên tủ lạnh không?',
   });
-  assert.match(byMissingName.reply, /không có phiên đấu giá nào.*tu lanh/i);
+  assert.match(byMissingName.reply, /no open or upcoming auctions matching.*tu lanh/i);
 
   const goRoom = await f.bot.reply('me', { message: 'Vào phiên kim cương' });
   assert.equal(goRoom.actions[0].type, 'NAVIGATE');
@@ -761,17 +761,17 @@ test('per-auction reputation eligibility lists eligible rooms, filters by name a
     message: 'bao nhiêu uy tín thì đủ điều kiện tham gia đấu giá ?',
   });
   assert.equal(ruleQuestion.topic, 'AUCTION');
-  assert.match(ruleQuestion.reply, /Quy trình/);
-  assert.match(ruleQuestion.reply, /40 điểm uy tín/);
-  assert.doesNotMatch(ruleQuestion.reply, /Điểm uy tín của bạn/);
+  assert.match(ruleQuestion.reply, /How to join/);
+  assert.match(ruleQuestion.reply, /40 reputation points/);
+  assert.doesNotMatch(ruleQuestion.reply, /Your reputation score/);
   assert.ok(ruleQuestion.actions.some((a) => a.type === 'NAVIGATE' && a.path === '/auction'));
 
   const processQuestion = await f.bot.reply('me', {
     message: 'giờ tao muốn mua đơn hàng đấu giá, hướng dẫn quy trình cho t',
   });
   assert.equal(processQuestion.topic, 'AUCTION');
-  assert.match(processQuestion.reply, /Quy trình/);
-  assert.match(processQuestion.reply, /24 giờ/);
+  assert.match(processQuestion.reply, /How to join/);
+  assert.match(processQuestion.reply, /24 hours/);
   assert.ok(processQuestion.actions.some((a) => a.type === 'NAVIGATE' && a.path === '/auction'));
   assert.ok(processQuestion.actions.some((a) => a.type === 'NAVIGATE' && a.path === '/buyer/bids'));
 
@@ -779,7 +779,7 @@ test('per-auction reputation eligibility lists eligible rooms, filters by name a
     message: 'làm thế nào để xem lịch sử mua hàng',
   });
   assert.equal(howToOrderHistory.topic, 'ORDER');
-  assert.match(howToOrderHistory.reply, /Đơn hàng của tôi/);
+  assert.match(howToOrderHistory.reply, /My Orders/);
   assert.ok(
     howToOrderHistory.actions.some((a) => a.type === 'NAVIGATE' && a.path === '/buyer/orders'),
   );
@@ -854,22 +854,22 @@ test('cart affordability and eligibility checks filter items by budget and stock
       'giờ tài chính của t còn 15 ngàn, m kiểm tra xem trong giỏ hàng của t có sản phẩm nào đủ điều kiện mua không ?',
   });
   assert.equal(affordable.engine, 'CART');
-  assert.match(affordable.reply, /ngân sách 15\.000 đ/);
+  assert.match(affordable.reply, /budget of 15,000 VND/);
   assert.match(affordable.reply, /Vỉ 5 viên pin cúc áo Maxell/);
   assert.doesNotMatch(affordable.reply, /Kính lúp thợ kim hoàn/);
   assert.doesNotMatch(affordable.reply, /Dây đeo hết hàng/);
-  assert.match(affordable.reply, /phí giao hàng/);
+  assert.match(affordable.reply, /shipping fees/);
 
   const tooLow = await f.bot.reply('me', {
     message: 'ngân sách 10k trong giỏ hàng có sản phẩm nào đủ điều kiện mua không',
   });
-  assert.match(tooLow.reply, /không có sản phẩm nào trong giỏ hàng đủ điều kiện mua/i);
-  assert.match(tooLow.reply, /15\.000 đ/);
+  assert.match(tooLow.reply, /no items in your cart are currently affordable/i);
+  assert.match(tooLow.reply, /15,000 VND/);
 
   const stockOnly = await f.bot.reply('me', {
     message: 'trong giỏ hàng có sản phẩm nào đủ điều kiện mua không',
   });
-  assert.match(stockOnly.reply, /có 2 sản phẩm đủ điều kiện mua ngay/);
+  assert.match(stockOnly.reply, /Your cart has 2 eligible items ready for purchase/);
   assert.match(stockOnly.reply, /Vỉ 5 viên pin cúc áo Maxell/);
   assert.match(stockOnly.reply, /Kính lúp thợ kim hoàn/);
   assert.doesNotMatch(stockOnly.reply, /Dây đeo hết hàng/);

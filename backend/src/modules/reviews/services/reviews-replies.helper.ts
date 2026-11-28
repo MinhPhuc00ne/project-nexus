@@ -54,7 +54,7 @@ export class ReviewsRepliesHelper {
 
       if (review.product.sellerId !== sellerId) {
         throw new ForbiddenException(
-          'Bạn chỉ có thể phản hồi đánh giá cho sản phẩm của gian hàng mình.',
+          'You can only reply to reviews for products in your own shop.',
         );
       }
 
@@ -76,8 +76,8 @@ export class ReviewsRepliesHelper {
           tx,
           {
             userId: review.reviewerId,
-            title: 'Người bán đã phản hồi đánh giá của bạn 💬',
-            content: `Người bán vừa trả lời đánh giá của bạn cho sản phẩm "${review.product.title}": "${updated.sellerReply}".`,
+            title: 'The seller replied to your review 💬',
+            content: `The seller replied to your review for product "${review.product.title}": "${updated.sellerReply}".`,
             type: NotificationType.SYSTEM,
             channel: NotificationChannel.IN_APP,
           },
@@ -105,9 +105,7 @@ export class ReviewsRepliesHelper {
       }
 
       if (review.reviewerId === userId) {
-        throw new BadRequestException(
-          'Bạn không thể tự bình chọn hữu ích cho đánh giá của chính mình.',
-        );
+        throw new BadRequestException('You cannot mark your own review as helpful.');
       }
 
       const existingVote = await tx.productReviewHelpfulVote.findUnique({
@@ -169,7 +167,7 @@ export class ReviewsRepliesHelper {
       if (!review) throw new NotFoundException(PRODUCT_REVIEW_NOT_FOUND);
       buyerId = review.reviewerId;
       sellerId = review.product.sellerId;
-      titleLabel = `sản phẩm "${review.product.title}"`;
+      titleLabel = `product "${review.product.title}"`;
       isHidden = Boolean(review.isHidden);
     } else {
       const review = await tx.review.findUnique({ where: { id: reviewId } });
@@ -178,17 +176,17 @@ export class ReviewsRepliesHelper {
       }
       buyerId = review.reviewerId;
       sellerId = review.targetUserId;
-      titleLabel = 'gian hàng của bạn';
+      titleLabel = 'your shop';
       isHidden = Boolean(review.isHidden);
     }
 
     if (userId !== buyerId && userId !== sellerId) {
       throw new ForbiddenException(
-        'Chỉ người mua đã đánh giá hoặc người bán sở hữu mới được phản hồi cuộc trò chuyện này.',
+        'Only the reviewing buyer or the owning seller can reply to this thread.',
       );
     }
     if (isHidden) {
-      throw new BadRequestException('Đánh giá này đã bị ẩn, không thể gửi thêm phản hồi.');
+      throw new BadRequestException('This review has been hidden and cannot receive new replies.');
     }
 
     return { buyerId, sellerId, titleLabel };
@@ -248,13 +246,13 @@ export class ReviewsRepliesHelper {
 
       const recipientId = userId === sellerId ? buyerId : sellerId;
       if (typeof tx?.notification?.create === 'function') {
-        const senderLabel = authorRole === Role.SELLER ? 'Người bán' : 'Khách hàng';
+        const senderLabel = authorRole === Role.SELLER ? 'Seller' : 'Customer';
         await publishNotification(
           tx,
           {
             userId: recipientId,
-            title: 'Phản hồi mới trên đánh giá 💬',
-            content: `${senderLabel} vừa phản hồi trong đánh giá ${titleLabel}: "${content}".`,
+            title: 'New reply on review 💬',
+            content: `${senderLabel} replied in the review for ${titleLabel}: "${content}".`,
             type: NotificationType.SYSTEM,
             channel: NotificationChannel.IN_APP,
           },

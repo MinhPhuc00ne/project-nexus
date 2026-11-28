@@ -29,15 +29,17 @@ export class AuctionImageService {
     return this.prisma.$transaction(async (tx) => {
       const actor = await tx.user.findUnique({ where: { id: actorId }, select: { role: true } });
       if (!actor || !['ADMIN', 'SUPPORT_STAFF'].includes(actor.role))
-        throw new ForbiddenException('Chỉ Admin hoặc Staff được cập nhật ảnh phiên đấu giá.');
+        throw new ForbiddenException('Only Admin or Staff may update auction images.');
       await tx.$queryRaw`SELECT id FROM auctions WHERE id = ${auctionId} FOR UPDATE`;
       const auction = await tx.auction.findUnique({ where: { id: auctionId } });
-      if (!auction) throw new NotFoundException('Không tìm thấy phiên đấu giá.');
+      if (!auction) throw new NotFoundException('Auction not found.');
       if (
         !['DRAFT', 'SCHEDULED'].includes(auction.status) ||
         (auction.status === 'SCHEDULED' && auction.startTime <= new Date())
       )
-        throw new BadRequestException('Chỉ được đổi ảnh phiên đấu giá chưa bắt đầu.');
+        throw new BadRequestException(
+          'Can only change the image of an auction that has not started.',
+        );
       return tx.auction.update({
         where: { id: auctionId },
         data: { imageUrl },

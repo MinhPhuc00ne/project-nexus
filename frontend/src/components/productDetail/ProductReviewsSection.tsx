@@ -369,7 +369,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* 1. Header tóm tắt Rating (Blue & White Theme) */}
+      {/* 1. Rating Summary Header (Blue & White Theme) */}
       <div className="flex flex-col sm:flex-row items-center gap-6 p-5 rounded-lg bg-blue-50/60 border border-blue-200">
         <div className="text-center sm:text-left sm:pr-8 sm:border-r border-blue-200">
           <div className="text-3xl font-extrabold text-[#1c3973] tracking-tight">
@@ -403,7 +403,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
         </div>
       </div>
 
-      {/* 2. Form gửi đánh giá Sản phẩm + Đánh giá Shop cho Buyer */}
+      {/* 2. Product + Shop Review Submission Form for Buyer */}
       <form
         onSubmit={handleSubmitReview}
         className="p-5 rounded-lg border border-slate-200 bg-white shadow-xs space-y-4"
@@ -572,7 +572,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
         </div>
       </form>
 
-      {/* 3. Danh sách đánh giá & Phản hồi của Seller */}
+      {/* 3. Review List & Seller Replies */}
       <div className="space-y-4">
         <h4 className="text-sm font-bold text-slate-900">
           {t('product.customerReviewsHeading', { count: reviews.length })}

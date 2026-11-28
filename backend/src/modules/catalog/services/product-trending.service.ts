@@ -281,8 +281,8 @@ export class ProductTrendingService {
               this.prisma,
               {
                 userId: product.sellerId,
-                title: 'Sản phẩm của bạn đã đạt Top 1 Xu hướng',
-                content: `Chúc mừng! Sản phẩm "${product.title}" đã đạt Top 1 Xu hướng trên trang chủ với ${entry.purchaseCount} lượt mua.`,
+                title: 'Your product reached Top 1 Trending',
+                content: `Congratulations! "${product.title}" reached Top 1 Trending on the homepage with ${entry.purchaseCount} purchases.`,
                 targetUrl: '/seller/products',
                 type: NotificationType.SYSTEM,
                 channel: NotificationChannel.IN_APP,
@@ -303,8 +303,8 @@ export class ProductTrendingService {
               this.prisma,
               {
                 userId: product.sellerId,
-                title: 'Sản phẩm của bạn đã lên Xu hướng',
-                content: `Chúc mừng! Sản phẩm "${product.title}" đang đứng Top ${entry.rank} Xu hướng trên trang chủ với ${entry.purchaseCount} lượt mua.`,
+                title: 'Your product is now Trending',
+                content: `Congratulations! "${product.title}" is now Top ${entry.rank} Trending on the homepage with ${entry.purchaseCount} purchases.`,
                 targetUrl: '/seller/products',
                 type: NotificationType.SYSTEM,
                 channel: NotificationChannel.IN_APP,

@@ -21,11 +21,11 @@ export class GhnOrderApiService {
 
   private shopHeader(shopId: number, environment?: string): string {
     if (environment && environment !== ghnEnvironment(this.config)) {
-      throw new BadRequestException('Vận đơn thuộc môi trường GHN khác.');
+      throw new BadRequestException('Waybill belongs to a different GHN environment.');
     }
     const selected = shopId;
     if (!Number.isSafeInteger(selected) || selected <= 0)
-      throw new BadGatewayException('Thiếu shop ID GHN hợp lệ.');
+      throw new BadGatewayException('Missing valid GHN shop ID.');
     return String(selected);
   }
 
@@ -36,7 +36,7 @@ export class GhnOrderApiService {
   ): Promise<{ a5: string; size80x80: string; size52x70: string }> {
     const token = this.config.get<string>('GHN_TOKEN');
     const selectedShopId = this.shopHeader(shopId, environment);
-    if (!token) throw new BadGatewayException('Chưa cấu hình tài khoản GHN.');
+    if (!token) throw new BadGatewayException('GHN account is not configured.');
     const base = (
       this.config.get<string>('GHN_API_URL') || 'https://online-gateway.ghn.vn/shiip/public-api/v2'
     ).replace(/\/$/, '');
@@ -56,7 +56,7 @@ export class GhnOrderApiService {
         typeof data.token !== 'string' ||
         !data.token.trim()
       ) {
-        throw new BadGatewayException('GHN chưa cấp phiếu gửi hàng cho vận đơn này.');
+        throw new BadGatewayException('GHN has not issued a shipping label for this waybill.');
       }
       const origin = new URL(base).origin;
       const key = encodeURIComponent(data.token);
@@ -67,7 +67,7 @@ export class GhnOrderApiService {
       };
     } catch (error) {
       if (error instanceof BadGatewayException) throw error;
-      throw new BadGatewayException('Không lấy được phiếu gửi hàng GHN.');
+      throw new BadGatewayException('Unable to retrieve GHN shipping label.');
     }
   }
 
@@ -80,7 +80,7 @@ export class GhnOrderApiService {
   ): Promise<Record<string, unknown>> {
     const token = this.config.get<string>('GHN_TOKEN');
     const selectedShopId = this.shopHeader(shopId, environment);
-    if (!token) throw new BadGatewayException('Chưa cấu hình tài khoản GHN.');
+    if (!token) throw new BadGatewayException('GHN account is not configured.');
     const base = (
       this.config.get<string>('GHN_API_URL') || 'https://online-gateway.ghn.vn/shiip/public-api/v2'
     ).replace(/\/$/, '');
@@ -94,15 +94,15 @@ export class GhnOrderApiService {
         },
       );
       const body = objectValue(await response.json());
-      if (response.status === 404) throw new NotFoundException('GHN chưa tìm thấy vận đơn.');
+      if (response.status === 404) throw new NotFoundException('GHN could not find the waybill.');
       if (!response.ok || body.code !== 200 || !body.data) {
-        throw new BadGatewayException('GHN chưa xác minh được thông tin vận đơn.');
+        throw new BadGatewayException('GHN could not verify waybill information.');
       }
       return objectValue(body.data);
     } catch (error) {
       if (error instanceof BadGatewayException || error instanceof NotFoundException) throw error;
       throw new BadGatewayException(
-        'Kết nối tra cứu GHN bị gián đoạn. Vui lòng đối soát trước khi gửi lại.',
+        'GHN lookup connection interrupted. Please reconcile before retrying.',
       );
     }
   }
@@ -115,7 +115,9 @@ export class GhnOrderApiService {
       typeof data.client_order_code !== 'string' ||
       Number(data.shop_id) !== Number(this.shopHeader(shopId))
     ) {
-      throw new BadGatewayException('Vận đơn GHN không hợp lệ hoặc không thuộc shop đã cấu hình.');
+      throw new BadGatewayException(
+        'Invalid GHN waybill or does not belong to the configured shop.',
+      );
     }
     return data as GhnOrderDetail;
   }
@@ -125,7 +127,7 @@ export class GhnOrderApiService {
       await this.read('detail', 'order_code', orderCode, shopId, environment),
       shopId,
     );
-    if (data.order_code !== orderCode) throw new BadGatewayException('Mã vận đơn GHN không khớp.');
+    if (data.order_code !== orderCode) throw new BadGatewayException('GHN waybill code mismatch.');
     return data;
   }
 
@@ -145,7 +147,7 @@ export class GhnOrderApiService {
       shopId,
     );
     if (data.client_order_code !== clientCode)
-      throw new BadGatewayException('Mã đơn nội bộ không khớp.');
+      throw new BadGatewayException('Internal order code mismatch.');
     return data;
   }
 
@@ -157,7 +159,7 @@ export class GhnOrderApiService {
     const data = await this.read('soc', 'order_code', orderCode, shopId, environment);
     const detail = objectValue(data.detail);
     if (data.order_code !== orderCode || !Number.isSafeInteger(detail.main_service)) {
-      throw new BadGatewayException('GHN chưa trả bảng phí hợp lệ.');
+      throw new BadGatewayException('GHN has not returned a valid fee breakdown.');
     }
     const components = Object.entries(detail).filter(([key]) => key !== 'total');
     if (
@@ -165,11 +167,11 @@ export class GhnOrderApiService {
         ([key, value]) => !Number.isSafeInteger(value) || (Number(value) < 0 && key !== 'coupon'),
       )
     ) {
-      throw new BadGatewayException('Bảng phí GHN có thành phần không hợp lệ.');
+      throw new BadGatewayException('GHN fee breakdown contains invalid components.');
     }
     const total = detail.total ?? components.reduce((sum, [, value]) => sum + Number(value), 0);
     if (!Number.isSafeInteger(total) || Number(total) < 0)
-      throw new BadGatewayException('Tổng phí GHN không hợp lệ.');
+      throw new BadGatewayException('Invalid total GHN fee.');
     return { total: Number(total), detail };
   }
 }

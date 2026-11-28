@@ -28,12 +28,12 @@ export interface AuctionShowcaseHUDProps {
   auctionDescription?: string;
   items: AuctionConsignmentItem[];
   /**
-   * 'live': Video phát trực tiếp khi mở phiên (không có nút dừng/skip/chuyển lô).
-   * 'admin-replay': Chế độ Admin xem lại phục vụ demo (có nút chuyển lô & đóng cục bộ).
+   * 'live': Live broadcast when the session opens (no stop/skip/lot-switch buttons).
+   * 'admin-replay': Admin demo replay mode (includes lot switcher and local close button).
    */
   playbackMode?: 'live' | 'admin-replay';
   /**
-   * Mốc thời gian đã trôi qua (ms) so với server khi người xem vào phòng muộn giữa lúc video trực tiếp đang chiếu.
+   * Elapsed time (ms) relative to server when a viewer joins mid-broadcast.
    */
   initialElapsedMs?: number;
   onComplete: () => void;
@@ -111,8 +111,8 @@ const RealProductPhotoSpotlight: React.FC<{ title: string; images: string[] }> =
 };
 
 /**
- * Video Giới Thiệu Phiên Đấu Giá Điện Ảnh 3D (không dùng file MP4).
- * Hỗ trợ phát trực tiếp đồng bộ (live) và chế độ xem lại demo cho riêng Admin (admin-replay).
+ * 3D Cinematic Auction Session Intro Video (without external MP4 files).
+ * Supports synchronized live playback (live) and admin demo replay mode (admin-replay).
  */
 export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
   auctionTitle,
@@ -161,7 +161,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
   onCancelRef.current = onCancel;
   const initialElapsedRef = useRef(initialElapsedMs);
 
-  // Hỗ trợ phím Escape để bỏ qua video hoặc đóng xem lại
+  // Support Escape key to skip intro video or close replay
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -173,7 +173,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Chuẩn hóa danh sách lô hàng đã duyệt để trình chiếu
+  // Normalize approved lots list for showcase presentation
   const showcaseLots = useMemo(() => {
     if (items && items.length > 0) return items;
     return [
@@ -213,7 +213,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
     });
   }, []);
 
-  // Thanh tiến trình mượt cho người xem ở chế độ trực tiếp
+  // Smooth progress bar for viewers in live mode
   useEffect(() => {
     const startClock = performance.now();
     const baseOffset = manualJumpTrigger
@@ -231,7 +231,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
     return () => window.clearInterval(timer);
   }, [manualJumpTrigger, resolvedLots.length, totalDurationMs]);
 
-  // Kịch bản đạo diễn bất đồng bộ (Async Timeline Sequencer — không bị hủy khi component cha re-render)
+  // Async Timeline Sequencer (not cancelled when parent component re-renders)
   useEffect(() => {
     const controller = new AbortController();
     const { signal } = controller;
@@ -264,7 +264,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
           }
         }
 
-        // 1. MỞ MÀN ĐIỆN ẢNH: GIỚI THIỆU PHIÊN ĐẤU GIÁ
+        // 1. CINEMATIC OPENING: AUCTION SESSION INTRO
         if (startPhase === 'hall') {
           setPhase('hall');
           setFlareKey((k) => k + 1);
@@ -281,7 +281,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
           setDoorsOpen(true);
         }
 
-        // 2. GIỚI THIỆU CHI TIẾT TỪNG LÔ HÀNG (10 MODEL 3D / TƯ LIỆU ẢNH SELLER)
+        // 2. DETAILED SHOWCASE FOR EACH LOT (10 3D MODELS / SELLER GALLERY IMAGES)
         if (startPhase === 'hall' || startPhase === 'lot') {
           setPhase('lot');
           for (let i = startLotIdx; i < resolvedLots.length; i++) {
@@ -320,7 +320,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
           offsetInPhaseMs = 0;
         }
 
-        // 3. CAO TRÀO KHAI MẠC & ĐẾM NGƯỢC MỞ SÀN
+        // 3. OPENING FINALE & FLOOR COUNTDOWN
         setPhase('climax');
         setFlareKey((k) => k + 1);
 
@@ -364,7 +364,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
   const activeVisual = activeEntry.visual;
   const activeLot = activeEntry.item;
 
-  // Luôn ưu tiên giá chính thức sau duyệt -> giá Seller đề xuất ban đầu
+  // Always prefer approved official starting price -> initial seller proposed price
   const resolvedStartingPrice = activeLot.startingPrice ?? activeLot.proposedStartingPrice;
   const resolvedBidIncrement = activeLot.bidIncrement ?? activeLot.proposedBidIncrement;
   const certNumber = activeLot.appraisalCertificateNumber?.trim() || null;
@@ -386,7 +386,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
       aria-modal="true"
       aria-label={t('showcase.dialogAria', { title: auctionTitle })}
     >
-      {/* Khung nền điện ảnh: Sàn phản chiếu + Bokeh hạt vàng + Spotlight + Lens Flare */}
+      {/* Cinematic backdrop: Reflective floor + Gold bokeh particles + Spotlight + Lens Flare */}
       <div className="cinema-bokeh-field" />
       <div className="museum-floor-grid" />
       <div className="museum-pillar hidden md:block" />
@@ -394,16 +394,16 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
       <div className="museum-spotlight-beam" />
       <div key={`flare-${flareKey}`} className="cinema-flare-sweep" />
 
-      {/* Cánh cửa đại sảnh mở màn */}
+      {/* Opening grand hall doors */}
       <div className={`museum-door museum-door-left ${doorsOpen ? 'museum-door-open-left' : ''}`} />
       <div
         className={`museum-door museum-door-right ${doorsOpen ? 'museum-door-open-right' : ''}`}
       />
 
-      {/* Dải Cinema Letterbox trên */}
+      {/* Top cinema letterbox bar */}
       <div className="cinema-letterbox-bar relative z-50 w-full shrink-0" />
 
-      {/* TOP BAR: Trạng thái phát sóng + Âm thanh (chỉ Admin Replay mới có nút Đóng) */}
+      {/* TOP BAR: Broadcast status + Audio toggle (Close button only in Admin Replay) */}
       <header className="relative z-50 flex flex-wrap items-center justify-between gap-3 border-b border-amber-500/20 bg-slate-950/65 px-4 py-3 backdrop-blur-md sm:px-8 sm:py-3.5">
         <div className="flex min-w-0 items-center gap-3">
           <span className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-500/15 px-3 py-1 text-[11px] font-bold tracking-wider text-amber-200 uppercase">
@@ -450,7 +450,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
 
       {/* MAIN CINEMATIC STAGE */}
       <main className="relative z-30 flex flex-1 items-center justify-center overflow-y-auto px-4 py-4 sm:px-8">
-        {/* SCENE 1: MỞ MÀN PHIÊN ĐẤU GIÁ */}
+        {/* SCENE 1: AUCTION SESSION OPENING */}
         {phase === 'hall' && (
           <section className="museum-pedestal-enter w-full max-w-4xl space-y-6 text-center">
             <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-slate-900/85 px-4 py-1.5 text-xs font-mono tracking-[0.22em] text-amber-200 uppercase">
@@ -514,13 +514,13 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
           </section>
         )}
 
-        {/* SCENE 2: TRÌNH CHIẾU TỪNG SẢN PHẨM VỚI DỮ LIỆU THẬT TỪ SELLER */}
+        {/* SCENE 2: LOT-BY-LOT SHOWCASE WITH REAL SELLER DATA */}
         {phase === 'lot' && (
           <section
             key={activeLot.id || currentLotIdx}
             className="museum-pedestal-enter grid w-full max-w-6xl grid-cols-1 items-center gap-6 lg:grid-cols-[1.15fr_0.95fr]"
           >
-            {/* CỘT TRÁI: SÂN KHẤU TRÌNH DIỄN HOLOGRAM / TƯ LIỆU ẢNH SELLER */}
+            {/* LEFT COLUMN: HOLOGRAM STAGE / SELLER GALLERY IMAGES */}
             <div className="relative flex min-h-[370px] flex-col items-center justify-center overflow-hidden rounded-3xl border border-amber-400/35 bg-slate-950/70 p-5 shadow-[0_0_70px_rgba(0,0,0,0.85)] backdrop-blur-md sm:min-h-[440px] sm:p-6">
               <svg
                 className="hud-svg-frame pointer-events-none absolute inset-0 h-full w-full"
@@ -611,7 +611,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
               </div>
             </div>
 
-            {/* CỘT PHẢI: HỒ SƠ THÔNG SỐ & CHỨNG THƯ KIỂM ĐỊNH THỰC TẾ CỦA SELLER */}
+            {/* RIGHT COLUMN: REAL SELLER SPECS & VERIFICATION CERTIFICATE */}
             <div className="space-y-3.5">
               {hudVisibleCount >= 1 && (
                 <div className="hud-panel-slide rounded-2xl border border-amber-400/35 bg-slate-900/85 p-5 shadow-xl backdrop-blur-md">
@@ -706,7 +706,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
           </section>
         )}
 
-        {/* SCENE 3: CAO TRÀO KHAI MẠC & MỞ BÀN ĐẶT GIÁ */}
+        {/* SCENE 3: OPENING FINALE & LIVE BIDDING FLOOR UNLOCK */}
         {phase === 'climax' && (
           <section className="w-full max-w-3xl space-y-6 text-center">
             <div className="relative mx-auto flex h-24 w-24 items-center justify-center rounded-full border-2 border-amber-400 bg-amber-500/20 text-amber-300 shadow-[0_0_60px_rgba(245,158,11,0.55)]">
@@ -758,7 +758,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
         )}
       </main>
 
-      {/* BOTTOM BAR: CHỈ ADMIN REPLAY MỚI CÓ NÚT CHỌN LÔ; LIVE CHỈ HIỆN THANH TIẾN TRÌNH */}
+      {/* BOTTOM BAR: LOT SELECTOR ONLY IN ADMIN REPLAY; LIVE SHOWS PROGRESS BAR ONLY */}
       <footer className="relative z-50 border-t border-amber-500/20 bg-slate-950/80 px-4 py-3 backdrop-blur-md sm:px-8">
         <div className="mx-auto max-w-6xl space-y-2">
           <div className="h-1 w-full overflow-hidden rounded-full bg-slate-800">
@@ -832,7 +832,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
         </div>
       </footer>
 
-      {/* Dải Cinema Letterbox dưới */}
+      {/* Bottom cinema letterbox bar */}
       <div className="cinema-letterbox-bar relative z-50 w-full shrink-0" />
     </div>
   );

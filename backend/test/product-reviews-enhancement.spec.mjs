@@ -104,7 +104,7 @@ test('ReviewsService.replyToProductReview enforces seller ownership and saves re
 
   await assert.rejects(
     () => service.replyToProductReview('other-seller', 'rev-1', { reply: 'Cảm ơn bạn' }),
-    /chỉ có thể phản hồi đánh giá cho sản phẩm của gian hàng mình/,
+    /only reply to reviews for products in your own shop/,
   );
 
   const res = await service.replyToProductReview('seller-1', 'rev-1', {
@@ -156,7 +156,7 @@ test('ReviewsService.toggleHelpfulProductReview blocks self-vote, toggles vote a
 
   await assert.rejects(
     () => service.toggleHelpfulProductReview('buyer-1', 'rev-1'),
-    /không thể tự bình chọn hữu ích cho đánh giá của chính mình/,
+    /cannot mark your own review as helpful/,
   );
 
   const first = await service.toggleHelpfulProductReview('buyer-2', 'rev-1');
@@ -274,7 +274,7 @@ test('ReviewsService supports 2-way ReviewReply with media and paginated listing
       service.createReviewReply('stranger-1', 'product', 'rev-1', {
         content: 'Nhắn ké',
       }),
-    /Chỉ người mua đã đánh giá hoặc người bán sở hữu/,
+    /Only the reviewing buyer or the owning seller/,
   );
 
   const reply = await service.createReviewReply('buyer-1', 'product', 'rev-1', {
@@ -431,7 +431,7 @@ test('ReviewsService.create rejects unconfirmed order before uploading files', a
       service.create('buyer-1', 'order-1', { rating: 5, comment: 'Good' }, 'product', 'prod-1', [
         { originalname: 'photo.png', mimetype: 'image/png', size: 1024, buffer: Buffer.from('a') },
       ]),
-    /Chỉ đánh giá sau khi đơn hàng đã hoàn tất/,
+    /after the order is completed/,
   );
   assert.equal(uploadMock.mock.callCount(), 0);
 });
@@ -463,7 +463,7 @@ test('ReviewsService.createReviewReply blocks replies on hidden reviews without 
       service.createReviewReply('buyer-1', 'product', 'rev-1', { content: 'Reply' }, [
         { originalname: 'photo.png', mimetype: 'image/png', size: 1024, buffer: Buffer.from('a') },
       ]),
-    /Đánh giá này đã bị ẩn/,
+    /review has been hidden/,
   );
   assert.equal(uploadMock.mock.callCount(), 0);
 });
@@ -532,7 +532,7 @@ test('MediaService strictReviewPolicy enforces 5MB images (PNG/JPG/WEBP) and 50M
         undefined,
         { strictReviewPolicy: true },
       ),
-    /Review chỉ hỗ trợ ảnh \(PNG, JPG, WEBP\) và video \(MP4, MOV\)/,
+    /Reviews only support images \(PNG, JPG, WEBP\) and videos \(MP4, MOV\)/,
   );
 
   await assert.rejects(
@@ -549,7 +549,7 @@ test('MediaService strictReviewPolicy enforces 5MB images (PNG/JPG/WEBP) and 50M
         undefined,
         { strictReviewPolicy: true },
       ),
-    /Kích thước ảnh vượt quá giới hạn cho phép \(tối đa 5MB\)/,
+    /Image size exceeds the allowed limit \(max 5MB\)/,
   );
 
   await assert.rejects(
@@ -566,6 +566,6 @@ test('MediaService strictReviewPolicy enforces 5MB images (PNG/JPG/WEBP) and 50M
         undefined,
         { strictReviewPolicy: true },
       ),
-    /Kích thước video vượt quá giới hạn cho phép \(tối đa 50MB\)/,
+    /Video size exceeds the allowed limit \(max 50MB\)/,
   );
 });

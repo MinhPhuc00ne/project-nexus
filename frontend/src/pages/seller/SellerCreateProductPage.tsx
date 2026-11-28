@@ -250,7 +250,7 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
               />
             </Panel>
 
-            {/* TÍNH NĂNG MỚI #5: PHÂN LOẠI HÀNG / TÙY CHỌN (MÀU SẮC, SIZE, PHIÊN BẢN...) */}
+            {/* FEATURE #5: PRODUCT VARIANTS / OPTIONS (COLOR, SIZE, EDITION...) */}
             <Panel
               title={t('productForm.optionsTitle')}
               subtitle={t('productForm.optionsSubtitle')}
@@ -437,7 +437,7 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
               </div>
             </Panel>
 
-            {/* TÍNH NĂNG MỚI #2: CHƯƠNG TRÌNH SALE / GIẢM GIÁ CHO SẢN PHẨM */}
+            {/* FEATURE #2: PRODUCT SALE / DISCOUNT CAMPAIGN */}
             <Panel title={t('productForm.saleTitle')} subtitle={t('productForm.saleSubtitle')}>
               <div className="space-y-4">
                 <label className="flex items-center justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50/60 p-3.5 cursor-pointer">
@@ -543,11 +543,13 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                         <option value="FLASH SALE">
                           {t('products.saleModal.badges.FLASH_SALE')}
                         </option>
-                        <option value="GIẢM SỐC">{t('products.saleModal.badges.HOT_DEAL')}</option>
-                        <option value="ƯU ĐÃI ĐẶC BIỆT">
+                        <option value="HOT DEAL">{t('products.saleModal.badges.HOT_DEAL')}</option>
+                        <option value="SPECIAL OFFER">
                           {t('products.saleModal.badges.SPECIAL_OFFER')}
                         </option>
-                        <option value="XẢ KHO">{t('products.saleModal.badges.CLEARANCE')}</option>
+                        <option value="CLEARANCE">
+                          {t('products.saleModal.badges.CLEARANCE')}
+                        </option>
                       </select>
                     </label>
 

@@ -14,10 +14,10 @@ export interface ProductSaleConfig {
 }
 
 export const PRESET_OPTION_GROUPS: Array<{ name: string; sampleValues: string[] }> = [
-  { name: 'Màu sắc', sampleValues: ['Đen', 'Trắng', 'Xanh Navy', 'Bạc', 'Vàng Hồng'] },
-  { name: 'Kích thước (Size)', sampleValues: ['S', 'M', 'L', 'XL'] },
-  { name: 'Cỡ mặt / Đường kính', sampleValues: ['38mm', '40mm', '42mm', '44mm'] },
-  { name: 'Phiên bản', sampleValues: ['Tiêu chuẩn', 'Cao cấp (Fullbox)', 'Bản giới hạn'] },
+  { name: 'Color', sampleValues: ['Black', 'White', 'Navy Blue', 'Silver', 'Rose Gold'] },
+  { name: 'Size', sampleValues: ['S', 'M', 'L', 'XL'] },
+  { name: 'Case Size / Diameter', sampleValues: ['38mm', '40mm', '42mm', '44mm'] },
+  { name: 'Edition', sampleValues: ['Standard', 'Premium (Fullbox)', 'Limited Edition'] },
 ];
 
 export function computeEffectiveSale(

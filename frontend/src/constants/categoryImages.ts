@@ -39,23 +39,67 @@ export function getCategoryImageUrl(cat: { name: string; slug?: string }): strin
     return CATEGORY_IMAGE_MAP[slug];
   }
 
-  const name = (cat.name || '').toLowerCase();
-  if (name.includes('điện tử') || name.includes('công nghệ') || name.includes('điện thoại')) {
+  const name = (cat.name || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\u0111/g, 'd');
+  if (
+    name.includes('dien tu') ||
+    name.includes('cong nghe') ||
+    name.includes('dien thoai') ||
+    name.includes('electronics') ||
+    name.includes('tech') ||
+    name.includes('phone')
+  ) {
     return CATEGORY_IMAGE_MAP['thiet-bi-dien-tu'];
   }
-  if (name.includes('thời trang') || name.includes('áo') || name.includes('quần')) {
+  if (
+    name.includes('thoi trang') ||
+    name.includes('ao') ||
+    name.includes('quan') ||
+    name.includes('fashion') ||
+    name.includes('apparel') ||
+    name.includes('clothing')
+  ) {
     return CATEGORY_IMAGE_MAP['thoi-trang'];
   }
-  if (name.includes('bàn phím') || name.includes('gear') || name.includes('chuột')) {
+  if (
+    name.includes('ban phim') ||
+    name.includes('gear') ||
+    name.includes('chuot') ||
+    name.includes('keyboard') ||
+    name.includes('mouse') ||
+    name.includes('gaming')
+  ) {
     return CATEGORY_IMAGE_MAP['ban-phim-gear'];
   }
-  if (name.includes('cổ vật') || name.includes('tác phẩm') || name.includes('nghệ thuật')) {
+  if (
+    name.includes('co vat') ||
+    name.includes('tac pham') ||
+    name.includes('nghe thuat') ||
+    name.includes('antique') ||
+    name.includes('collectible') ||
+    name.includes('art')
+  ) {
     return CATEGORY_IMAGE_MAP['co-vat-tac-pham'];
   }
-  if (name.includes('đồng hồ') || name.includes('trang sức')) {
+  if (
+    name.includes('dong ho') ||
+    name.includes('trang suc') ||
+    name.includes('watch') ||
+    name.includes('jewelry')
+  ) {
     return CATEGORY_IMAGE_MAP['dong-ho-trang-suc'];
   }
-  if (name.includes('xe') || name.includes('ô tô') || name.includes('mô tô')) {
+  if (
+    name.includes('xe') ||
+    name.includes('o to') ||
+    name.includes('mo to') ||
+    name.includes('vehicle') ||
+    name.includes('car') ||
+    name.includes('motorcycle')
+  ) {
     return CATEGORY_IMAGE_MAP['xe-co-phu-kien'];
   }
 

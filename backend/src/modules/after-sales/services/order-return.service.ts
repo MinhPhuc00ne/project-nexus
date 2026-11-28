@@ -53,11 +53,11 @@ export class OrderReturnService {
     return this.prisma.$transaction(async (tx) => {
       const order = await this.store.lock(tx, orderId);
       if (order.buyerId !== actor.id)
-        throw new ForbiddenException('Chỉ người mua được yêu cầu trả hàng.');
+        throw new ForbiddenException('Only the buyer may request a return.');
       if (order.afterSales) {
         if (order.afterSales.kind !== 'RETURN')
           throw new ConflictException({
-            message: 'Đơn đã có yêu cầu hủy.',
+            message: 'Order already has a cancellation request.',
             errorCode: AppErrorCode.CONFLICT,
           });
         return order.afterSales;
@@ -67,10 +67,10 @@ export class OrderReturnService {
         !order.escrowRecord ||
         order.escrowRecord.status === 'REFUNDED'
       )
-        throw new BadRequestException('Đơn chưa đủ điều kiện trả hàng.');
+        throw new BadRequestException('Order is not eligible for a return.');
       if (order.dispute)
         throw new ConflictException({
-          message: 'Đơn đã có khiếu nại; tiếp tục xử lý trên hồ sơ đó.',
+          message: 'Order already has an open dispute; continue handling it on that dispute.',
           errorCode: AppErrorCode.DISPUTE_ALREADY_EXISTS,
         });
       if (
@@ -78,7 +78,7 @@ export class OrderReturnService {
         !['FAILED', 'RETURNED'].includes(order.shipment?.status ?? '')
       )
         throw new BadRequestException(
-          'Đơn đang chuẩn bị; hãy dùng chức năng hủy trước khi GHN nhận hàng.',
+          'Order is still preparing; please use cancellation before GHN pickup.',
         );
       if (['DELIVERED', 'CONFIRMED'].includes(order.status)) {
         const delivered = Date.parse(String(objectValue(order.shipment?.metadata).deliveredAt));
@@ -88,10 +88,10 @@ export class OrderReturnService {
           Date.now() - delivered > 3 * 86400000
         )
           throw new BadRequestException(
-            'Đã hết thời gian kiểm tra/trả hàng 3 ngày hoặc thiếu xác nhận giao hàng.',
+            'The 3-day inspection/return window has expired or delivery confirmation is missing.',
           );
       } else if (!order.shipment?.waybillCode)
-        throw new BadRequestException('Chưa có vận đơn để chuyển hoàn.');
+        throw new BadRequestException('No waybill exists to initiate a return.');
       const request = await tx.afterSalesRequest.create({
         data: {
           orderId,
@@ -108,8 +108,8 @@ export class OrderReturnService {
       await notifyAllAdmins(
         tx,
         {
-          title: 'Yêu cầu trả hàng / hoàn tiền mới',
-          content: `Đơn #${orderId.slice(0, 8)} có yêu cầu trả hàng từ người mua: ${dto.reason}.`,
+          title: 'New return / refund request',
+          content: `Order #${orderId.slice(0, 8)} has a return request from the buyer: ${dto.reason}.`,
           type: NotificationType.ORDER,
           targetUrl: '/admin/refunds',
         },
@@ -127,12 +127,12 @@ export class OrderReturnService {
     const order = await this.prisma.$transaction(async (tx) => {
       const current = await this.store.lock(tx, orderId);
       if (actor.id !== current.sellerId && !isStaff(actor))
-        throw new ForbiddenException('Chỉ shop hoặc nhân viên được duyệt trả hàng.');
+        throw new ForbiddenException('Only the shop or support staff may review return requests.');
       if (!current.afterSales || current.afterSales.kind !== 'RETURN')
-        throw new BadRequestException('Không có yêu cầu trả hàng.');
+        throw new BadRequestException('No return request found.');
       if (dto.decision === 'REJECT' && current.afterSales.status === 'APPROVING')
         throw new ConflictException({
-          message: 'GHN đang xử lý chuyển hoàn. Cần đối soát trước.',
+          message: 'GHN is currently processing the return. Reconciliation required first.',
           errorCode: AppErrorCode.CONFLICT,
         });
       if (dto.decision === 'APPROVE' && current.afterSales.status === 'REQUESTED') {
@@ -150,7 +150,7 @@ export class OrderReturnService {
       !['DELIVERED', 'CONFIRMED'].includes(order.status) &&
       ['REQUESTED', 'APPROVING'].includes(order.afterSales?.status ?? '')
     ) {
-      if (!order.shipment?.waybillCode) throw new BadRequestException('Thiếu vận đơn GHN.');
+      if (!order.shipment?.waybillCode) throw new BadRequestException('Missing GHN waybill.');
       const context = shipmentGhnContext(order.shipment.metadata);
       const detail = await this.ghn.detail(
         order.shipment.waybillCode,
@@ -210,21 +210,21 @@ export class OrderReturnService {
   ): Promise<AfterSalesRequest> {
     const order = await this.store.view(orderId, actor);
     if (actor.id !== order.sellerId && !isStaff(actor))
-      throw new ForbiddenException('Chỉ shop hoặc nhân viên được gắn vận đơn hoàn.');
+      throw new ForbiddenException('Only the shop or support staff may attach a return waybill.');
     const context = shipmentGhnContext(order.shipment?.metadata);
     const detail = await this.ghn.detail(waybillCode, context.shopId, context.environment);
     if (detail.client_order_code !== `NX-RETURN-${orderId}`)
-      throw new BadRequestException('Vận đơn hoàn không khớp đơn hàng.');
+      throw new BadRequestException('Return waybill does not match this order.');
     return this.prisma.$transaction(async (tx) => {
       const current = await this.store.lock(tx, orderId);
       if (current.afterSales?.kind !== 'RETURN' || current.afterSales.status !== 'APPROVED')
-        throw new BadRequestException('Yêu cầu trả hàng chưa được duyệt.');
+        throw new BadRequestException('Return request has not been approved.');
       if (
         current.afterSales.returnWaybillCode &&
         current.afterSales.returnWaybillCode !== waybillCode
       )
         throw new ConflictException({
-          message: 'Đã gắn vận đơn hoàn khác.',
+          message: 'A different return waybill is already attached.',
           errorCode: AppErrorCode.CONFLICT,
         });
       await this.store.audit(tx, current, actor, 'return-waybill-attached', { waybillCode });
@@ -242,14 +242,17 @@ export class OrderReturnService {
   ): Promise<AfterSalesRequest> {
     const order = await this.store.view(orderId, actor);
     if (actor.id !== order.sellerId && !isStaff(actor))
-      throw new ForbiddenException('Chỉ shop hoặc nhân viên được xác nhận hàng hoàn.');
+      throw new ForbiddenException(
+        'Only the shop or support staff may confirm returned goods receipt.',
+      );
     const request = order.afterSales;
     if (!request || request.kind !== 'RETURN')
-      throw new BadRequestException('Không có yêu cầu trả hàng.');
+      throw new BadRequestException('No return request found.');
     if (request.status === 'COMPLETED' || request.status === 'RECEIVED') return request;
-    if (request.status !== 'APPROVED') throw new BadRequestException('Yêu cầu chưa được duyệt.');
+    if (request.status !== 'APPROVED')
+      throw new BadRequestException('Return request has not been approved.');
     const code = request.returnWaybillCode || order.shipment?.waybillCode;
-    if (!code) throw new BadRequestException('Thiếu vận đơn hoàn hàng.');
+    if (!code) throw new BadRequestException('Missing return waybill.');
     const context = shipmentGhnContext(order.shipment?.metadata);
     const metadata = objectValue(order.shipment?.metadata);
     const tracking = objectValue(metadata.tracking);
@@ -264,17 +267,19 @@ export class OrderReturnService {
       const detail = await this.ghn.detail(code, context.shopId, context.environment);
       detailStatus = detail.status;
       if (request.returnWaybillCode && detail.client_order_code !== `NX-RETURN-${orderId}`)
-        throw new BadRequestException('Vận đơn hoàn không khớp.');
+        throw new BadRequestException('Return waybill does not match.');
     }
     if (detailStatus !== (request.returnWaybillCode ? 'delivered' : 'returned'))
-      throw new BadRequestException('GHN chưa xác nhận hàng đã về shop.');
+      throw new BadRequestException(
+        'GHN has not confirmed that the return parcel arrived at the shop.',
+      );
     return this.prisma.$transaction(async (tx) => {
       const current = await this.store.lock(tx, orderId);
       if (current.afterSales?.status !== 'APPROVED')
         return tx.afterSalesRequest.findUniqueOrThrow({ where: { orderId } });
       if (current.afterSales.returnWaybillCode !== request.returnWaybillCode)
         throw new ConflictException({
-          message: 'Vận đơn hoàn đã thay đổi.',
+          message: 'Return waybill has changed.',
           errorCode: AppErrorCode.CONFLICT,
         });
       await tx.afterSalesRequest.update({
@@ -305,7 +310,7 @@ export class OrderReturnService {
       await this.receive(
         payload.orderId,
         { id: payload.sellerId, role: 'SELLER' },
-        { restock: true, reason: `GHN xác nhận hoàn hàng (${payload.returnWaybillCode})` },
+        { restock: true, reason: `GHN confirmed parcel return (${payload.returnWaybillCode})` },
       );
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);

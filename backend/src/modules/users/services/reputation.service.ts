@@ -100,7 +100,7 @@ export class ReputationService {
         ...(scoreTrustLevel === ReputationTrustLevel.SUSPENDED
           ? {
               isShopSuspended: true,
-              suspensionReason: 'Điểm uy tín dưới 40 (SUSPENDED)',
+              suspensionReason: 'Reputation score below 40 (SUSPENDED)',
             }
           : {}),
       },
@@ -316,18 +316,18 @@ export class ReputationService {
     let content: string;
 
     if (delta > 0) {
-      title = `Điểm uy tín tăng (+${delta})`;
-      content = `Bạn vừa được cộng +${delta} điểm uy tín. Lý do: ${reason}. Điểm hiện tại: ${newScore} (${trustLevel}).`;
+      title = `Reputation score increased (+${delta})`;
+      content = `You received +${delta} reputation points. Reason: ${reason}. Current score: ${newScore} (${trustLevel}).`;
     } else {
-      title = `Cảnh báo: Điểm uy tín bị trừ (${delta})`;
-      content = `Bạn vừa bị trừ ${Math.abs(delta)} điểm uy tín. Lý do: ${reason}. Điểm hiện tại: ${newScore} (${trustLevel}).`;
+      title = `Warning: Reputation score deducted (${delta})`;
+      content = `You had ${Math.abs(delta)} reputation points deducted. Reason: ${reason}. Current score: ${newScore} (${trustLevel}).`;
 
       if (trustLevel === ReputationTrustLevel.PROBATION) {
         content +=
-          ' Cảnh báo: Tài khoản đang ở mức PROBATION (40-79 điểm) và không được tạo phiên đấu giá.';
+          ' Warning: Your account is at PROBATION level (40-79 points) and cannot create auction sessions.';
       } else if (trustLevel === ReputationTrustLevel.SUSPENDED) {
         content +=
-          ' Khẩn cấp: Gian hàng đã bị tạm khóa do điểm uy tín dưới 40. Vui lòng liên hệ Ban Quản Trị để được hỗ trợ.';
+          ' Urgent: Your shop has been suspended because your reputation score fell below 40. Please contact Administration for assistance.';
       }
     }
 

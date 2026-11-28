@@ -84,7 +84,7 @@ const Popup: React.FC<PopupProps> = ({
         onCloseRef.current();
         return;
       }
-      // Giữ focus bên trong popup khi nhấn Tab.
+      // Trap focus inside the popup when pressing Tab.
       if (event.key === 'Tab' && dialogRef.current) {
         const items = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
         if (items.length === 0) {

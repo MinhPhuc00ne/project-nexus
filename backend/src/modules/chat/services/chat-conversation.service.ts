@@ -43,13 +43,13 @@ export class ChatConversationService {
     const recipientId = (dto.participantId || dto.targetUserId || '').trim();
     if (!recipientId && dto.contextType !== 'DISPUTE') {
       throw new BadRequestException({
-        message: 'Vui lòng cung cấp ID đối tác trò chuyện.',
+        message: 'Please provide the chat partner ID.',
         errorCode: AppErrorCode.BAD_REQUEST,
       });
     }
     if (recipientId && currentUserId === recipientId) {
       throw new BadRequestException({
-        message: 'Không thể tự tạo cuộc trò chuyện với chính mình.',
+        message: 'Cannot start a conversation with yourself.',
         errorCode: AppErrorCode.BAD_REQUEST,
       });
     }
@@ -68,8 +68,7 @@ export class ChatConversationService {
 
     if (currentUserRole === 'SUPPORT_STAFF') {
       throw new ForbiddenException({
-        message:
-          'Nhân viên hỗ trợ chỉ có thể phản hồi yêu cầu hỗ trợ hoặc giải quyết tranh chấp do người dùng gửi lên.',
+        message: 'Support staff can only respond to user-submitted support requests or disputes.',
         errorCode: AppErrorCode.FORBIDDEN,
       });
     }
@@ -80,7 +79,7 @@ export class ChatConversationService {
     });
     if (!partner) {
       throw new NotFoundException({
-        message: 'Không tìm thấy người dùng tham gia cuộc trò chuyện.',
+        message: 'Conversation participant not found.',
         errorCode: AppErrorCode.NOT_FOUND,
       });
     }
@@ -88,7 +87,7 @@ export class ChatConversationService {
     if (partner.role === 'ADMIN') {
       throw new BadRequestException({
         message:
-          'Không thể nhắn tin trực tiếp cho Quản trị viên. Mọi khiếu nại hoặc hỗ trợ vui lòng gửi qua Trung tâm Trợ giúp.',
+          'Direct messages to Administrators are not allowed. Please submit complaints or support requests through the Help Center.',
         errorCode: AppErrorCode.BAD_REQUEST,
       });
     }
@@ -96,7 +95,7 @@ export class ChatConversationService {
     if (partner.role === 'SUPPORT_STAFF' && delegates?.requestSupport) {
       return delegates.requestSupport(currentUserId, currentUserRole, {
         subject: dto.title,
-        message: dto.initialMessage || 'Tôi cần hỗ trợ từ nhân viên CSKH.',
+        message: dto.initialMessage || 'I need support from Customer Support Staff.',
         contextId: dto.contextId,
         contextType: dto.contextType || 'GENERAL',
       });
@@ -264,7 +263,7 @@ export class ChatConversationService {
     });
     if (!conv) {
       throw new NotFoundException({
-        message: 'Không tìm thấy cuộc trò chuyện.',
+        message: 'Conversation not found.',
         errorCode: AppErrorCode.NOT_FOUND,
       });
     }
@@ -278,7 +277,7 @@ export class ChatConversationService {
 
     if (!isParticipant && !isStaffAllowed && !isAuditAdmin) {
       throw new ForbiddenException({
-        message: 'Bạn không có quyền truy cập vào cuộc trò chuyện này.',
+        message: 'You do not have permission to access this conversation.',
         errorCode: AppErrorCode.FORBIDDEN,
       });
     }
