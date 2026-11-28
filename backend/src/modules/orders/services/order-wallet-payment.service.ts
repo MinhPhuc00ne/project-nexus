@@ -45,8 +45,7 @@ export interface WalletPaymentResponse {
 }
 
 /**
- * Handles wallet balance payments (single and atomic multi-order) and COD
- * registration for retail orders.
+ * Handles wallet balance payments (single and atomic multi-order) for retail orders.
  */
 @Injectable()
 export class OrderWalletPaymentService {
@@ -95,7 +94,10 @@ export class OrderWalletPaymentService {
       );
 
     if (order.buyerId !== buyerId) {
-      throw new ForbiddenException('Bạn không có quyền thanh toán cho đơn hàng này');
+      throw new ForbiddenException({
+        message: 'Bạn không có quyền thanh toán cho đơn hàng này',
+        errorCode: AppErrorCode.FORBIDDEN,
+      });
     }
 
     if (order.status !== OrderStatus.PENDING_PAYMENT) {
@@ -149,7 +151,10 @@ export class OrderWalletPaymentService {
 
     for (const order of orders) {
       if (order.buyerId !== buyerId)
-        throw new ForbiddenException('Bạn không có quyền thanh toán cho đơn hàng này');
+        throw new ForbiddenException({
+          message: 'Bạn không có quyền thanh toán cho đơn hàng này',
+          errorCode: AppErrorCode.FORBIDDEN,
+        });
       if (order.isAuction)
         throw new BadRequestException(
           'Đơn đấu giá phải thanh toán qua quyền mua, để sử dụng đúng tiền cọc.',
@@ -188,63 +193,6 @@ export class OrderWalletPaymentService {
     }));
   }
 
-  /**
-   * Registers cash on delivery (COD) payment for an order.
-   */
-  async registerCodPayment(
-    orderId: string,
-    buyerId: string,
-  ): Promise<{ orderId: string; success: boolean; message: string; provider: PaymentProvider }> {
-    const order = await this.prisma.order.findUnique({
-      where: { id: orderId },
-      include: { payments: true },
-    });
-
-    if (!order) {
-      throw new NotFoundException('Không tìm thấy đơn hàng tương ứng');
-    }
-
-    if (order.isAuction)
-      throw new BadRequestException(
-        'Đơn đấu giá phải thanh toán qua quyền mua, để sử dụng đúng tiền cọc.',
-      );
-
-    if (order.buyerId !== buyerId) {
-      throw new ForbiddenException('Bạn không có quyền thao tác trên đơn hàng này');
-    }
-
-    if (order.status !== OrderStatus.PENDING_PAYMENT) {
-      throw new BadRequestException(
-        `Không thể ghi nhận thanh toán COD cho đơn hàng ở trạng thái '${order.status}'.`,
-      );
-    }
-
-    const hasSuccessfulPayment = order.payments.some((p) => p.status === PaymentStatus.SUCCESS);
-    if (hasSuccessfulPayment) {
-      throw new BadRequestException('Đơn hàng đã được thanh toán thành công trước đó.');
-    }
-
-    const existingCod = order.payments.find((p) => p.provider === PaymentProvider.COD);
-    if (!existingCod) {
-      await this.prisma.payment.create({
-        data: {
-          orderId,
-          provider: PaymentProvider.COD,
-          amount: order.totalAmount,
-          status: PaymentStatus.PENDING,
-          metadata: { note: 'Thanh toán tiền mặt khi nhận hàng (COD)' },
-        },
-      });
-    }
-
-    return {
-      orderId,
-      success: true,
-      message: 'Phương thức thanh toán COD đã được ghi nhận thành công.',
-      provider: PaymentProvider.COD,
-    };
-  }
-
   private async debitWalletForOrder(
     tx: Prisma.TransactionClient,
     orderId: string,
@@ -253,7 +201,10 @@ export class OrderWalletPaymentService {
     await tx.$queryRaw`SELECT id FROM orders WHERE id = ${orderId} FOR UPDATE`;
     const payable = await tx.order.findUniqueOrThrow({ where: { id: orderId } });
     if (payable.buyerId !== buyerId)
-      throw new ForbiddenException('Bạn không có quyền thanh toán cho đơn hàng này');
+      throw new ForbiddenException({
+        message: 'Bạn không có quyền thanh toán cho đơn hàng này',
+        errorCode: AppErrorCode.FORBIDDEN,
+      });
     if (payable.status !== OrderStatus.PENDING_PAYMENT)
       throw new BadRequestException('Đơn hàng đã được thanh toán hoặc không còn chờ thanh toán.');
 

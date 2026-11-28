@@ -3,6 +3,7 @@ import {
   publishNotification,
 } from '../../../core/notifications/notification-publisher.service';
 import { ForbiddenException, Injectable, NotFoundException, Optional } from '@nestjs/common';
+import { AppErrorCode } from '@nexus/contracts';
 import { AfterSalesRequest, OrderRefund, Prisma } from '@prisma/client';
 import { AuditLogService } from '../../../core/audit/audit-log.service';
 import { QueryAfterSalesInput, QueryRefundsInput } from '../dtos/after-sales.dto';
@@ -33,13 +34,21 @@ export class AfterSalesStoreService {
   async lock(tx: Prisma.TransactionClient, orderId: string): Promise<AfterSalesOrder> {
     await tx.$queryRaw`SELECT id FROM orders WHERE id = ${orderId} FOR UPDATE`;
     const order = await tx.order.findUnique({ where: { id: orderId }, include: afterSalesInclude });
-    if (!order) throw new NotFoundException('Không tìm thấy đơn hàng.');
+    if (!order) {
+      throw new NotFoundException({
+        message: 'Không tìm thấy đơn hàng.',
+        errorCode: AppErrorCode.NOT_FOUND,
+      });
+    }
     return order;
   }
 
   authorize(order: AfterSalesOrder, actor: ShipmentActor): void {
     if (actor.id !== order.buyerId && actor.id !== order.sellerId && !isStaff(actor))
-      throw new ForbiddenException('Bạn không có quyền thao tác đơn hàng này.');
+      throw new ForbiddenException({
+        message: 'Bạn không có quyền thao tác đơn hàng này.',
+        errorCode: AppErrorCode.FORBIDDEN,
+      });
   }
 
   async view(orderId: string, actor: ShipmentActor): Promise<AfterSalesOrder> {
@@ -47,7 +56,12 @@ export class AfterSalesStoreService {
       where: { id: orderId },
       include: afterSalesInclude,
     });
-    if (!order) throw new NotFoundException('Không tìm thấy đơn hàng.');
+    if (!order) {
+      throw new NotFoundException({
+        message: 'Không tìm thấy đơn hàng.',
+        errorCode: AppErrorCode.NOT_FOUND,
+      });
+    }
     this.authorize(order, actor);
     return order;
   }
@@ -128,7 +142,12 @@ export class AfterSalesStoreService {
     actor: ShipmentActor,
     query: QueryRefundsInput,
   ): Promise<{ items: OrderRefund[]; total: number; page: number; limit: number }> {
-    if (!isStaff(actor)) throw new ForbiddenException('Chỉ nhân viên được xem hàng đợi hoàn tiền.');
+    if (!isStaff(actor)) {
+      throw new ForbiddenException({
+        message: 'Chỉ nhân viên được xem hàng đợi hoàn tiền.',
+        errorCode: AppErrorCode.FORBIDDEN,
+      });
+    }
     const where = { status: query.status };
     const [items, total] = await Promise.all([
       this.prisma.orderRefund.findMany({

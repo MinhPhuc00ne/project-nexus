@@ -1,5 +1,6 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { AppErrorCode } from '@nexus/contracts';
 import { ProviderConfigService } from '../../../core/providers/provider-config.service';
 import { PaymentSandboxService } from './payment-sandbox.service';
 import {
@@ -64,10 +65,12 @@ export class PayosService {
       this.logger.error(
         `Lỗi khi tạo payment link PayOS (orderCode=${paymentData.orderCode}): ${message}`,
       );
-      throw new BadRequestException(
-        message ||
+      throw new BadRequestException({
+        message:
+          message ||
           'Không thể tạo liên kết thanh toán PayOS. Vui lòng kiểm tra lại cấu hình hoặc dữ liệu đơn hàng.',
-      );
+        errorCode: AppErrorCode.PAYMENT_FAILED,
+      });
     }
   }
 
@@ -84,7 +87,10 @@ export class PayosService {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error(`Chữ ký Webhook PayOS không hợp lệ: ${message}`);
-      throw new BadRequestException('Chữ ký Webhook PayOS không hợp lệ hoặc dữ liệu bị thay đổi');
+      throw new BadRequestException({
+        message: 'Chữ ký Webhook PayOS không hợp lệ hoặc dữ liệu bị thay đổi',
+        errorCode: AppErrorCode.PAYMENT_FAILED,
+      });
     }
   }
 
@@ -103,7 +109,10 @@ export class PayosService {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error(`Lỗi khi truy vấn payment link PayOS: ${message}`);
-      throw new BadRequestException('Không tìm thấy thông tin liên kết thanh toán PayOS');
+      throw new BadRequestException({
+        message: 'Không tìm thấy thông tin liên kết thanh toán PayOS',
+        errorCode: AppErrorCode.PAYMENT_FAILED,
+      });
     }
   }
 
@@ -120,7 +129,10 @@ export class PayosService {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error(`Lỗi khi xác nhận Webhook URL với PayOS: ${message}`);
-      throw new BadRequestException(`Không thể xác nhận Webhook URL với PayOS: ${message}`);
+      throw new BadRequestException({
+        message: `Không thể xác nhận Webhook URL với PayOS: ${message}`,
+        errorCode: AppErrorCode.PAYMENT_FAILED,
+      });
     }
   }
 }

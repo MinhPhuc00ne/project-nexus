@@ -1,6 +1,7 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { AppErrorCode } from '@nexus/contracts';
 import { ReputationTrustLevel, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
@@ -127,18 +128,30 @@ export class TokenAuthService {
     const claims = await this.verifyToken(token);
     const userId = claims.sub || claims.id;
     if (!userId) {
-      throw new UnauthorizedException('Invalid authentication token');
+      throw new UnauthorizedException({
+        message: 'Invalid authentication token',
+        errorCode: AppErrorCode.UNAUTHORIZED,
+      });
     }
 
     const account = await this.resolveAccount(userId);
     if (!account) {
-      throw new UnauthorizedException('Account unavailable');
+      throw new UnauthorizedException({
+        message: 'Account unavailable',
+        errorCode: AppErrorCode.UNAUTHORIZED,
+      });
     }
     if (account.trustLevel === ReputationTrustLevel.SUSPENDED) {
-      throw new UnauthorizedException('Account unavailable');
+      throw new UnauthorizedException({
+        message: 'Account unavailable',
+        errorCode: AppErrorCode.ACCOUNT_SUSPENDED,
+      });
     }
     if ((claims.tv ?? 0) < account.tokenVersion) {
-      throw new UnauthorizedException('Session has been revoked');
+      throw new UnauthorizedException({
+        message: 'Session has been revoked',
+        errorCode: AppErrorCode.UNAUTHORIZED,
+      });
     }
 
     return {
@@ -169,9 +182,15 @@ export class TokenAuthService {
     } catch (error) {
       const message = error instanceof Error ? error.message : '';
       if (message.toLowerCase().includes('expired')) {
-        throw new UnauthorizedException('Token has expired');
+        throw new UnauthorizedException({
+          message: 'Token has expired',
+          errorCode: AppErrorCode.UNAUTHORIZED,
+        });
       }
-      throw new UnauthorizedException('Invalid authentication token');
+      throw new UnauthorizedException({
+        message: 'Invalid authentication token',
+        errorCode: AppErrorCode.UNAUTHORIZED,
+      });
     }
   }
 

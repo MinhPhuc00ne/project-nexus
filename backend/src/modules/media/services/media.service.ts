@@ -5,6 +5,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { AppErrorCode } from '@nexus/contracts';
 import * as crypto from 'crypto';
 import type { Request } from 'express';
 import { fromBuffer } from 'file-type';
@@ -63,16 +64,18 @@ export class MediaService {
     const isImage = REVIEW_IMAGE_EXTENSIONS.has(ext);
     const isVideo = REVIEW_VIDEO_EXTENSIONS.has(ext);
     if (!isImage && !isVideo) {
-      throw new BadRequestException(
-        `Định dạng file không được hỗ trợ (${ext}). Review chỉ hỗ trợ ảnh (PNG, JPG, WEBP) và video (MP4, MOV).`,
-      );
+      throw new BadRequestException({
+        message: `Định dạng file không được hỗ trợ (${ext}). Review chỉ hỗ trợ ảnh (PNG, JPG, WEBP) và video (MP4, MOV).`,
+        errorCode: AppErrorCode.UNSUPPORTED_MEDIA_TYPE,
+      });
     }
     const limitBytes = isImage ? MAX_REVIEW_IMAGE_FILE_SIZE : MAX_REVIEW_VIDEO_FILE_SIZE;
     if (file.size > limitBytes) {
       const maxMb = isImage ? 5 : 50;
-      throw new BadRequestException(
-        `Kích thước ${isImage ? 'ảnh' : 'video'} vượt quá giới hạn cho phép (tối đa ${maxMb}MB).`,
-      );
+      throw new BadRequestException({
+        message: `Kích thước ${isImage ? 'ảnh' : 'video'} vượt quá giới hạn cho phép (tối đa ${maxMb}MB).`,
+        errorCode: AppErrorCode.FILE_TOO_LARGE,
+      });
     }
   }
 
@@ -80,9 +83,10 @@ export class MediaService {
     const baseName = path.basename((originalname ?? '').trim());
     const rawExt = path.extname(baseName).toLowerCase();
     if (baseName.startsWith('.') && !rawExt) {
-      throw new BadRequestException(
-        `Định dạng file không được hỗ trợ (${baseName}). Vui lòng tải lên file hợp lệ.`,
-      );
+      throw new BadRequestException({
+        message: `Định dạng file không được hỗ trợ (${baseName}). Vui lòng tải lên file hợp lệ.`,
+        errorCode: AppErrorCode.UNSUPPORTED_MEDIA_TYPE,
+      });
     }
     return rawExt || '.png';
   }
@@ -92,7 +96,10 @@ export class MediaService {
     options: MediaUploadOptions,
   ): asserts file is Express.Multer.File {
     if (!file || !file.buffer) {
-      throw new BadRequestException('Vui lòng chọn file hình ảnh hợp lệ để tải lên.');
+      throw new BadRequestException({
+        message: 'Vui lòng chọn file hình ảnh hợp lệ để tải lên.',
+        errorCode: AppErrorCode.BAD_REQUEST,
+      });
     }
 
     const ext = this.resolveUploadExtension(file.originalname);
@@ -104,9 +111,10 @@ export class MediaService {
     const maxFileSize = options.allowVideo ? MAX_REVIEW_VIDEO_FILE_SIZE : MAX_FILE_SIZE;
     if (file.size > maxFileSize) {
       const maxMb = options.allowVideo ? 50 : 25;
-      throw new BadRequestException(
-        `Kích thước file vượt quá giới hạn cho phép (tối đa ${maxMb}MB).`,
-      );
+      throw new BadRequestException({
+        message: `Kích thước file vượt quá giới hạn cho phép (tối đa ${maxMb}MB).`,
+        errorCode: AppErrorCode.FILE_TOO_LARGE,
+      });
     }
 
     const allowedExtensions = options.allowVideo ? ALLOWED_REVIEW_EXTENSIONS : ALLOWED_EXTENSIONS;
@@ -114,9 +122,10 @@ export class MediaService {
       const supported = options.allowVideo
         ? 'hình ảnh hoặc video (JPG, PNG, WEBP, GIF, BMP, TIFF, MP4, WEBM, MOV)'
         : 'hình ảnh (JPG, PNG, WEBP, GIF, BMP, TIFF)';
-      throw new BadRequestException(
-        `Định dạng file không được hỗ trợ (${ext}). Vui lòng tải lên file ${supported}.`,
-      );
+      throw new BadRequestException({
+        message: `Định dạng file không được hỗ trợ (${ext}). Vui lòng tải lên file ${supported}.`,
+        errorCode: AppErrorCode.UNSUPPORTED_MEDIA_TYPE,
+      });
     }
   }
 
@@ -129,9 +138,10 @@ export class MediaService {
       detected = undefined;
     }
     if (!expectedMimes || !detected || !expectedMimes.includes(detected.mime)) {
-      throw new BadRequestException(
-        `Nội dung file không khớp với định dạng ${ext}. Vui lòng tải lên file hợp lệ.`,
-      );
+      throw new BadRequestException({
+        message: `Nội dung file không khớp với định dạng ${ext}. Vui lòng tải lên file hợp lệ.`,
+        errorCode: AppErrorCode.UNSUPPORTED_MEDIA_TYPE,
+      });
     }
   }
 

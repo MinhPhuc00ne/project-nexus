@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { AppErrorCode } from '@nexus/contracts';
 import { PaymentProvider } from '@prisma/client';
 import { WebhookData } from '@payos/node';
 import { NotificationPublisher } from '../../../core/notifications/notification-publisher.service';
@@ -12,6 +13,7 @@ import { PayosSettlement } from '../../payments/services/payos-settlement';
 import { PayosService } from '../../payments/services/payos.service';
 import { TreasuryService } from '../../treasury/services/treasury.service';
 import { PayOrderInput } from '../dtos/pay-order.dto';
+import { OrderCodPaymentService } from './order-cod-payment.service';
 import { OrderEscrowService } from './order-escrow.service';
 import {
   OrderPayosService,
@@ -23,13 +25,14 @@ import { OrderWalletPaymentService, WalletPaymentResponse } from './order-wallet
 export type { PayosGroupPaymentResponse, PayosPaymentResponse, WalletPaymentResponse };
 
 /**
- * Facade delegating retail order payments to `OrderPayosService` (PayOS VietQR)
- * and `OrderWalletPaymentService` (NEXUS Pay wallet & COD).
+ * Facade delegating retail order payments to `OrderPayosService` (PayOS VietQR),
+ * `OrderWalletPaymentService` (NEXUS Pay wallet), and `OrderCodPaymentService` (COD).
  */
 @Injectable()
 export class OrderPaymentHelper {
   private readonly fallbackPayos: OrderPayosService;
   private readonly fallbackWallet: OrderWalletPaymentService;
+  private readonly fallbackCod: OrderCodPaymentService;
 
   constructor(
     prisma: PrismaService,
@@ -44,6 +47,7 @@ export class OrderPaymentHelper {
     @Optional() notifications?: NotificationPublisher,
     @Optional() private readonly payosPaymentService?: OrderPayosService,
     @Optional() private readonly walletPaymentService?: OrderWalletPaymentService,
+    @Optional() private readonly codPaymentService?: OrderCodPaymentService,
   ) {
     this.fallbackPayos =
       payosPaymentService ??
@@ -68,6 +72,7 @@ export class OrderPaymentHelper {
         trendingService,
         notifications,
       );
+    this.fallbackCod = codPaymentService ?? new OrderCodPaymentService(prisma);
   }
 
   private get payos(): OrderPayosService {
@@ -76,6 +81,10 @@ export class OrderPaymentHelper {
 
   private get wallet(): OrderWalletPaymentService {
     return this.walletPaymentService ?? this.fallbackWallet;
+  }
+
+  private get cod(): OrderCodPaymentService {
+    return this.codPaymentService ?? this.fallbackCod;
   }
 
   async initializePayment(
@@ -94,11 +103,14 @@ export class OrderPaymentHelper {
     }
 
     if (provider === PaymentProvider.COD) {
-      return this.wallet.registerCodPayment(orderId, buyerId);
+      return this.cod.registerCodPayment(orderId, buyerId);
     }
 
     if (provider !== PaymentProvider.PAYOS) {
-      throw new BadRequestException(`Cổng thanh toán ${provider} hiện chưa được kích hoạt`);
+      throw new BadRequestException({
+        message: `Cổng thanh toán ${provider} hiện chưa được kích hoạt`,
+        errorCode: AppErrorCode.BAD_REQUEST,
+      });
     }
 
     return this.payos.initializePayosPayment(orderId, buyerId, dto);
@@ -124,7 +136,7 @@ export class OrderPaymentHelper {
     orderId: string,
     buyerId: string,
   ): Promise<{ orderId: string; success: boolean; message: string; provider: PaymentProvider }> {
-    return this.wallet.registerCodPayment(orderId, buyerId);
+    return this.cod.registerCodPayment(orderId, buyerId);
   }
 
   async settleOrderPayment(webhookData: WebhookData): Promise<PayosSettlement | null> {

@@ -14,6 +14,7 @@ import {
   OrderStatus,
   PaymentProvider,
   PaymentStatus,
+  Prisma,
   ProductStatus,
   ReservationStatus,
   Role,
@@ -36,6 +37,7 @@ import { AdminFinanceService } from '../src/modules/admin/services/admin-finance
 import { AdminProductsService } from '../src/modules/admin/services/admin-products.service';
 import { AdminService } from '../src/modules/admin/services/admin.service';
 import { AfterSalesStoreService } from '../src/modules/after-sales/services/after-sales-store.service';
+import { RefundService } from '../src/modules/after-sales/services/refund.service';
 import { AuctionComplaintService } from '../src/modules/auction/services/auction-complaint.service';
 import { AuctionDefaultService } from '../src/modules/auction/services/auction-default.service';
 import type { StaffProvisioningService } from '../src/modules/auth/services/staff-provisioning.service';
@@ -53,6 +55,7 @@ import type { TreasuryService } from '../src/modules/treasury/services/treasury.
 import type { ReputationService } from '../src/modules/users/services/reputation.service';
 import { ShopsService } from '../src/modules/users/services/shops.service';
 import { UsersService } from '../src/modules/users/services/users.service';
+import { WithdrawalService } from '../src/modules/wallet/services/withdrawal.service';
 
 describe('M9 NotificationPublisher, OrderExpirationService & AuditLogService', () => {
   describe('NotificationPublisher & runWithNotificationBatch', () => {
@@ -1178,6 +1181,174 @@ describe('M9 NotificationPublisher, OrderExpirationService & AuditLogService', (
           'ReportReviewed',
           'admin.auction_complaint.resolved',
           'admin.auction_award.second_chance_withdrawn',
+        ]),
+      );
+    });
+
+    it('records audit logs directly in WithdrawalService and RefundService inside transactions', async () => {
+      const eventLogCreate = vi.fn().mockResolvedValue({ id: 'audit-wr-1' });
+      const audit = new AuditLogService({
+        eventLog: { create: eventLogCreate },
+      } as unknown as PrismaService);
+
+      await runWithRequestTrace('trace-m9-withdrawal-refund', async () => {
+        const withdrawalTx = {
+          $queryRaw: vi.fn().mockResolvedValue([]),
+          withdrawalRequest: {
+            count: vi.fn().mockResolvedValue(0),
+            create: vi.fn().mockResolvedValue({
+              id: 'wd-req-1',
+              amount: 100_000,
+              bankName: 'Vietcombank',
+              accountNumber: '0123456789',
+              accountHolderName: 'NGUYEN VAN A',
+              status: 'PENDING',
+              createdAt: new Date(),
+            }),
+          },
+          wallet: {
+            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+            findUniqueOrThrow: vi.fn().mockResolvedValue({
+              id: 'w-buyer-1',
+              balance: 400_000,
+              lockedBalance: 100_000,
+              currency: 'VND',
+            }),
+          },
+          walletTransaction: {
+            create: vi.fn().mockResolvedValue({ id: 'wtx-wd-1' }),
+          },
+          notification: {
+            create: vi.fn().mockResolvedValue({ id: 'n-wd-1' }),
+            createMany: vi.fn().mockResolvedValue({ count: 0 }),
+          },
+          user: {
+            findMany: vi.fn().mockResolvedValue([]),
+          },
+          eventLog: { create: eventLogCreate },
+        };
+
+        const withdrawalService = new WithdrawalService(
+          {
+            user: {
+              findUnique: vi.fn().mockResolvedValue({
+                id: 'buyer-1',
+                role: Role.BUYER,
+                fullName: 'Buyer One',
+                isShopSuspended: false,
+                suspensionReason: null,
+                bankName: 'Vietcombank',
+                accountNumber: '0123456789',
+                accountHolderName: 'NGUYEN VAN A',
+                wallet: { id: 'w-buyer-1', balance: 500_000, lockedBalance: 0, currency: 'VND' },
+                sellerUpgradeRequests: [],
+              }),
+            },
+            withdrawalRequest: { count: vi.fn().mockResolvedValue(0) },
+            $transaction: vi.fn(async (fn: (tx: typeof withdrawalTx) => Promise<unknown>) =>
+              fn(withdrawalTx),
+            ),
+          } as unknown as PrismaService,
+          undefined,
+          audit,
+        );
+        await withdrawalService.createWithdrawal('buyer-1', { amount: 100_000 });
+
+        const refundRow = {
+          id: 'ref-1',
+          orderId: 'order-ref-1',
+          paymentId: 'pay-1',
+          amount: new Prisma.Decimal(150_000),
+          adminWalletId: 'w-escrow',
+          transactionId: 'wtx-ref-1',
+          destination: 'ORIGINAL',
+          status: 'PENDING',
+        };
+        const lockedOrder = {
+          id: 'order-ref-1',
+          buyerId: 'buyer-1',
+          sellerId: 'seller-1',
+          escrowRecord: {
+            status: EscrowStatus.DISPUTED,
+            totalAmount: new Prisma.Decimal(150_000),
+            sellerPayout: new Prisma.Decimal(135_000),
+          },
+        };
+        const refundTx = {
+          $queryRaw: vi.fn().mockResolvedValue([]),
+          order: {
+            findUnique: vi.fn().mockResolvedValue(lockedOrder),
+            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+          },
+          payment: {
+            findMany: vi.fn().mockResolvedValue([
+              {
+                id: 'pay-1',
+                amount: new Prisma.Decimal(150_000),
+                provider: PaymentProvider.PAYOS,
+              },
+            ]),
+          },
+          wallet: {
+            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+            upsert: vi.fn().mockResolvedValue({ id: 'w-buyer-1' }),
+            update: vi.fn().mockResolvedValue({}),
+          },
+          walletTransaction: {
+            create: vi.fn().mockResolvedValue({ id: 'wtx-ref-1' }),
+            update: vi.fn().mockResolvedValue({}),
+          },
+          orderRefund: {
+            findMany: vi.fn().mockResolvedValueOnce([]).mockResolvedValue([refundRow]),
+            findUnique: vi.fn().mockResolvedValue(null),
+            findUniqueOrThrow: vi.fn().mockResolvedValue(refundRow),
+            create: vi.fn().mockResolvedValue(refundRow),
+            update: vi.fn().mockResolvedValue({ ...refundRow, status: 'SUCCESS' }),
+          },
+          escrowRecord: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+          afterSalesRequest: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+          notification: {
+            create: vi.fn().mockResolvedValue({ id: 'n-ref-1' }),
+            createMany: vi.fn().mockResolvedValue({ count: 0 }),
+          },
+          user: { findMany: vi.fn().mockResolvedValue([]) },
+          eventLog: { create: eventLogCreate },
+        };
+
+        const store = new AfterSalesStoreService(
+          {} as unknown as PrismaService,
+          {} as unknown as ReputationService,
+          undefined,
+          audit,
+        );
+        const refundService = new RefundService(
+          {
+            orderRefund: { findUniqueOrThrow: vi.fn().mockResolvedValue(refundRow) },
+            $transaction: vi.fn(async (fn: (tx: typeof refundTx) => Promise<unknown>) =>
+              fn(refundTx),
+            ),
+          } as unknown as PrismaService,
+          {
+            getOrCreateEscrowWallet: vi.fn().mockResolvedValue({ id: 'w-escrow' }),
+          } as unknown as TreasuryService,
+          store,
+          undefined,
+          audit,
+        );
+
+        await refundService.issue(refundTx as never, lockedOrder as never, false);
+        await refundService.complete('ref-1', { id: 'admin-1', role: Role.ADMIN }, 'PAYOS-REF-99');
+      });
+
+      const recorded = eventLogCreate.mock.calls.map(
+        (call) => (call[0] as { data: { eventName: string; traceId: string } }).data,
+      );
+      expect(recorded.every((ev) => ev.traceId === 'trace-m9-withdrawal-refund')).toBe(true);
+      expect(recorded.map((ev) => ev.eventName)).toEqual(
+        expect.arrayContaining([
+          'wallet.withdrawal.requested',
+          'order.refund.issued',
+          'order.refund.completed',
         ]),
       );
     });

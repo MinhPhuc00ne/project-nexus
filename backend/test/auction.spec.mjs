@@ -638,14 +638,13 @@ function createHarness(overrides = {}) {
     db,
     shipping,
     escrow,
-    new AuctionSecondChanceHelper(db, reputation, adminSettings, adminFinance, undefined),
+    new AuctionSecondChanceHelper(db, reputation, adminSettings, adminFinance),
   );
   // Helpers are injected now, so the fixture builds them from the same
   // doubles the service used to hand them.
   const auctionService = new AuctionService(
     db,
     gateway,
-    {},
     new AuctionAdminHelper(db, gateway),
     new AuctionConsignmentHelper(db, chatService),
     new AuctionBiddingHelper(db, gateway, checkoutService),

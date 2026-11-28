@@ -1,5 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { AppErrorCode } from '@nexus/contracts';
 import { Request } from 'express';
 import { IS_PUBLIC_KEY, AuthenticatedUserPayload } from './roles.decorator';
 import { TokenAuthService } from './token-auth.service';
@@ -32,7 +33,10 @@ export class JwtAuthGuard implements CanActivate {
     const authHeader = request.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Missing or invalid Authorization header');
+      throw new UnauthorizedException({
+        message: 'Missing or invalid Authorization header',
+        errorCode: AppErrorCode.UNAUTHORIZED,
+      });
     }
 
     const user = await this.tokenAuth.authenticate(authHeader.substring(7));

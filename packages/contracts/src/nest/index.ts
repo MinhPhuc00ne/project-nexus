@@ -1,5 +1,12 @@
-import { Body, Param, Query, StandardSchemaValidationPipe } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Param,
+  Query,
+  StandardSchemaValidationPipe,
+} from '@nestjs/common';
 import type { StandardSchemaV1 } from '@standard-schema/spec';
+import { AppErrorCode } from '../common/error-codes.js';
 
 export { StandardSchemaValidationPipe };
 
@@ -7,7 +14,24 @@ export { StandardSchemaValidationPipe };
  * Shared stateless Standard Schema validation pipe instance.
  * `transform: true` ensures Zod coerced/defaulted values are forwarded to handlers.
  */
-const standardSchemaPipe = new StandardSchemaValidationPipe({ transform: true });
+const standardSchemaPipe = new StandardSchemaValidationPipe({
+  transform: true,
+  exceptionFactory: (issues) =>
+    new BadRequestException({
+      message: issues.map((issue) =>
+        issue.path?.length
+          ? `${issue.path
+              .map((segment) =>
+                typeof segment === 'object' && segment !== null && 'key' in segment
+                  ? String(segment.key)
+                  : String(segment),
+              )
+              .join('.')}: ${issue.message}`
+          : issue.message,
+      ),
+      errorCode: AppErrorCode.VALIDATION_ERROR,
+    }),
+});
 
 function assertSchemaProvided(schema: StandardSchemaV1, decoratorName: string): void {
   if (

@@ -20,6 +20,7 @@ import {
   WalletTransactionType,
   WithdrawalStatus,
 } from '@prisma/client';
+import { AuditLogService } from '../../../core/audit/audit-log.service';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { notifyAllAdmins } from '../../../core/notifications/admin-notification.util';
 import { CreateWithdrawalInput } from '../dtos/create-withdrawal.dto';
@@ -44,11 +45,13 @@ type PrismaLike = {
 export class WithdrawalService {
   private readonly logger = new Logger(WithdrawalService.name);
   private static readonly MAX_PENDING_WITHDRAWALS = 3;
+  private static readonly MIN_SELLER_WITHDRAWAL_VND = 50_000;
   private static readonly CURRENCY_VND = 'VND';
 
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly notifications?: NotificationPublisher,
+    @Optional() private readonly auditLog?: AuditLogService,
   ) {}
 
   /**
@@ -76,13 +79,32 @@ export class WithdrawalService {
     });
 
     if (!user) {
-      throw new NotFoundException('Không tìm thấy tài khoản người dùng.');
+      throw new NotFoundException({
+        message: 'Không tìm thấy tài khoản người dùng.',
+        errorCode: AppErrorCode.NOT_FOUND,
+      });
     }
 
     this.ensureWithdrawalAllowed(user, options);
 
-    const wallet = await this.getOrCreateWallet(userId, user.wallet);
     const withdrawAmount = Number(dto.amount);
+    if (!Number.isFinite(withdrawAmount) || withdrawAmount <= 0) {
+      throw new BadRequestException({
+        message: 'Withdrawal amount must be greater than 0 VND.',
+        errorCode: AppErrorCode.WITHDRAWAL_MIN_AMOUNT,
+      });
+    }
+    if (
+      options?.requireSellerRole &&
+      withdrawAmount < WithdrawalService.MIN_SELLER_WITHDRAWAL_VND
+    ) {
+      throw new BadRequestException({
+        message: `Minimum seller withdrawal amount is ${WithdrawalService.MIN_SELLER_WITHDRAWAL_VND.toLocaleString('en-US')} VND.`,
+        errorCode: AppErrorCode.WITHDRAWAL_MIN_AMOUNT,
+      });
+    }
+
+    const wallet = await this.getOrCreateWallet(userId, user.wallet);
     const currentBalance = Number(wallet.balance);
 
     if (currentBalance < withdrawAmount) {
@@ -260,11 +282,12 @@ export class WithdrawalService {
     }
 
     if (user.role === Role.SELLER && user.isShopSuspended) {
-      throw new ForbiddenException(
-        `Gian hàng của bạn hiện đang bị Admin đình chỉ hoạt động.${
+      throw new ForbiddenException({
+        message: `Gian hàng của bạn hiện đang bị Admin đình chỉ hoạt động.${
           user.suspensionReason ? ` Lý do: ${user.suspensionReason}` : ''
         } Không thể thực hiện rút tiền.`,
-      );
+        errorCode: AppErrorCode.SHOP_SUSPENDED,
+      });
     }
   }
 
@@ -323,9 +346,11 @@ export class WithdrawalService {
       ?.toUpperCase();
 
     if (!bankName || !accountNumber || !accountHolderName) {
-      throw new BadRequestException(
-        'Thông tin ngân hàng chưa đầy đủ. Vui lòng cập nhật thông tin ngân hàng trong Hồ sơ cá nhân hoặc nhập trực tiếp khi gửi yêu cầu rút tiền.',
-      );
+      throw new BadRequestException({
+        message:
+          'Thông tin ngân hàng chưa đầy đủ. Vui lòng cập nhật thông tin ngân hàng trong Hồ sơ cá nhân hoặc nhập trực tiếp khi gửi yêu cầu rút tiền.',
+        errorCode: AppErrorCode.BAD_REQUEST,
+      });
     }
 
     return { bankName, accountNumber, accountHolderName };
@@ -449,6 +474,22 @@ export class WithdrawalService {
           targetUrl: '/admin/finance',
         },
         this.notifications,
+      );
+
+      await this.auditLog?.record(
+        {
+          eventName: 'wallet.withdrawal.requested',
+          operatorId: userId,
+          payload: {
+            withdrawalId: req.id,
+            walletId,
+            transactionId: transaction.id,
+            amount: withdrawAmount,
+            userRole,
+            bankName: bankDetails.bankName,
+          },
+        },
+        tx,
       );
 
       return { req, transaction, updatedWallet };

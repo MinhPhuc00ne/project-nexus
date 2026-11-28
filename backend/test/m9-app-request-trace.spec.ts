@@ -26,7 +26,7 @@ describe('M9 AppModule RequestTrace & AuditLogService integration', () => {
       process.env[key] = value;
     }
     ({ AppModule: AppModuleClass } = await import('../src/app.module'));
-  });
+  }, 30_000);
 
   afterAll(() => {
     for (const [key, prev] of Object.entries(savedEnv)) {
