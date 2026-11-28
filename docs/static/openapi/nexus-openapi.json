@@ -12211,7 +12211,7 @@
     },
     "/api/v1/commerce/webhooks/payos": {
       "post": {
-        "description": "Endpoint công khai để PayOS bắn thông báo khi khách hàng chuyển khoản thành công. Tự động xác minh chữ ký HMAC-SHA256 (Checksum) và cập nhật đơn hàng sang trạng thái PAID.",
+        "description": "Public endpoint called by PayOS when a buyer transfer succeeds. Verifies the HMAC-SHA256 checksum and settles matching orders or wallet deposits.",
         "operationId": "PayosWebhookController_handlePayosWebhook",
         "parameters": [],
         "requestBody": {
@@ -12254,19 +12254,19 @@
         },
         "responses": {
           "200": {
-            "description": "Xác nhận webhook thành công"
+            "description": "Webhook processed successfully"
           },
           "400": {
-            "description": "Chữ ký webhook không hợp lệ"
+            "description": "Invalid webhook checksum"
           }
         },
-        "summary": "[PAYOS WEBHOOK] Điểm tiếp nhận Webhook biến động số dư VietQR từ PayOS",
+        "summary": "[PAYOS WEBHOOK] Receive VietQR balance-change webhook from PayOS",
         "tags": ["8. COMMERCE - WEBHOOKS"]
       }
     },
     "/api/v1/commerce/webhooks/payos/confirm": {
       "post": {
-        "description": "Gọi API PayOS để tự động xác thực URL Webhook của bạn (tiện lợi khi sử dụng ngrok URL ở môi trường phát triển).",
+        "description": "Calls the PayOS API to verify and register the configured merchant webhook URL. Restricted to platform administrators.",
         "operationId": "PayosWebhookController_confirmWebhookUrl",
         "parameters": [],
         "requestBody": {
@@ -12291,10 +12291,21 @@
         },
         "responses": {
           "200": {
-            "description": "Đăng ký Webhook URL thành công"
+            "description": "Webhook URL registered successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — Admin role required"
           }
         },
-        "summary": "[UTILITY] Xác nhận và đăng ký Webhook URL với máy chủ PayOS",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "[ADMIN] Confirm and register the PayOS webhook URL",
         "tags": ["8. COMMERCE - WEBHOOKS"]
       }
     },

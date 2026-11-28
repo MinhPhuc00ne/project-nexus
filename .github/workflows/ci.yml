@@ -5,6 +5,7 @@ on:
     branches: [main, dev]
   pull_request:
     branches: [main, dev]
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -60,6 +61,22 @@ jobs:
 
       - name: Validate documentation and OpenAPI spec
         run: npm run docs:check
+
+      - name: Validate environment template
+        run: npm run env:check -- --env-file .env.example
+
+      - name: Validate Docker Compose files
+        run: |
+          docker compose -f infra/docker-compose.yml config --quiet
+          docker compose -f infra/docker-compose.yml -f infra/docker-compose.demo.yml config --quiet
+
+      - name: Build documentation site (main strict gate)
+        if: github.ref == 'refs/heads/main' || github.base_ref == 'main'
+        run: npm run docs:build
+
+      - name: Audit backend production dependencies (main strict gate)
+        if: github.ref == 'refs/heads/main' || github.base_ref == 'main'
+        run: npm audit --omit=dev --workspace=nexus-backend --workspace=@nexus/contracts --audit-level=critical
 
       - name: Validate Prisma schema
         run: npx prisma validate --schema=backend/prisma/schema.prisma
@@ -242,6 +259,12 @@ jobs:
       - name: Build shared packages
         run: npm run build:contracts
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - name: Install the browser
         run: npx playwright install --with-deps chromium
 
@@ -272,17 +295,28 @@ jobs:
           filters: |
             docker:
               - 'infra/**'
-              - 'backend/**'
-              - 'frontend/**'
-              - 'packages/**'
               - 'package*.json'
+              - '.dockerignore'
               - '.github/workflows/ci.yml'
 
   images:
-    name: Container Images Build
+    name: Container Images Build (${{ matrix.name }})
     needs: changes
-    if: github.ref == 'refs/heads/main' || needs.changes.outputs.docker == 'true'
+    if: github.ref == 'refs/heads/main' || github.base_ref == 'main' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.docker == 'true'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: backend-runner
+            file: infra/docker/Dockerfile.backend
+            target: runner
+          - name: backend-migrator
+            file: infra/docker/Dockerfile.backend
+            target: migrator
+          - name: frontend
+            file: infra/docker/Dockerfile.frontend
+            target: ''
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -290,36 +324,12 @@ jobs:
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build the backend image
+      - name: Build container image (${{ matrix.name }})
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: infra/docker/Dockerfile.backend
-          target: runner
+          file: ${{ matrix.file }}
+          target: ${{ matrix.target }}
           push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build the migration image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: infra/docker/Dockerfile.backend
-          target: migrator
-          push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build the frontend image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: infra/docker/Dockerfile.frontend
-          push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Validate the compose files
-        run: |
-          docker compose -f infra/docker-compose.yml config --quiet
-          docker compose -f infra/docker-compose.yml -f infra/docker-compose.demo.yml config --quiet
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=min,scope=${{ matrix.name }}

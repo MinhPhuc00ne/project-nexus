@@ -9,6 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
 import {
   StaffInvitationQuery,
@@ -118,6 +119,7 @@ export class StaffController {
       'Staff nhập tài khoản được cấp dạng HuyNQ@staff.com. OTP gửi về email cá nhân; dùng chung luồng Quên mật khẩu của hệ thống.',
   })
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   async forgotPassword(
@@ -134,6 +136,7 @@ export class StaffController {
       'Staff nhập tài khoản @staff.com, OTP nhận ở email cá nhân và mật khẩu mới. Dùng chung xử lý với reset-password thông thường.',
   })
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   async resetPassword(
