@@ -72,6 +72,8 @@
   },
   "header": {
     "searchPlaceholder": "Tìm kiếm sản phẩm, thương hiệu hoặc phiên đấu giá…",
+    "searchAria": "Tìm kiếm",
+    "breadcrumbAria": "Điều hướng đường dẫn",
     "sellerChannel": "Kênh Người Bán",
     "sellerShort": "Người Bán",
     "sellerProfile": "Hồ sơ Người Bán",

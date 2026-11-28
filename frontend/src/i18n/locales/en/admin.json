@@ -1,4 +1,10 @@
 {
+  "roles": {
+    "BUYER": "Buyer",
+    "SELLER": "Seller",
+    "SUPPORT_STAFF": "Staff",
+    "ADMIN": "Admin"
+  },
   "header": {
     "panelTitle": "NEXUS ADMIN PANEL",
     "clusterStatus": "Cluster uptime: 99.98%",
@@ -587,6 +593,7 @@
     "wsEngine": "WebSocket engine",
     "webglCluster": "WebGL cluster",
     "uptime": "System uptime",
+    "overallStatus": "Overall Status",
     "demoState": "Sample status • not connected to API",
     "logistics": {
       "title": "GHN Logistics API Connection",

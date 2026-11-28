@@ -307,7 +307,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
           ) : isYouTube ? (
             <iframe
               src={ytEmbedUrl}
-              title="Auction Session Video Showcase"
+              title={t('cinematic.videoShowcaseTitle')}
               className="w-full h-full border-0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen

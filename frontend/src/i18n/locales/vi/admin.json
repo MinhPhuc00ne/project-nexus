@@ -1,4 +1,10 @@
 {
+  "roles": {
+    "BUYER": "Người mua",
+    "SELLER": "Người bán",
+    "SUPPORT_STAFF": "Nhân viên",
+    "ADMIN": "Quản trị"
+  },
   "header": {
     "panelTitle": "NEXUS ADMIN PANEL",
     "clusterStatus": "Cụm máy chủ: 99.98%",
@@ -587,6 +593,7 @@
     "wsEngine": "WebSocket engine",
     "webglCluster": "WebGL cluster",
     "uptime": "Uptime hệ thống",
+    "overallStatus": "Trạng thái tổng thể",
     "demoState": "Trạng thái minh họa • chưa kết nối API",
     "logistics": {
       "title": "Kết nối GHN Logistics API",

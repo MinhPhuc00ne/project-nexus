@@ -55,6 +55,7 @@
     "adminBannerLabel": "Auction Session Banner (Admin Created)",
     "productMainPhoto": "Official Product Photo",
     "breadcrumbHome": "Home",
+    "breadcrumbAria": "Breadcrumb",
     "breadcrumbAuctions": "Live Auctions",
     "saved": "Saved",
     "favorite": "Favorite",
@@ -181,6 +182,7 @@
     "noVideoTitle": "No intro video for this session",
     "videoErrorDesc": "Video format is unsupported or the video link is interrupted.",
     "noVideoDesc": "Admin has not uploaded a trailer video for this auction.",
+    "youtubePlayerTitle": "YouTube video player",
     "backToPhotos": "Back to photos",
     "unmutePrompt": "Click to unmute",
     "pauseTitle": "Pause",
@@ -358,7 +360,8 @@
     "startPrice": "Start: {{amount}}",
     "awaitingValuation": "Awaiting valuation",
     "consignmentOpenLabel": "Auction is open for item consignments:",
-    "consignmentOpenDesc": "This is an overview intro video created by Admin. Sellers can submit consignment requests to list real items in this session."
+    "consignmentOpenDesc": "This is an overview intro video created by Admin. Sellers can submit consignment requests to list real items in this session.",
+    "videoShowcaseTitle": "Auction Session Video Showcase"
   },
   "showcase": {
     "byAgreement": "By session agreement",
@@ -398,6 +401,12 @@
     "certAgencyMissing": "Issuer not updated",
     "certIssueDate": "Issue date: {{date}}",
     "certAlt": "Certificate {{name}}",
+    "broadcast": {
+      "officialLive": "OFFICIAL LIVE AUCTION BROADCAST",
+      "authComplete": "AUTHENTICATION COMPLETE",
+      "readyToBid": "ARE YOU READY TO BID?",
+      "roomOpen": "AUCTION ROOM IS NOW OPEN"
+    },
     "syncNote": "Starting price, increment, and appraisal certificate are synced directly from the seller's consignment.",
     "climaxAuthComplete": "APPRAISAL COMPLETE",
     "climaxReady": "AUCTION OPENING SOON",

@@ -72,6 +72,8 @@
   },
   "header": {
     "searchPlaceholder": "Search products, brands, or live auctions…",
+    "searchAria": "Search",
+    "breadcrumbAria": "Breadcrumb",
     "sellerChannel": "Seller Center",
     "sellerShort": "Seller",
     "sellerProfile": "Seller Profile",

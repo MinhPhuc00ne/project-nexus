@@ -304,7 +304,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
               <span className="hidden lg:inline">
                 {profile?.role === 'SELLER' ? t('header.sellerProfile') : t('header.becomeSeller')}
               </span>
-              <span className="lg:hidden">Seller</span>
+              <span className="lg:hidden">{t('header.sellerShort')}</span>
             </button>
 
             <span className="text-xs text-slate-300">|</span>
@@ -614,7 +614,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
 
               <button
                 type="submit"
-                aria-label="Search"
+                aria-label={t('header.searchAria')}
                 className="flex h-[38px] w-[58px] shrink-0 items-center justify-center rounded-full border-0 bg-gradient-to-br from-[#ff6b35] to-[#ee4d2d] text-white transition-transform hover:scale-[1.04] hover:shadow-[0_4px_12px_rgba(238,77,45,0.35)]"
               >
                 <Search size={18} />

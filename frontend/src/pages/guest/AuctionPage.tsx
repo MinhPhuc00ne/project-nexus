@@ -642,7 +642,7 @@ export const AuctionPage: React.FC = () => {
 
       <main className="max-w-7xl mx-auto px-4 py-5 pb-14">
         <div className="flex items-center justify-between mb-5 text-[13px] text-slate-500">
-          <nav className="flex items-center gap-2 flex-wrap" aria-label="Breadcrumb">
+          <nav className="flex items-center gap-2 flex-wrap" aria-label={t('page.breadcrumbAria')}>
             <Link to="/" className="text-slate-500 hover:text-rose-500 transition">
               {t('page.breadcrumbHome')}
             </Link>
