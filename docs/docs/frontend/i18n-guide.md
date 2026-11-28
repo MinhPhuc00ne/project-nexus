@@ -44,4 +44,4 @@ frontend/src/i18n/
 1. Copy `frontend/src/i18n/locales/vi/` to `frontend/src/i18n/locales/ja/` and translate all 10 JSON files.
 2. Register `{ code: 'ja', label: '日本語', shortLabel: 'JA', intlLocale: 'ja-JP' }` in `frontend/src/i18n/config.ts`.
 3. Import the `ja` JSON resources into `frontend/src/i18n/index.ts`.
-4. Run `npm run i18n:check` and `npm run test --workspace=frontend` to verify parity and formatters.
+4. Run `npm run i18n:check` and `npm test --workspace=nexus-frontend` to verify parity and formatters.
