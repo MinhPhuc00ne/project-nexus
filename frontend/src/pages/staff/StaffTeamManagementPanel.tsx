@@ -145,7 +145,7 @@ export default function StaffTeamManagementPanel({ notify }: StaffTeamManagement
                   <td className="py-3 px-4 text-slate-600">{s.phoneNumber || '—'}</td>
                   <td className="py-3 px-4">
                     <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-100 text-indigo-700">
-                      SUPPORT_STAFF
+                      {t('header.supportStaffRole')}
                     </span>
                   </td>
                   <td className="py-3 px-4">

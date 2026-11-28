@@ -455,7 +455,7 @@ function CatalogProductCard({ product }: { product: ProductDetail }) {
         <div className="flex items-center justify-between text-[11px] pt-2 border-t border-slate-100 text-slate-500">
           <div className="flex items-center gap-1 text-emerald-600 font-medium text-[10px]">
             <Truck className="h-3 w-3" />
-            <span>Freeship</span>
+            <span>{t('catalog.freeShip')}</span>
           </div>
           <span className="truncate max-w-[90px] text-[10px] text-slate-400">
             {product.shop.name}

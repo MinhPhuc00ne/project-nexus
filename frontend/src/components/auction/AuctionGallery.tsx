@@ -347,7 +347,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
               <div className="w-full h-full flex items-center justify-center">
                 <iframe
                   src={ytEmbedUrl}
-                  title="YouTube video player"
+                  title={t('gallery.youtubePlayerTitle')}
                   className="w-full h-full border-0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen

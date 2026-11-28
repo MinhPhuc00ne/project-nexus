@@ -158,7 +158,7 @@ function HomeLiveAuctionContent({ auctions }: { auctions: AuctionEntity[] }) {
             </span>
 
             <span className="rounded bg-green-50 px-2 py-1 text-[10px] font-semibold text-green-500">
-              Seller KYC: Verified
+              {t('home.liveAuction.sellerKycVerified')}
             </span>
           </div>
 
@@ -193,7 +193,9 @@ function HomeLiveAuctionContent({ auctions }: { auctions: AuctionEntity[] }) {
                 <HomeCountdown endsAt={targetDateStr} />
               </div>
               <p className="mt-2 text-[11px] text-red-500">
-                {isUpcoming ? t('home.liveAuction.statusScheduled') : 'Anti-Sniping: Active'}
+                {isUpcoming
+                  ? t('home.liveAuction.statusScheduled')
+                  : t('home.liveAuction.antiSnipingActive')}
               </p>
             </div>
           </div>

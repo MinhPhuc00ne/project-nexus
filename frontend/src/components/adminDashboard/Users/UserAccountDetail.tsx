@@ -3,19 +3,12 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getUserById } from '@/features/admin/services/admin';
-import type { AdminUserDetail, AdminUserRole } from '@/features/account/types/user.types';
+import type { AdminUserDetail } from '@/features/account/types/user.types';
 import { getIntlLocale } from '../../../i18n/config';
 import Popup from '../../Popup';
 import { Badge, Button } from '../shared/AdminUI';
 import ShopDetail from '../Stores/ShopDetail';
 import UserShopSummary from './UserShopSummary';
-
-const roleLabels: Record<AdminUserRole, string> = {
-  BUYER: 'Buyer',
-  SELLER: 'Seller',
-  SUPPORT_STAFF: 'Staff',
-  ADMIN: 'Admin',
-};
 
 function formatDate(value: string, locale: string) {
   const date = new Date(value);
@@ -131,7 +124,7 @@ export default function UserAccountDetail({
               </h3>
               <p className="mt-1 break-all text-sm text-slate-500">{user.email}</p>
               <div className="mt-3 flex flex-wrap gap-2">
-                <Badge>{roleLabels[user.role]}</Badge>
+                <Badge>{t(`roles.${user.role}`)}</Badge>
                 <Badge tone={user.isLocked ? 'red' : 'green'}>
                   {user.isLocked ? t('users.detail.lockedBadge') : t('users.detail.activeBadge')}
                 </Badge>

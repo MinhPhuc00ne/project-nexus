@@ -55,6 +55,7 @@
     "adminBannerLabel": "Banner đại diện phiên đấu giá (Admin khởi tạo)",
     "productMainPhoto": "Ảnh sản phẩm chính thức",
     "breadcrumbHome": "Trang Chủ",
+    "breadcrumbAria": "Điều hướng đường dẫn",
     "breadcrumbAuctions": "Sàn Đấu Giá Trực Tuyến",
     "saved": "Đã Lưu",
     "favorite": "Yêu Thích",
@@ -181,6 +182,7 @@
     "noVideoTitle": "Phiên này chưa có video giới thiệu",
     "videoErrorDesc": "Định dạng video không được hỗ trợ hoặc đường dẫn video bị gián đoạn.",
     "noVideoDesc": "Admin chưa đăng tải video trailer cho phiên đấu giá này.",
+    "youtubePlayerTitle": "Trình phát video YouTube",
     "backToPhotos": "Quay lại xem ảnh",
     "unmutePrompt": "Bấm để bật âm thanh",
     "pauseTitle": "Tạm dừng",
@@ -358,7 +360,8 @@
     "startPrice": "Khởi điểm: {{amount}}",
     "awaitingValuation": "Chờ định giá",
     "consignmentOpenLabel": "Phiên đấu giá đang mở tiếp nhận hiện vật ký gửi:",
-    "consignmentOpenDesc": "Video này là thước phim giới thiệu tổng quan do Admin tạo cho phiên. Người bán (Seller) có thể gửi yêu cầu ký gửi để niêm yết các sản phẩm thực tế vào phiên này."
+    "consignmentOpenDesc": "Video này là thước phim giới thiệu tổng quan do Admin tạo cho phiên. Người bán (Seller) có thể gửi yêu cầu ký gửi để niêm yết các sản phẩm thực tế vào phiên này.",
+    "videoShowcaseTitle": "Video Giới Thiệu Phiên Đấu Giá"
   },
   "showcase": {
     "byAgreement": "Theo thỏa thuận phiên",
@@ -398,6 +401,12 @@
     "certAgencyMissing": "Chưa cập nhật đơn vị cấp",
     "certIssueDate": "Ngày cấp: {{date}}",
     "certAlt": "Chứng thư {{name}}",
+    "broadcast": {
+      "officialLive": "PHÁT SÓNG ĐẤU GIÁ TRỰC TIẾP CHÍNH THỨC",
+      "authComplete": "HOÀN TẤT XÁC THỰC",
+      "readyToBid": "BẠN ĐÃ SẴN SÀNG ĐẶT GIÁ?",
+      "roomOpen": "PHÒNG ĐẤU GIÁ ĐÃ MỞ CỬA"
+    },
     "syncNote": "Thông tin giá khởi điểm, bước giá và chứng thư kiểm định được đồng bộ trực tiếp từ hồ sơ ký gửi của người bán.",
     "climaxAuthComplete": "THẨM ĐỊNH HOÀN TẤT",
     "climaxReady": "PHIÊN ĐẤU GIÁ SẮP MỞ CỬA",
