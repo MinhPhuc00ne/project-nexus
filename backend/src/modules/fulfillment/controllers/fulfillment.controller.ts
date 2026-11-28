@@ -36,11 +36,11 @@ export class FulfillmentController {
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      '[ADMIN] Kiểm tra API tính phí bằng shop GHN cấu hình chung; đơn seller dùng quote riêng',
+      '[ADMIN] Test GHN shipping fee calculation using default platform shop (seller orders use shop-specific quotes)',
     description:
-      'Tra cứu cước phí vận chuyển chính xác theo quy chuẩn bảng giá Giao Hàng Nhanh: Mã Quận/Huyện, Phường/Xã, trọng lượng gram và kích thước 3 chiều.',
+      'Queries GHN shipping fee using district ID, ward code, weight in grams, and parcel dimensions.',
   })
-  @ApiResponse({ status: 200, description: 'Cước phí vận chuyển GHN chính thức' })
+  @ApiResponse({ status: 200, description: 'Official GHN shipping fee' })
   async calculateOfficialGhnFee(@ZodBody(CalculateGhnFeeSchema) dto: CalculateGhnFeeInput) {
     const fee = await this.ghnService.calculateFee({
       toDistrictId: dto.toDistrictId,
@@ -56,7 +56,7 @@ export class FulfillmentController {
       items: dto.items,
     });
     return {
-      message: 'Tính cước phí giao hàng GHN thành công',
+      message: 'GHN shipping fee calculated successfully.',
       data: fee,
     };
   }
@@ -65,18 +65,18 @@ export class FulfillmentController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Báo giá vận chuyển từ API GHN',
+    summary: 'Quote shipping fee from GHN API',
     description:
-      'Phí do GHN trả về theo địa chỉ và sản phẩm. Khoảng cách chỉ để tham khảo, không dùng tính cước. GHN lỗi sẽ không có báo giá dự phòng.',
+      'Returns the fee calculated by GHN for the destination address and items. Distance is informational only; no fallback quote is generated if GHN fails.',
   })
-  @ApiResponse({ status: 200, description: 'Báo giá vận chuyển chi tiết' })
+  @ApiResponse({ status: 200, description: 'Detailed shipping quote' })
   async getShippingQuote(
     @CurrentUser('id') userId: string,
     @ZodBody(ShippingQuoteSchema) dto: ShippingQuoteInput,
   ) {
     const quote = await this.fulfillmentService.calculateShippingQuote(userId, dto);
     return {
-      message: 'Tính cước phí vận chuyển thành công',
+      message: 'Shipping quote calculated successfully.',
       data: quote,
     };
   }
@@ -84,10 +84,10 @@ export class FulfillmentController {
   @Post('distance')
   @Public()
   @ApiOperation({
-    summary: 'Đo khoảng cách tham khảo giữa hai tọa độ GPS',
-    description: 'Chỉ trả khoảng cách và thời gian di chuyển. Không tính hoặc trả phí vận chuyển.',
+    summary: 'Measure informational road distance between two GPS coordinates',
+    description: 'Returns only distance and travel duration without computing shipping fees.',
   })
-  @ApiResponse({ status: 200, description: 'Khoảng cách và thời gian di chuyển tham khảo' })
+  @ApiResponse({ status: 200, description: 'Informational distance and travel duration' })
   async computeDirectDistance(@ZodBody(DirectDistanceSchema) dto: DirectDistanceInput) {
     const result = await this.distanceService.getRoadDistanceAndDuration(
       dto.originLat,
@@ -97,7 +97,7 @@ export class FulfillmentController {
     );
 
     return {
-      message: 'Đo khoảng cách thành công; phí vận chuyển được lấy riêng từ GHN',
+      message: 'Distance calculated successfully; shipping fees are quoted separately via GHN.',
       data: result,
     };
   }
@@ -105,25 +105,25 @@ export class FulfillmentController {
   @Get('diagnostic')
   @Public()
   @ApiOperation({
-    summary: 'Chẩn đoán cấu hình và kiểm tra kết nối cổng GHN Express',
+    summary: 'Diagnose GHN Express configuration and connectivity',
     description:
-      'Kiểm tra token, shop ID, URL môi trường (Sandbox/Production) và trạng thái kết nối GHN.',
+      'Checks token, shop ID, environment URL (Sandbox or Production), and GHN connection status.',
   })
   async getDiagnostic() {
     const diagnostic = await this.ghnService.getDiagnostic();
     return {
-      message: 'Chẩn đoán kết nối GHN thành công',
+      message: 'GHN connectivity diagnostic completed.',
       data: diagnostic,
     };
   }
 
   @Get('provinces')
   @Public()
-  @ApiOperation({ summary: 'Lấy danh sách 63 Tỉnh/Thành phố từ GHN Master Data' })
+  @ApiOperation({ summary: 'List provinces from GHN Master Data' })
   async getProvinces() {
     const provinces = await this.ghnService.getProvinces();
     return {
-      message: 'Lấy danh sách Tỉnh/Thành thành công',
+      message: 'Provinces retrieved successfully.',
       total: provinces.length,
       data: provinces,
     };
@@ -131,12 +131,12 @@ export class FulfillmentController {
 
   @Get('districts/:provinceId')
   @Public()
-  @ApiOperation({ summary: 'Lấy danh sách Quận/Huyện theo Tỉnh/Thành từ GHN' })
+  @ApiOperation({ summary: 'List districts by province ID from GHN' })
   async getDistricts(@ZodParam('provinceId', PositiveIntParamSchema) provinceId: number) {
     const districts = await this.ghnService.getDistricts(provinceId);
     return {
       message:
-        districts.length > 0 ? 'Lấy danh sách Quận/Huyện thành công' : 'Danh sách Quận/Huyện rỗng',
+        districts.length > 0 ? 'Districts retrieved successfully.' : 'District list is empty.',
       total: districts.length,
       data: districts,
     };
@@ -144,11 +144,11 @@ export class FulfillmentController {
 
   @Get('wards/:districtId')
   @Public()
-  @ApiOperation({ summary: 'Lấy danh sách Phường/Xã theo Quận/Huyện từ GHN' })
+  @ApiOperation({ summary: 'List wards by district ID from GHN' })
   async getWards(@ZodParam('districtId', PositiveIntParamSchema) districtId: number) {
     const wards = await this.ghnService.getWards(districtId);
     return {
-      message: wards.length > 0 ? 'Lấy danh sách Phường/Xã thành công' : 'Danh sách Phường/Xã rỗng',
+      message: wards.length > 0 ? 'Wards retrieved successfully.' : 'Ward list is empty.',
       total: wards.length,
       data: wards,
     };
@@ -156,7 +156,7 @@ export class FulfillmentController {
 
   @Get('available-services')
   @Public()
-  @ApiOperation({ summary: 'Tra cứu các gói dịch vụ GHN khả dụng giữa 2 Quận/Huyện' })
+  @ApiOperation({ summary: 'Query available GHN services between two districts' })
   async getAvailableServices(
     @ZodQuery(AvailableServicesQuerySchema) query: AvailableServicesQuery,
   ) {
@@ -165,7 +165,7 @@ export class FulfillmentController {
       query.toDistrictId,
     );
     return {
-      message: 'Tra cứu dịch vụ khả dụng thành công',
+      message: 'Available services retrieved successfully.',
       total: services.length,
       data: services,
     };

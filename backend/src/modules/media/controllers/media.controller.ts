@@ -39,31 +39,31 @@ export class MediaController {
   @Post('upload')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[MEDIA] Upload file hình ảnh lên server / Cloudinary',
+    summary: '[MEDIA] Upload an image file to local storage or Cloudinary',
     description:
-      'Nhận file hình ảnh từ client (field "file" hoặc "image"), lưu trữ vào máy chủ và trả về đường dẫn URL của ảnh. Nếu gửi nhiều file, hệ thống sẽ tự động upload toàn bộ mảng và trả về danh sách urls.',
+      'Accepts an image file (field "file" or "image"), stores it, and returns its URL. If multiple files are submitted, uploads all files and returns the urls array.',
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
-    description: 'File hình ảnh đính kèm (hỗ trợ JPG, PNG, WEBP, GIF, BMP, TIFF)',
+    description: 'Image file attachment (supports JPG, PNG, WEBP, GIF, BMP, TIFF)',
     schema: {
       type: 'object',
       properties: {
         file: {
           type: 'string',
           format: 'binary',
-          description: 'File hình ảnh (field name "file" hoặc "image")',
+          description: 'Image file (field name "file" or "image")',
         },
       },
     },
   })
   @ApiOkResponse({
-    description: 'Upload file thành công, trả về đường dẫn URL của ảnh',
+    description: 'File uploaded successfully with image URL',
     standardSchema: MediaUploadResponseSchema,
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Không có file hoặc file không đúng định dạng',
+    description: 'Missing file or unsupported file format',
   })
   @UseInterceptors(AnyFilesInterceptor({ limits: { fileSize: 25 * 1024 * 1024, files: 10 } }))
   async uploadMedia(
@@ -77,7 +77,7 @@ export class MediaController {
         return this.mediaService.uploadMedia(rawReq.file, req);
       }
       throw new BadRequestException(
-        'Vui lòng chọn file hình ảnh để tải lên (field name "file" hoặc "image").',
+        'Please select an image file to upload (field name "file" or "image").',
       );
     }
 
@@ -95,13 +95,13 @@ export class MediaController {
   @Post('upload-multiple')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[MEDIA] Upload mảng nhiều file hình ảnh cùng 1 lần (Array / Batch Upload)',
+    summary: '[MEDIA] Batch upload multiple image files',
     description:
-      'Nhận một mảng các file hình ảnh từ client (field name "files" hoặc "images"), lưu trữ và tải lên song song, trả về mảng danh sách URL ảnh để gán trực tiếp vào mảng ảnh sản phẩm/hồ sơ.',
+      'Accepts multiple image files (field name "files" or "images"), uploads them in parallel, and returns the resulting image URL list.',
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
-    description: 'Mảng các file hình ảnh đính kèm (chọn cùng lúc nhiều ảnh)',
+    description: 'Array of image file attachments',
     schema: {
       type: 'object',
       properties: {
@@ -111,18 +111,18 @@ export class MediaController {
             type: 'string',
             format: 'binary',
           },
-          description: 'Danh sách mảng các file hình ảnh',
+          description: 'List of image files',
         },
       },
     },
   })
   @ApiOkResponse({
-    description: 'Upload toàn bộ danh sách file thành công, trả về mảng URL và thông tin chi tiết',
+    description: 'All files uploaded successfully with URLs and metadata',
     standardSchema: MultipleMediaUploadResponseSchema,
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Không có file hoặc file không đúng định dạng',
+    description: 'Missing files or unsupported file format',
   })
   @UseInterceptors(AnyFilesInterceptor({ limits: { fileSize: 25 * 1024 * 1024, files: 10 } }))
   async uploadMultipleMedia(
@@ -131,7 +131,7 @@ export class MediaController {
   ): Promise<MultipleMediaUploadResponseDto> {
     if (!files || files.length === 0) {
       throw new BadRequestException(
-        'Vui lòng chọn ít nhất một file hình ảnh để tải lên (field name "files" hoặc "images").',
+        'Please select at least one image file to upload (field name "files" or "images").',
       );
     }
 
@@ -141,13 +141,13 @@ export class MediaController {
   @Post('upload-review')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[MEDIA] Upload hình ảnh hoặc video feedback cho đánh giá sản phẩm',
+    summary: '[MEDIA] Upload image or video attachments for product reviews',
     description:
-      'Hỗ trợ upload 1 hoặc nhiều file ảnh (PNG, JPG, WEBP tối đa 5MB/file) và video (MP4, MOV tối đa 50MB/file) qua multipart/form-data để đính kèm vào Review.',
+      'Supports uploading one or more images (PNG, JPG, WEBP up to 5MB each) and videos (MP4, MOV up to 50MB each) via multipart/form-data.',
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
-    description: 'Danh sách file ảnh/video feedback đánh giá sản phẩm',
+    description: 'Review image or video attachments',
     schema: {
       type: 'object',
       properties: {
@@ -157,13 +157,13 @@ export class MediaController {
             type: 'string',
             format: 'binary',
           },
-          description: 'Danh sách ảnh/video review (tối đa 50MB/file)',
+          description: 'Review image or video files (up to 50MB each)',
         },
       },
     },
   })
   @ApiOkResponse({
-    description: 'Upload media đánh giá thành công',
+    description: 'Review media uploaded successfully',
     standardSchema: MultipleMediaUploadResponseSchema,
   })
   @UseInterceptors(AnyFilesInterceptor({ limits: { fileSize: 55 * 1024 * 1024, files: 10 } }))
@@ -172,7 +172,7 @@ export class MediaController {
     @Req() req?: Request,
   ): Promise<MultipleMediaUploadResponseDto> {
     if (!files || files.length === 0) {
-      throw new BadRequestException('Vui lòng chọn ít nhất một file ảnh hoặc video để tải lên.');
+      throw new BadRequestException('Please select at least one image or video file to upload.');
     }
 
     return this.mediaService.uploadMultipleMedia(files, req, { strictReviewPolicy: true });

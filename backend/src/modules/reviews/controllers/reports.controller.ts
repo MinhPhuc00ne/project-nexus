@@ -24,7 +24,7 @@ export class ReportsController {
   @Get('commerce/reports/my')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @ApiOperation({ summary: 'Theo dõi trạng thái báo cáo của chính mình' })
+  @ApiOperation({ summary: 'Track status of my submitted violation reports' })
   mine(
     @CurrentUser('id') userId: string,
     @ZodQuery(QueryReportsSchema) query: QueryReportsInput,

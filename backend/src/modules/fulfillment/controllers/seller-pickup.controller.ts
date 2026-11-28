@@ -25,15 +25,15 @@ export class SellerPickupController {
   constructor(private readonly points: SellerPickupService) {}
 
   @Get()
-  @ApiOperation({ summary: '[SELLER] Đồng bộ điểm lấy hàng GHN từ hồ sơ gian hàng' })
+  @ApiOperation({ summary: '[SELLER] Sync GHN pickup point from shop profile' })
   mine(@CurrentUser('id') sellerId: string): ReturnType<SellerPickupService['mine']> {
     return this.points.mine(sellerId);
   }
 
   @Put()
   @ApiOperation({
-    summary: '[SELLER] Kết nối lại GHN bằng địa chỉ hồ sơ gian hàng',
-    description: 'Địa chỉ gửi lên phải khớp hồ sơ gian hàng. Thay đổi địa chỉ tại shop-profile.',
+    summary: '[SELLER] Reconnect GHN using shop profile address',
+    description: 'Submitted address must match shop profile. Update address under shop-profile.',
   })
   propose(
     @CurrentUser('id') sellerId: string,
@@ -55,21 +55,21 @@ export class AdminPickupController {
   ) {}
 
   @Get('pickup-points')
-  @ApiOperation({ summary: '[ADMIN] Xem điểm lấy hàng đang chờ xác minh' })
+  @ApiOperation({ summary: '[ADMIN] List pickup points pending verification' })
   pending(): ReturnType<SellerPickupService['pending']> {
     return this.points.pending();
   }
 
   @Get('ghn-shops')
   @ApiOperation({
-    summary: '[ADMIN] Danh sách điểm GHN thuộc tài khoản sàn, dùng last_offset để phân trang',
+    summary: '[ADMIN] List GHN shops on the platform account using last_offset pagination',
   })
   list(@ZodQuery(GhnShopPageSchema) page: GhnShopPageInput): ReturnType<GhnShopApiService['list']> {
     return this.shops.list(page.offset, page.limit);
   }
 
   @Post('pickup-points/:id/verify')
-  @ApiOperation({ summary: '[ADMIN] Xác minh và gắn điểm lấy hàng với shop GHN thực tế' })
+  @ApiOperation({ summary: '[ADMIN] Verify and bind a pickup point to a real GHN shop' })
   verify(
     @ZodParam('id', UuidParamSchema) id: string,
     @ZodBody(VerifySellerPickupSchema) dto: VerifySellerPickupInput,

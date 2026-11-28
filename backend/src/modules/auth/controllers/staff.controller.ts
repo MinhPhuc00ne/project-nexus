@@ -59,9 +59,9 @@ export class StaffController {
 
   @ApiOperation({
     deprecated: true,
-    summary: '[LEGACY] Tra cứu token kích hoạt đã ngừng hỗ trợ (410)',
+    summary: '[LEGACY] Deprecated activation token lookup (410)',
     description:
-      'Staff nhận tài khoản và mật khẩu ngẫu nhiên qua email, đăng nhập ngay; dùng Quên mật khẩu để đặt lại.',
+      'Staff accounts receive credentials via email and sign in directly; use Forgot Password to reset.',
   })
   @Public()
   @Get('invitation-info')
@@ -69,27 +69,27 @@ export class StaffController {
     @ZodQuery(StaffInvitationQuerySchema) _query: StaffInvitationQuery,
   ): Promise<never> {
     throw new GoneException(
-      'Staff được cấp tài khoản và mật khẩu qua email. Vui lòng đăng nhập hoặc dùng Quên mật khẩu.',
+      'Staff credentials are issued via email. Please sign in or use Forgot Password.',
     );
   }
 
   @ApiOperation({
     deprecated: true,
-    summary: '[LEGACY] Kích hoạt bằng token đã ngừng hỗ trợ (410)',
+    summary: '[LEGACY] Deprecated token-based staff activation (410)',
     description:
-      'Tài khoản Staff được tạo và kích hoạt khi Admin gửi lời mời. Endpoint này không thể tạo tài khoản hoặc thay mật khẩu.',
+      'Staff accounts are created and activated when an Admin sends an invitation. This endpoint no longer creates accounts or updates passwords.',
   })
   @Public()
   @Post('activate')
   @HttpCode(HttpStatus.OK)
   async activateStaff(@ZodBody(ActivateStaffSchema) _dto: ActivateStaffInput): Promise<never> {
     throw new GoneException(
-      'Luồng kích hoạt bằng token đã ngừng. Vui lòng dùng tài khoản được cấp hoặc Quên mật khẩu.',
+      'Token-based activation has been retired. Use your issued credentials or Forgot Password.',
     );
   }
 
   @ApiOperation({
-    summary: '[STAFF] PROFILE.VIEW - Xem thông tin hồ sơ của Staff',
+    summary: '[STAFF] PROFILE.VIEW - View Staff profile',
   })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -104,7 +104,7 @@ export class StaffController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SUPPORT_STAFF)
-  @ApiOperation({ summary: 'Staff cập nhật họ tên, số điện thoại và avatar của chính mình' })
+  @ApiOperation({ summary: 'Update own full name, phone number, and avatar (Staff)' })
   updateStaffProfile(
     @CurrentUser('id') userId: string,
     @ZodBody(UpdateStaffProfileSchema) dto: UpdateStaffProfileInput,
@@ -113,10 +113,9 @@ export class StaffController {
   }
 
   @ApiOperation({
-    summary:
-      '[STAFF] PROFILE.RESET_PASSWORD (Bước 1) - Quên mật khẩu Staff: Gửi OTP 6 số về email cá nhân',
+    summary: '[STAFF] PROFILE.RESET_PASSWORD (Step 1) - Send 6-digit OTP to personal email',
     description:
-      'Staff nhập tài khoản được cấp dạng HuyNQ@staff.com. OTP gửi về email cá nhân; dùng chung luồng Quên mật khẩu của hệ thống.',
+      'Accepts the issued @staff.com account and sends a password-reset OTP to the staff personal email.',
   })
   @Public()
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
@@ -130,10 +129,9 @@ export class StaffController {
   }
 
   @ApiOperation({
-    summary:
-      '[STAFF] PROFILE.RESET_PASSWORD (Bước 2) - Xác nhận OTP và đặt lại mật khẩu mới cho Staff',
+    summary: '[STAFF] PROFILE.RESET_PASSWORD (Step 2) - Verify OTP and set new Staff password',
     description:
-      'Staff nhập tài khoản @staff.com, OTP nhận ở email cá nhân và mật khẩu mới. Dùng chung xử lý với reset-password thông thường.',
+      'Accepts the @staff.com account, personal email OTP, and new password using the standard password-reset flow.',
   })
   @Public()
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
@@ -151,8 +149,8 @@ export class StaffController {
   }
 
   @ApiOperation({
-    summary: '[STAFF] PROFILE.CHANGE_PASSWORD - Đổi mật khẩu trực tiếp cho Staff khi đã đăng nhập',
-    description: 'Staff nhập mật khẩu hiện tại và mật khẩu mới để đổi mật khẩu bảo mật.',
+    summary: '[STAFF] PROFILE.CHANGE_PASSWORD - Change password while signed in (Staff)',
+    description: 'Requires current password and new password.',
   })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)

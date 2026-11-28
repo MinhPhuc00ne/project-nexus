@@ -28,7 +28,7 @@ export class SellerOrdersController {
   ) {}
 
   @Get(':id/ghn-label')
-  @ApiOperation({ summary: '[SELLER] Lấy liên kết in phiếu chính thức GHN (A5, 80x80, 52x70)' })
+  @ApiOperation({ summary: '[SELLER] Get official GHN shipping label URL (A5, 80x80, 52x70)' })
   ghnLabel(
     @CurrentUser('id') sellerId: string,
     @ZodParam('id', UuidParamSchema) id: string,
@@ -39,7 +39,7 @@ export class SellerOrdersController {
   @Post(':id/shipping-quote')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[SELLER] Xem phí GHN cho kiện đóng gói thực tế và khoản chênh lệch seller chịu',
+    summary: '[SELLER] Preview GHN fee for actual package dimensions and seller fee delta',
   })
   shippingQuote(
     @CurrentUser('id') sellerId: string,
@@ -52,7 +52,7 @@ export class SellerOrdersController {
   @Post(':id/reconcile-ghn')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[SELLER] Đối soát yêu cầu tạo vận đơn bị gián đoạn, không tạo lại vận đơn',
+    summary: '[SELLER] Reconcile an interrupted GHN waybill request without recreating it',
   })
   async reconcile(
     @CurrentUser('id') sellerId: string,
@@ -65,11 +65,11 @@ export class SellerOrdersController {
   @Get()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[SELLER] Lấy danh sách đơn bán của người bán kèm phân trang và bộ đếm trạng thái',
+    summary: '[SELLER] List seller orders with pagination and status counters',
     description:
-      'Hỗ trợ lọc theo trạng thái đơn hàng (PAID, PREPARING, SHIPPING, DELIVERED, CONFIRMED, CANCELLED, REFUNDED), tìm kiếm theo mã đơn hoặc tên/SĐT khách hàng, đồng thời trả về counters số lượng đơn theo từng trạng thái.',
+      'Supports filtering by status (PAID, PREPARING, SHIPPING, DELIVERED, CONFIRMED, CANCELLED, REFUNDED), searching by order code or customer name/phone, and returns per-status counters.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách đơn bán thành công' })
+  @ApiResponse({ status: 200, description: 'Seller orders retrieved successfully' })
   async listOrders(
     @CurrentUser('id') sellerId: string,
     @ZodQuery(QuerySellerOrdersSchema) query: QuerySellerOrdersInput,
@@ -80,13 +80,13 @@ export class SellerOrdersController {
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[SELLER] Xem chi tiết thông tin 1 đơn bán',
+    summary: '[SELLER] Get seller order details',
     description:
-      'Trả về thông tin chi tiết sản phẩm, khối lượng, thông tin người mua, địa chỉ nhận hàng, trạng thái thanh toán và thông tin vận chuyển GHN.',
+      'Returns item details, weight, buyer information, shipping address, payment status, and GHN tracking details.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy chi tiết đơn hàng thành công' })
-  @ApiResponse({ status: 403, description: 'Không có quyền truy cập đơn hàng này' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy đơn hàng' })
+  @ApiResponse({ status: 200, description: 'Order details retrieved successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden to access this order' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
   async getOrderDetail(
     @CurrentUser('id') sellerId: string,
     @ZodParam('id', UuidParamSchema) orderId: string,
@@ -97,12 +97,12 @@ export class SellerOrdersController {
   @Post(':id/confirm')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[SELLER] Xác nhận đơn hàng (Chuyển trạng thái PAID -> PREPARING)',
+    summary: '[SELLER] Confirm an order (PAID -> PREPARING)',
     description:
-      'Người bán xác nhận đã tiếp nhận đơn và đang chuẩn bị đóng gói hàng hóa, đồng thời gửi thông báo trạng thái tới người mua.',
+      'Marks the order as accepted for packaging and sends a status notification to the buyer.',
   })
-  @ApiResponse({ status: 200, description: 'Xác nhận đơn hàng thành công' })
-  @ApiResponse({ status: 400, description: 'Đơn hàng không ở trạng thái hợp lệ để xác nhận' })
+  @ApiResponse({ status: 200, description: 'Order confirmed successfully' })
+  @ApiResponse({ status: 400, description: 'Order is not in a confirmable status' })
   async confirmOrder(
     @CurrentUser('id') sellerId: string,
     @ZodParam('id', UuidParamSchema) orderId: string,
@@ -113,12 +113,12 @@ export class SellerOrdersController {
   @Post(':id/dispatch-ghn')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[SELLER] Tạo vận đơn GHN, chờ hãng xác nhận lấy hàng',
+    summary: '[SELLER] Create a GHN waybill and await carrier pickup',
     description:
-      'Lưu yêu cầu chống gửi trùng, tạo mã vận đơn thật. Đơn giữ PREPARING và shipment CREATED; chỉ chuyển SHIPPING khi đồng bộ GHN xác nhận đã lấy hàng. Kết quả không rõ phải đối soát, không gửi tạo lại.',
+      'Records an idempotent dispatch request and creates the waybill. Order stays PREPARING with shipment CREATED until GHN confirms pickup. Ambiguous failures must be reconciled rather than retried.',
   })
-  @ApiResponse({ status: 200, description: 'Bàn giao vận đơn GHN thành công' })
-  @ApiResponse({ status: 400, description: 'Đơn hàng chưa ở trạng thái chuẩn bị hàng' })
+  @ApiResponse({ status: 200, description: 'GHN waybill created successfully' })
+  @ApiResponse({ status: 400, description: 'Order is not in PREPARING status' })
   async dispatchGhn(
     @CurrentUser('id') sellerId: string,
     @ZodParam('id', UuidParamSchema) orderId: string,
@@ -130,11 +130,11 @@ export class SellerOrdersController {
   @Get(':id/print-waybill')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[SELLER] In phiếu giao hàng / Vận đơn GHN (Print Waybill)',
+    summary: '[SELLER] Get printable GHN waybill data',
     description:
-      'Lấy dữ liệu phiếu gửi hàng chuẩn hóa (thông tin người gửi, người nhận, danh sách kiện hàng, barcode GHN) để người bán in dán lên bưu kiện.',
+      'Returns standardized sender, recipient, parcel item list, and GHN barcode data for printing.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy dữ liệu in vận đơn thành công' })
+  @ApiResponse({ status: 200, description: 'Waybill data retrieved successfully' })
   async printWaybill(
     @CurrentUser('id') sellerId: string,
     @ZodParam('id', UuidParamSchema) orderId: string,

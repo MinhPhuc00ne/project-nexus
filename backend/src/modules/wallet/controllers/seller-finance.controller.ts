@@ -24,11 +24,11 @@ export class SellerFinanceController {
   @Get('revenue')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[SELLER] Báo cáo doanh thu, số dư ví và chi tiết tài chính của Shop',
+    summary: '[SELLER] Get shop revenue overview, wallet balance, and financial breakdown',
     description:
-      'Tổng hợp số dư ví khả dụng, số tiền tạm giữ, tổng doanh số bán hàng, phí sàn ước tính và phân bổ doanh thu theo tháng.',
+      'Aggregates available balance, held funds, total sales, estimated platform fees, and monthly revenue breakdown.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy báo cáo doanh thu thành công' })
+  @ApiResponse({ status: 200, description: 'Revenue overview retrieved successfully' })
   async getRevenueOverview(@CurrentUser('id') sellerId: string) {
     return this.sellerFinanceService.getRevenueOverview(sellerId);
   }
@@ -36,12 +36,12 @@ export class SellerFinanceController {
   @Post('withdraw')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
-    summary: '[SELLER] Tạo yêu cầu rút tiền từ số dư ví về tài khoản ngân hàng',
+    summary: '[SELLER] Create a withdrawal request from wallet balance to bank account',
     description:
-      'Kiểm tra số dư khả dụng, khóa tạm thời số tiền rút trong ví và gửi yêu cầu đến Quản trị viên duyệt chuyển khoản.',
+      'Validates available balance, freezes the requested amount in the wallet, and submits a payout request for Admin approval.',
   })
-  @ApiResponse({ status: 201, description: 'Tạo yêu cầu rút tiền thành công' })
-  @ApiResponse({ status: 400, description: 'Số dư không đủ hoặc số tiền rút không hợp lệ' })
+  @ApiResponse({ status: 201, description: 'Withdrawal request created successfully' })
+  @ApiResponse({ status: 400, description: 'Insufficient balance or invalid withdrawal amount' })
   async createWithdrawal(
     @CurrentUser('id') sellerId: string,
     @ZodBody(CreateWithdrawalSchema) dto: CreateWithdrawalInput,
@@ -52,11 +52,11 @@ export class SellerFinanceController {
   @Get('transactions')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[SELLER] Xem lịch sử giao dịch tài chính / biến động số dư ví của Shop',
+    summary: '[SELLER] List shop wallet transaction history',
     description:
-      'Hỗ trợ phân trang và lọc theo loại giao dịch (DEPOSIT, WITHDRAW, ESCROW_PAYOUT...) và trạng thái (PENDING, SUCCESS, FAILED).',
+      'Supports pagination and filtering by transaction type (DEPOSIT, WITHDRAW, ESCROW_PAYOUT) and status (PENDING, SUCCESS, FAILED).',
   })
-  @ApiResponse({ status: 200, description: 'Lấy lịch sử giao dịch thành công' })
+  @ApiResponse({ status: 200, description: 'Transaction history retrieved successfully' })
   async getTransactions(
     @CurrentUser('id') sellerId: string,
     @ZodQuery(QueryFinanceSchema) query: QueryFinanceInput,
@@ -67,9 +67,9 @@ export class SellerFinanceController {
   @Get('withdrawals')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[SELLER] Xem danh sách các yêu cầu rút tiền đã tạo và tiến độ duyệt',
+    summary: '[SELLER] List submitted withdrawal requests and approval status',
   })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách yêu cầu rút tiền thành công' })
+  @ApiResponse({ status: 200, description: 'Withdrawal requests retrieved successfully' })
   async getWithdrawals(
     @CurrentUser('id') sellerId: string,
     @ZodQuery(StandardPaginationQuerySchema) query: StandardPaginationQuery,

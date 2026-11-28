@@ -20,7 +20,7 @@ export class OrderController {
   @HttpCode(HttpStatus.OK)
   @RequirePrivilege('CHECKOUT.START')
   @ApiOperation({
-    summary: '[BUYER] Báo giá giỏ hàng theo từng shop, chưa tạo đơn hoặc thanh toán',
+    summary: '[BUYER] Quote cart by shop without creating orders or charging payment',
   })
   quoteCheckout(@CurrentUser('id') userId: string, @ZodBody(CheckoutSchema) dto: CheckoutInput) {
     return this.orderService.checkout(userId, dto, undefined, true);
@@ -30,17 +30,17 @@ export class OrderController {
   @HttpCode(HttpStatus.CREATED)
   @RequirePrivilege('CHECKOUT.START')
   @ApiOperation({
-    summary: '[BUYER] Đặt hàng từ giỏ hàng hiện tại (Checkout)',
+    summary: '[BUYER] Place orders from the current cart (Checkout)',
     description:
-      'Tạo đơn hàng từ giỏ hàng kèm kiểm tra tồn kho, giá cập nhật và chặn tự mua hàng của chính mình (Anti-Self-Purchase). Nếu chọn PayOS, hệ thống có thể tạo sẵn link thanh toán.',
+      'Creates orders from the cart with stock validation, price revalidation, and anti-self-purchase enforcement. Generates PayOS payment link when selected.',
   })
   @ApiHeader({
     name: 'idempotency-key',
     required: false,
-    description: 'Khóa chống trùng lặp request khi bấm nhiều lần (UUID)',
+    description: 'Idempotency UUID key to prevent duplicate submissions',
   })
-  @ApiResponse({ status: 201, description: 'Đặt hàng thành công' })
-  @ApiResponse({ status: 400, description: 'Giỏ hàng trống hoặc vi phạm quy tắc đơn hàng' })
+  @ApiResponse({ status: 201, description: 'Orders created successfully' })
+  @ApiResponse({ status: 400, description: 'Empty cart or order validation failure' })
   async checkout(
     @CurrentUser('id') userId: string,
     @ZodBody(CheckoutSchema) dto: CheckoutInput,
@@ -53,16 +53,16 @@ export class OrderController {
   @HttpCode(HttpStatus.OK)
   @RequirePrivilege('CHECKOUT.START')
   @ApiOperation({
-    summary: '[BUYER] Thanh toán đơn hàng (PayOS VietQR hoặc Ví NEXUS Pay)',
+    summary: '[BUYER] Pay an order (PayOS VietQR or NEXUS Pay Wallet)',
     description:
-      'PAYOS tạo liên kết VietQR; WALLET trừ số dư người mua. Khi thanh toán thành công, tiền được giữ ký quỹ HELD; chỉ giải ngân sau xác nhận nhận hàng hoặc phân xử khiếu nại.',
+      'PAYOS creates a VietQR payment link; WALLET deducts buyer balance. Funds are held in escrow (HELD) until delivery confirmation or dispute resolution.',
   })
-  @ApiResponse({ status: 200, description: 'Khởi tạo hoặc thanh toán đơn hàng thành công' })
+  @ApiResponse({ status: 200, description: 'Payment initialized or completed successfully' })
   @ApiResponse({
     status: 400,
-    description: 'Số dư ví không đủ hoặc trạng thái đơn hàng không hợp lệ',
+    description: 'Insufficient wallet balance or invalid order status',
   })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy đơn hàng' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
   async payOrder(
     @ZodParam('id', UuidParamSchema) orderId: string,
     @CurrentUser('id') userId: string,
@@ -75,12 +75,12 @@ export class OrderController {
   @HttpCode(HttpStatus.OK)
   @RequirePrivilege('CHECKOUT.START')
   @ApiOperation({
-    summary: '[BUYER] Kiểm tra và tự động đồng bộ trạng thái thanh toán PayOS',
+    summary: '[BUYER] Check and synchronize PayOS payment status',
     description:
-      'Chủ động kiểm tra trạng thái đơn hàng từ cơ sở dữ liệu và truy vấn trực tiếp cổng PayOS nếu đang ở trạng thái chờ thanh toán.',
+      'Reads order status from the database and queries PayOS directly when payment is pending.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy trạng thái thanh toán thành công' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy đơn hàng' })
+  @ApiResponse({ status: 200, description: 'Payment status retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
   async getPaymentStatus(
     @ZodParam('id', UuidParamSchema) orderId: string,
     @CurrentUser('id') userId: string,
@@ -92,10 +92,10 @@ export class OrderController {
   @HttpCode(HttpStatus.OK)
   @RequirePrivilege('CHECKOUT.START')
   @ApiOperation({
-    summary: '[BUYER] Xem danh sách đơn hàng đã đặt của người dùng',
-    description: 'Trả về danh sách đơn hàng kèm chi tiết sản phẩm và trạng thái thanh toán.',
+    summary: '[BUYER] List placed orders for the authenticated user',
+    description: 'Returns orders with item details and payment status.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách đơn hàng thành công' })
+  @ApiResponse({ status: 200, description: 'Orders retrieved successfully' })
   async getUserOrders(@CurrentUser('id') userId: string) {
     return this.orderService.getUserOrders(userId);
   }
@@ -104,11 +104,11 @@ export class OrderController {
   @HttpCode(HttpStatus.OK)
   @RequirePrivilege('CHECKOUT.START')
   @ApiOperation({
-    summary: '[BUYER / SELLER] Xem chi tiết một đơn hàng cụ thể',
-    description: 'Xem chi tiết đơn hàng, lịch sử thanh toán và trạng thái giao hàng.',
+    summary: '[BUYER / SELLER] Get order details by ID',
+    description: 'Returns order details, payment history, and shipment status.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy chi tiết đơn hàng thành công' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy đơn hàng' })
+  @ApiResponse({ status: 200, description: 'Order details retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
   async getOrderDetail(
     @ZodParam('id', UuidParamSchema) orderId: string,
     @CurrentUser('id') userId: string,

@@ -57,7 +57,7 @@ export class AfterSalesController {
   }
 
   @Get('disputes')
-  @ApiOperation({ summary: 'Danh sách khiếu nại thật của người mua' })
+  @ApiOperation({ summary: 'List the authenticated buyer disputes' })
   disputes(
     @CurrentUser('id') buyerId: string,
   ): Promise<Prisma.DisputeGetPayload<{ include: { order: true } }>[]> {
@@ -75,7 +75,7 @@ export class AfterSalesController {
   @Post('orders/:id/cancel')
   @HttpCode(200)
   @ApiOperation({
-    summary: 'Hủy trước khi GHN lấy hàng; buyer cần Admin duyệt nếu seller đã xác nhận',
+    summary: 'Cancel before GHN pickup; buyer requires Admin approval if seller already confirmed',
   })
   cancel(
     @ZodParam('id', UuidParamSchema) id: string,
@@ -87,7 +87,7 @@ export class AfterSalesController {
 
   @Post('orders/:id/cancel/review')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Admin duyệt hoặc từ chối yêu cầu hủy của người mua' })
+  @ApiOperation({ summary: 'Approve or reject a buyer cancellation request (Admin)' })
   reviewCancellation(
     @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() actor: AuthenticatedUserPayload,
@@ -98,7 +98,7 @@ export class AfterSalesController {
 
   @Post('orders/:id/returns')
   @ApiOperation({
-    summary: 'Yêu cầu trả toàn bộ đơn, trong 3 ngày sau giao hàng theo chính sách sàn',
+    summary: 'Request a full-order return within 3 days of delivery per platform policy',
   })
   request(
     @ZodParam('id', UuidParamSchema) id: string,
@@ -141,7 +141,8 @@ export class AfterSalesController {
   @Post('refunds/:id/complete')
   @HttpCode(200)
   @ApiOperation({
-    summary: 'Admin xác nhận đã chuyển khoản hoàn tiền về nguồn, kèm mã đối soát duy nhất',
+    summary:
+      'Confirm refund bank transfer to source with a unique reconciliation reference (Admin)',
   })
   complete(
     @ZodParam('id', UuidParamSchema) id: string,

@@ -56,9 +56,9 @@ export class AuthController {
 
   @Post('login')
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
-  @ApiOperation({ summary: 'Đăng nhập vào hệ thống' })
-  @ApiResponse({ status: 200, description: 'Đăng nhập thành công' })
-  @ApiResponse({ status: 401, description: 'Email hoặc mật khẩu không chính xác' })
+  @ApiOperation({ summary: 'Sign in with email and password' })
+  @ApiResponse({ status: 200, description: 'Signed in successfully' })
+  @ApiResponse({ status: 401, description: 'Invalid email or password' })
   async login(@ZodBody(LoginSchema) loginDto: LoginInput) {
     return this.authService.login(loginDto);
   }
@@ -66,8 +66,8 @@ export class AuthController {
   @Get('google')
   @UseGuards(AuthGuard('google'))
   @ApiOperation({
-    summary: 'Đăng nhập bằng Google',
-    description: 'LƯU Ý: Vui lòng mở link trực tiếp trên trình duyệt, không bấm Execute.',
+    summary: 'Sign in with Google OAuth',
+    description: 'Open this URL directly in a browser rather than executing from Swagger UI.',
   })
   async googleAuth(): Promise<void> {}
 
@@ -99,20 +99,20 @@ export class AuthController {
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Đổi mã OAuth một lần sang phiên đăng nhập',
+    summary: 'Exchange a one-time OAuth code for session tokens',
     description:
-      'Nhận mã opaque từ redirect của Google callback và trả về access token, refresh token cùng thông tin tài khoản. Mã chỉ dùng được một lần, hết hạn sau 60 giây.',
+      'Accepts the opaque code from the Google callback redirect and returns access token, refresh token, and account details. Single-use, expires after 60 seconds.',
   })
-  @ApiResponse({ status: 200, description: 'Đổi mã thành công' })
-  @ApiResponse({ status: 401, description: 'Mã không hợp lệ, đã dùng hoặc đã hết hạn' })
+  @ApiResponse({ status: 200, description: 'Code exchanged successfully' })
+  @ApiResponse({ status: 401, description: 'Invalid, already-used, or expired code' })
   async exchangeOAuthCode(@ZodBody(ExchangeOAuthCodeSchema) dto: ExchangeOAuthCodeInput) {
     return this.oauthCodes.redeem(dto.code);
   }
 
   @Post('register')
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
-  @ApiOperation({ summary: 'Đăng ký tài khoản mới & gửi mã OTP về email' })
-  @ApiResponse({ status: 201, description: 'Đăng ký thành công, vui lòng check mail' })
+  @ApiOperation({ summary: 'Register a new account and send an email OTP code' })
+  @ApiResponse({ status: 201, description: 'Registration succeeded; check email for OTP' })
   async register(
     @ZodBody(RegisterSchema) dto: RegisterInput,
   ): Promise<{ message: string; email: string }> {
@@ -121,8 +121,8 @@ export class AuthController {
 
   @Post('verify-email')
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
-  @ApiOperation({ summary: 'Xác thực tài khoản bằng mã OTP nhận từ email' })
-  @ApiResponse({ status: 200, description: 'Xác thực thành công' })
+  @ApiOperation({ summary: 'Verify account email using the OTP code' })
+  @ApiResponse({ status: 200, description: 'Email verified successfully' })
   async verifyEmail(@ZodBody(VerifyEmailSchema) dto: VerifyEmailInput) {
     return this.authService.verifyEmail(dto);
   }
@@ -130,9 +130,9 @@ export class AuthController {
   @Post('forgot-password')
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Quên mật khẩu - gửi mã OTP đặt lại mật khẩu về Gmail' })
-  @ApiResponse({ status: 200, description: 'Đã gửi mã OTP về email' })
-  @ApiResponse({ status: 400, description: 'Email không tồn tại hoặc tài khoản chưa xác thực' })
+  @ApiOperation({ summary: 'Request a password-reset OTP code via email' })
+  @ApiResponse({ status: 200, description: 'OTP sent to email' })
+  @ApiResponse({ status: 400, description: 'Email not found or account not verified' })
   async forgotPassword(
     @ZodBody(ForgotPasswordSchema) dto: ForgotPasswordInput,
   ): Promise<{ message: string; email: string }> {
@@ -142,9 +142,9 @@ export class AuthController {
   @Post('reset-password')
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Đặt lại mật khẩu bằng mã OTP nhận từ email' })
-  @ApiResponse({ status: 200, description: 'Đặt lại mật khẩu thành công' })
-  @ApiResponse({ status: 400, description: 'Mã OTP không chính xác hoặc đã hết hạn' })
+  @ApiOperation({ summary: 'Reset password using the email OTP code' })
+  @ApiResponse({ status: 200, description: 'Password reset successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired OTP code' })
   async resetPassword(
     @ZodBody(ResetPasswordSchema) dto: ResetPasswordInput,
   ): Promise<{ message: string }> {
@@ -154,17 +154,17 @@ export class AuthController {
   @Post('refresh')
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Làm mới Access Token bằng Refresh Token' })
-  @ApiResponse({ status: 200, description: 'Làm mới token thành công' })
-  @ApiResponse({ status: 401, description: 'Refresh token không hợp lệ hoặc đã hết hạn' })
+  @ApiOperation({ summary: 'Refresh access token using a refresh token' })
+  @ApiResponse({ status: 200, description: 'Token refreshed successfully' })
+  @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
   async refreshToken(@ZodBody(RefreshTokenSchema) dto: RefreshTokenInput) {
     return this.authService.refreshToken(dto);
   }
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Đăng xuất và thu hồi Refresh Token' })
-  @ApiResponse({ status: 200, description: 'Đăng xuất thành công' })
+  @ApiOperation({ summary: 'Sign out and revoke the refresh token' })
+  @ApiResponse({ status: 200, description: 'Signed out successfully' })
   async logout(@ZodBody(RefreshTokenSchema) dto: RefreshTokenInput): Promise<{ message: string }> {
     return this.authService.logout(dto);
   }
@@ -174,11 +174,11 @@ export class AuthController {
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'PROFILE.VIEW - Xem thông tin hồ sơ của tài khoản đang đăng nhập',
-    description: 'Bóc tách userId từ Token qua JwtAuthGuard và trả về thông tin chi tiết.',
+    summary: 'PROFILE.VIEW - Get the authenticated user profile',
+    description: 'Extracts userId from the JWT via JwtAuthGuard and returns profile details.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy thông tin tài khoản thành công' })
-  @ApiResponse({ status: 401, description: 'Chưa đăng nhập hoặc token không hợp lệ' })
+  @ApiResponse({ status: 200, description: 'Profile retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthenticated or invalid token' })
   async getProfile(@CurrentUser('id') userId: string): Promise<UserProfileResponse> {
     return this.authProfileService.getProfile(userId);
   }
@@ -190,13 +190,13 @@ export class AuthController {
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'PROFILE.UPDATE - Cập nhật thông tin cá nhân (Họ tên, SĐT, Avatar)',
+    summary: 'PROFILE.UPDATE - Update personal profile (full name, phone number, avatar)',
     description:
-      'Buyer cập nhật thông thường; Seller cần đăng nhập bằng mật khẩu trong 5 phút gần đây, mật khẩu hiện tại hoặc token reauthenticate hợp lệ.',
+      'Buyers update directly; sellers require a password sign-in within the last 5 minutes, current password, or a valid reauthentication token.',
   })
-  @ApiResponse({ status: 200, description: 'Cập nhật hồ sơ thành công' })
-  @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ' })
-  @ApiResponse({ status: 401, description: 'Chưa đăng nhập' })
+  @ApiResponse({ status: 200, description: 'Profile updated successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  @ApiResponse({ status: 401, description: 'Unauthenticated' })
   async updateProfile(
     @CurrentUser('id') userId: string,
     @ZodBody(UpdateAuthProfileSchema) dto: UpdateAuthProfileInput,
@@ -209,7 +209,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.BUYER, Role.SELLER)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Xác minh lại mật khẩu, cấp token cập nhật hồ sơ trong 5 phút' })
+  @ApiOperation({ summary: 'Re-verify password and issue a 5-minute profile update token' })
   @HttpCode(HttpStatus.OK)
   reauthenticate(
     @CurrentUser('id') userId: string,
@@ -223,12 +223,11 @@ export class AuthController {
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'PROFILE.CHANGE_PASSWORD (Bước 1) - Gửi mã OTP xác nhận đổi mật khẩu về Gmail',
-    description:
-      'Tạo mã OTP ngẫu nhiên 6 số (hạn 15 phút) gửi về hòm thư Gmail hiện tại của người dùng.',
+    summary: 'PROFILE.CHANGE_PASSWORD (Step 1) - Send password-change OTP to email',
+    description: 'Generates a 6-digit OTP (15-minute TTL) and sends it to the user email address.',
   })
-  @ApiResponse({ status: 200, description: 'Đã gửi mã OTP về Gmail thành công' })
-  @ApiResponse({ status: 401, description: 'Chưa đăng nhập' })
+  @ApiResponse({ status: 200, description: 'OTP sent to email successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthenticated' })
   async requestChangePasswordOtp(
     @CurrentUser('id') userId: string,
   ): Promise<{ success: boolean; message: string }> {
@@ -241,13 +240,13 @@ export class AuthController {
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'PROFILE.CHANGE_PASSWORD (Bước 2) - Xác nhận OTP và cập nhật mật khẩu mới',
+    summary: 'PROFILE.CHANGE_PASSWORD (Step 2) - Verify OTP and update password',
     description:
-      'Xác thực OTP, cập nhật mật khẩu mới và thu hồi toàn bộ phiên đăng nhập cũ để bảo mật tài khoản.',
+      'Verifies the OTP, updates the password, and revokes all existing sessions for security.',
   })
-  @ApiResponse({ status: 200, description: 'Đổi mật khẩu thành công' })
-  @ApiResponse({ status: 400, description: 'Mã OTP không đúng hoặc đã hết hạn' })
-  @ApiResponse({ status: 401, description: 'Chưa đăng nhập' })
+  @ApiResponse({ status: 200, description: 'Password changed successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired OTP code' })
+  @ApiResponse({ status: 401, description: 'Unauthenticated' })
   async confirmChangePasswordWithOtp(
     @CurrentUser('id') userId: string,
     @ZodBody(ConfirmChangePasswordOtpSchema) dto: ConfirmChangePasswordOtpInput,
