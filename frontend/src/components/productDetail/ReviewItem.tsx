@@ -2,10 +2,22 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Star } from 'lucide-react';
 import { getIntlLocale } from '../../i18n/config';
+import { useAuth } from '../../contexts/AuthContext';
 import type { ProductReviewItem } from '@/features/reviews/services/reviews.service';
+import ReviewMediaAndReplies from '../reviews/ReviewMediaAndReplies';
 
-export const ReviewItem: React.FC<{ rev: ProductReviewItem }> = ({ rev }) => {
+export const ReviewItem: React.FC<{ rev: ProductReviewItem; sellerId?: string }> = ({
+  rev,
+  sellerId,
+}) => {
   const { t, i18n } = useTranslation('guest');
+  const { user } = useAuth();
+  const formatDate = (value: string): string =>
+    new Date(value).toLocaleDateString(getIntlLocale(i18n.language));
+  const canReply = Boolean(
+    user?.id && (user.id === rev.reviewer?.id || (sellerId && user.id === sellerId)),
+  );
+
   return (
     <div className="py-4 space-y-2.5">
       <div className="flex items-center justify-between">
@@ -48,6 +60,17 @@ export const ReviewItem: React.FC<{ rev: ProductReviewItem }> = ({ rev }) => {
       </div>
 
       <p className="text-xs text-slate-700 leading-relaxed pl-10.5">{rev.comment}</p>
+      <div className="pl-10.5">
+        <ReviewMediaAndReplies
+          reviewId={rev.id}
+          kind="product"
+          media={rev.media}
+          mediaUrls={rev.mediaUrls}
+          sellerReply={rev.sellerReply}
+          canReply={canReply}
+          formatDate={formatDate}
+        />
+      </div>
     </div>
   );
 };

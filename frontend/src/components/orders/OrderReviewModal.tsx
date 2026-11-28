@@ -12,6 +12,7 @@ import {
 import { getBuyerOrdersApi, type BuyerOrder } from '@/features/orders/services/orders';
 import { getStoredUser } from '@/features/auth/services/auth';
 import { canBuyerReviewShop, getBuyerReviewEligibility } from '../../utils/buyerReviewEligibility';
+import ReviewMediaPicker from '../reviews/ReviewMediaPicker';
 import { useToast } from '../ToastNotification';
 
 interface OrderReviewModalProps {
@@ -25,6 +26,7 @@ async function submitOrderProductReviews(
   items: BuyerOrder['items'],
   ratings: Record<string, number>,
   comments: Record<string, string>,
+  filesByProduct: Record<string, File[]>,
   orderId: string,
   existingReviews: Record<string, boolean>,
   reviewOrderIds: Record<string, string[]>,
@@ -41,6 +43,7 @@ async function submitOrderProductReviews(
       {
         rating: ratings[productId] || 5,
         comment: comments[productId]?.trim() || defaultComment,
+        files: filesByProduct[productId] ?? [],
       },
     );
   }
@@ -67,10 +70,12 @@ export default function OrderReviewModal({
   });
 
   const [productComments, setProductComments] = useState<Record<string, string>>({});
+  const [productFiles, setProductFiles] = useState<Record<string, File[]>>({});
 
   // Shop review
   const [shopRating, setShopRating] = useState<number>(5);
   const [shopComment, setShopComment] = useState<string>('');
+  const [shopFiles, setShopFiles] = useState<File[]>([]);
   const [includeShop, setIncludeShop] = useState(true);
 
   const [submitting, setSubmitting] = useState(false);
@@ -187,6 +192,7 @@ export default function OrderReviewModal({
         items,
         productRatings,
         productComments,
+        productFiles,
         order.id,
         existingProductReviews,
         productReviewOrderIds,
@@ -198,8 +204,12 @@ export default function OrderReviewModal({
         await saveBuyerShopReviewApi(hasExistingShopReview, order.id, shopReviewOrderIds, {
           rating: shopRating,
           comment: shopComment.trim() || t('orders.reviewModal.defaultShopComment'),
+          files: shopFiles,
         });
       }
+
+      setProductFiles({});
+      setShopFiles([]);
 
       setSuccess(true);
       toast.success(t('orders.reviewModal.reviewUpdatedToast'));
@@ -343,7 +353,7 @@ export default function OrderReviewModal({
                   </div>
 
                   {/* Comment */}
-                  <div>
+                  <div className="space-y-2">
                     <textarea
                       rows={2}
                       value={productComments[pid] || ''}
@@ -352,6 +362,13 @@ export default function OrderReviewModal({
                       }
                       placeholder={t('orders.reviewModal.productCommentPlaceholder')}
                       className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs text-slate-800 placeholder-slate-400 focus:border-blue-600 focus:outline-hidden"
+                    />
+                    <ReviewMediaPicker
+                      files={productFiles[pid] ?? []}
+                      onChange={(nextFiles) =>
+                        setProductFiles((prev) => ({ ...prev, [pid]: nextFiles }))
+                      }
+                      disabled={submitting}
                     />
                   </div>
                 </div>
@@ -407,6 +424,11 @@ export default function OrderReviewModal({
                     onChange={(e) => setShopComment(e.target.value)}
                     placeholder={t('orders.reviewModal.shopCommentPlaceholder')}
                     className="w-full rounded-lg border border-slate-200 bg-slate-50/50 p-2.5 text-xs text-slate-800 placeholder-slate-400 focus:border-blue-600 focus:outline-hidden"
+                  />
+                  <ReviewMediaPicker
+                    files={shopFiles}
+                    onChange={setShopFiles}
+                    disabled={submitting}
                   />
                 </div>
               )}

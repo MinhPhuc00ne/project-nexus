@@ -11,11 +11,14 @@ import {
   Loader2,
   Store,
 } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   getShopReviewsApi,
+  type ReviewSortBy,
   type ShopReviewItem,
 } from '@/features/reviews/services/reviews.service';
 import type { ShopListItem } from '@/features/catalog/services/products.service';
+import ReviewMediaAndReplies from '../reviews/ReviewMediaAndReplies';
 
 interface ShopReviewsSectionProps {
   shop: ShopListItem;
@@ -23,16 +26,21 @@ interface ShopReviewsSectionProps {
 
 export const ShopReviewsSection: React.FC<ShopReviewsSectionProps> = ({ shop }) => {
   const { t, i18n } = useTranslation('guest');
+  const { user } = useAuth();
   const [reviews, setReviews] = useState<ShopReviewItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [page, setPage] = useState<number>(1);
   const [total, setTotal] = useState<number>(0);
   const [selectedStar, setSelectedStar] = useState<number | null>(null);
+  const [sortBy, setSortBy] = useState<ReviewSortBy>('newest');
 
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
-    getShopReviewsApi(shop.id, page, 10)
+    getShopReviewsApi(shop.id, page, 10, {
+      rating: selectedStar ?? undefined,
+      sortBy,
+    })
       .then((res) => {
         if (isMounted) {
           setReviews(Array.isArray(res?.items) ? res.items : []);
@@ -53,9 +61,9 @@ export const ShopReviewsSection: React.FC<ShopReviewsSectionProps> = ({ shop }) 
     return () => {
       isMounted = false;
     };
-  }, [shop.id, page]);
+  }, [shop.id, page, selectedStar, sortBy]);
 
-  const filteredReviews = selectedStar ? reviews.filter((r) => r.rating === selectedStar) : reviews;
+  const filteredReviews = reviews;
 
   // Calculate average rating from the list
   const averageRating =
@@ -107,7 +115,10 @@ export const ShopReviewsSection: React.FC<ShopReviewsSectionProps> = ({ shop }) 
               <button
                 key={star}
                 type="button"
-                onClick={() => setSelectedStar(star === selectedStar ? null : star)}
+                onClick={() => {
+                  setPage(1);
+                  setSelectedStar(star === selectedStar ? null : star);
+                }}
                 className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
                   selectedStar === star
                     ? 'bg-blue-600 text-white shadow-sm'
@@ -120,6 +131,18 @@ export const ShopReviewsSection: React.FC<ShopReviewsSectionProps> = ({ shop }) 
                 />
               </button>
             ))}
+            <select
+              aria-label={t('product.sortLabel')}
+              value={sortBy}
+              onChange={(e) => {
+                setPage(1);
+                setSortBy(e.target.value as ReviewSortBy);
+              }}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 focus:border-blue-400 focus:outline-none"
+            >
+              <option value="newest">{t('product.sortNewest')}</option>
+              <option value="oldest">{t('product.sortOldest')}</option>
+            </select>
           </div>
         </div>
 
@@ -227,6 +250,19 @@ export const ShopReviewsSection: React.FC<ShopReviewsSectionProps> = ({ shop }) 
                       {rev.comment}
                     </p>
                   )}
+
+                  <ReviewMediaAndReplies
+                    reviewId={rev.id}
+                    kind="shop"
+                    media={rev.media}
+                    mediaUrls={rev.mediaUrls}
+                    canReply={Boolean(
+                      user?.id && (user.id === rev.reviewer?.id || user.id === shop.id),
+                    )}
+                    formatDate={(val) =>
+                      new Date(val).toLocaleDateString(getIntlLocale(i18n.language))
+                    }
+                  />
                 </div>
               </div>
             ))}

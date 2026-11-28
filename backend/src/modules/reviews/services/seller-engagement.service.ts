@@ -62,6 +62,9 @@ export class SellerEngagementService {
               avatarUrl: true,
             },
           },
+          media: {
+            orderBy: { sortOrder: 'asc' },
+          },
           order: {
             select: {
               id: true,
@@ -112,6 +115,8 @@ export class SellerEngagementService {
       id: r.id,
       rating: Number(r.rating),
       comment: r.comment,
+      mediaUrls: r.mediaUrls,
+      media: r.media,
       createdAt: r.createdAt,
       reviewer: r.reviewer,
       order: {

@@ -34,6 +34,7 @@ import {
 } from '@/features/wallet/services/wallet.service';
 import WalletTopUpModal from '../../components/wallet/WalletTopUpModal';
 import BuyerWithdrawalModal from '../../components/wallet/BuyerWithdrawalModal';
+import BuyerLinkedBankCard from '../../components/wallet/BuyerLinkedBankCard';
 import type { SellerWithdrawal } from '@/features/wallet/types/seller-finance.types';
 
 type FilterType = 'ALL' | 'TOP_UP' | 'PAYMENT' | 'REFUND' | 'WITHDRAWAL';
@@ -414,6 +415,8 @@ export default function BuyerWalletPage() {
           onSubmit={(input) => void handleWithdrawal(input)}
         />
       )}
+
+      <BuyerLinkedBankCard profile={user} />
 
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
