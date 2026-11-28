@@ -8,7 +8,13 @@ import {
   type ChatToStaffEvent,
   type ChatToUserEvent,
 } from '../services/chat-realtime.publisher';
-import { Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  HttpException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -21,6 +27,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import {
+  AppErrorCode,
   WS_CHAT_EVENTS,
   WsChatSendMessageSchema,
   WsChatTypingSchema,
@@ -212,6 +219,32 @@ export class ChatGateway
     this.logger.log(`Socket client disconnected: ${client.id}`);
   }
 
+  private formatGatewayError(err: unknown, fallback: string): string {
+    if (err instanceof HttpException) {
+      const response = err.getResponse();
+      if (typeof response === 'object' && response !== null) {
+        const errorCode = (response as { errorCode?: unknown }).errorCode;
+        if (errorCode === AppErrorCode.PROFANITY_DETECTED) {
+          return 'Message contains prohibited or sensitive content.';
+        }
+      }
+    }
+    const raw = err instanceof Error ? err.message : '';
+    if (raw && !/[^\p{ASCII}]/u.test(raw)) {
+      return raw;
+    }
+    if (err instanceof NotFoundException) {
+      return 'Conversation not found.';
+    }
+    if (err instanceof ForbiddenException) {
+      return 'You do not have permission to access this conversation.';
+    }
+    if (err instanceof BadRequestException) {
+      return 'Invalid chat request.';
+    }
+    return fallback;
+  }
+
   @SubscribeMessage(WS_CHAT_EVENTS.CLIENT.JOIN_CONVERSATION)
   async handleJoinConversation(
     @ConnectedSocket() client: Socket,
@@ -238,7 +271,7 @@ export class ChatGateway
         user.role,
       );
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Access denied.';
+      const message = this.formatGatewayError(err, 'Access denied.');
       client.emit(WS_CHAT_EVENTS.SERVER.ERROR, { message });
       return { status: 'error', message };
     }
@@ -280,6 +313,11 @@ export class ChatGateway
     }
 
     try {
+      await this.chatService.assertConversationAccess(
+        parsed.data.conversationId,
+        user.id,
+        user.role,
+      );
       const message = await this.chatService.sendMessage(user.id, user.role, {
         conversationId: parsed.data.conversationId,
         content: parsed.data.content || parsed.data.body,
@@ -288,7 +326,7 @@ export class ChatGateway
 
       return { status: 'ok', data: message };
     } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : 'Failed to send message.';
+      const errMsg = this.formatGatewayError(err, 'Failed to send message.');
       client.emit(WS_CHAT_EVENTS.SERVER.ERROR, { message: errMsg });
       return { status: 'error', message: errMsg };
     }
@@ -320,7 +358,7 @@ export class ChatGateway
         user.role,
       );
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Access denied.';
+      const message = this.formatGatewayError(err, 'Access denied.');
       client.emit(WS_CHAT_EVENTS.SERVER.ERROR, { message });
       return { status: 'error', message };
     }
@@ -359,10 +397,15 @@ export class ChatGateway
     }
 
     try {
+      await this.chatService.assertConversationAccess(
+        parsed.data.conversationId,
+        user.id,
+        user.role,
+      );
       await this.chatService.markAsRead(parsed.data.conversationId, user.id, user.role);
       return { status: 'ok' };
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to mark messages as read.';
+      const message = this.formatGatewayError(err, 'Failed to mark messages as read.');
       client.emit(WS_CHAT_EVENTS.SERVER.ERROR, { message });
       return { status: 'error', message };
     }

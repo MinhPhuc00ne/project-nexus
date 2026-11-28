@@ -434,6 +434,138 @@ describe('M9 NotificationPublisher, OrderExpirationService & AuditLogService', (
 
       expect(updateMany).not.toHaveBeenCalled();
     });
+
+    it('cursors past 50+ protected COD/active reservations in sweep() and releases newer expired orphan reservations', async () => {
+      const baseTime = new Date('2026-11-27T11:00:00Z');
+      const now = new Date('2026-11-27T12:00:00Z');
+
+      const rows: Array<{
+        id: string;
+        inventoryId: string;
+        quantity: number;
+        referenceId: string;
+        status: ReservationStatus;
+        expiresAt: Date;
+      }> = Array.from({ length: 55 }, (_, i) => ({
+        id: `res-cod-${String(i).padStart(3, '0')}`,
+        inventoryId: 'inv-cod',
+        quantity: 1,
+        referenceId: `order-cod-${i}`,
+        status: ReservationStatus.PENDING,
+        expiresAt: new Date(baseTime.getTime() + i * 1000),
+      }));
+      rows.push({
+        id: 'res-orphan-001',
+        inventoryId: 'inv-orphan',
+        quantity: 5,
+        referenceId: 'cart-orphan',
+        status: ReservationStatus.PENDING,
+        expiresAt: new Date(baseTime.getTime() + 60_000),
+      });
+
+      const inventoryLedgerCreate = vi.fn().mockResolvedValue({});
+      const inventoryUpdateMany = vi.fn().mockResolvedValue({ count: 1 });
+      const reservationFindMany = vi.fn(
+        async (args: {
+          where: {
+            status: ReservationStatus;
+            expiresAt: { lte: Date };
+            OR?: Array<{ expiresAt: { gt?: Date } | Date; id?: { gt: string } }>;
+          };
+          take: number;
+        }) => {
+          const filtered = rows
+            .filter((r) => {
+              if (r.status !== args.where.status || r.expiresAt > args.where.expiresAt.lte) {
+                return false;
+              }
+              if (args.where.OR) {
+                return args.where.OR.some((cond) => {
+                  if (
+                    typeof cond.expiresAt === 'object' &&
+                    'gt' in cond.expiresAt &&
+                    cond.expiresAt.gt
+                  ) {
+                    return r.expiresAt > cond.expiresAt.gt;
+                  }
+                  if (cond.expiresAt instanceof Date && cond.id?.gt) {
+                    return r.expiresAt.getTime() === cond.expiresAt.getTime() && r.id > cond.id.gt;
+                  }
+                  return false;
+                });
+              }
+              return true;
+            })
+            .sort(
+              (a, b) => a.expiresAt.getTime() - b.expiresAt.getTime() || a.id.localeCompare(b.id),
+            )
+            .slice(0, args.take)
+            .map((r) => ({ id: r.id, expiresAt: r.expiresAt }));
+          return filtered;
+        },
+      );
+
+      const txMock = {
+        inventoryReservation: {
+          findUnique: vi.fn(async ({ where }: { where: { id: string } }) => {
+            const found = rows.find((r) => r.id === where.id);
+            return found ? { ...found } : null;
+          }),
+          updateMany: vi.fn(
+            async ({
+              where,
+              data,
+            }: {
+              where: { id: string; status: ReservationStatus };
+              data: { status: ReservationStatus };
+            }) => {
+              const found = rows.find((r) => r.id === where.id && r.status === where.status);
+              if (!found) return { count: 0 };
+              found.status = data.status;
+              return { count: 1 };
+            },
+          ),
+        },
+        order: {
+          findUnique: vi.fn(async ({ where }: { where: { id: string } }) =>
+            where.id.startsWith('order-cod-') ? { status: OrderStatus.PENDING_PAYMENT } : null,
+          ),
+        },
+        auction: { findFirst: vi.fn().mockResolvedValue(null) },
+        auctionItem: { findFirst: vi.fn().mockResolvedValue(null) },
+        auctionAward: { findFirst: vi.fn().mockResolvedValue(null) },
+        inventory: {
+          updateMany: inventoryUpdateMany,
+          findUnique: vi.fn().mockResolvedValue({ availableQty: 5 }),
+        },
+        inventoryLedger: { create: inventoryLedgerCreate },
+      };
+
+      const prismaMock = {
+        order: { findMany: vi.fn().mockResolvedValue([]) },
+        inventoryReservation: { findMany: reservationFindMany },
+        $transaction: vi.fn(async (fn: (tx: typeof txMock) => Promise<unknown>) => fn(txMock)),
+      } as unknown as PrismaService;
+
+      const service = new OrderExpirationService(
+        prismaMock,
+        {} as unknown as DistributedLockService,
+        { get: vi.fn().mockResolvedValue(15) } as unknown as PlatformSettingsService,
+      );
+
+      const result = await service.sweep(now);
+
+      expect(reservationFindMany).toHaveBeenCalledTimes(2);
+      expect(result).toEqual({ expiredOrders: 0, releasedReservations: 1 });
+      expect(rows.find((r) => r.id === 'res-orphan-001')?.status).toBe(ReservationStatus.RELEASED);
+      expect(
+        rows
+          .filter((r) => r.id.startsWith('res-cod-'))
+          .every((r) => r.status === ReservationStatus.PENDING),
+      ).toBe(true);
+      expect(inventoryUpdateMany).toHaveBeenCalledTimes(1);
+      expect(inventoryLedgerCreate).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('InventoryService timeout setting', () => {

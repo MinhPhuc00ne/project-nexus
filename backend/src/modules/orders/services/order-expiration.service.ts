@@ -22,6 +22,7 @@ import { PlatformSettingsService } from '../../../core/settings/platform-setting
 const SWEEP_INTERVAL_MS = 60_000;
 const ORDER_BATCH_SIZE = 25;
 const RESERVATION_BATCH_SIZE = 50;
+const MAX_RESERVATION_SWEEP_BATCHES = 20;
 
 /**
  * Periodically cancels overdue `PENDING_PAYMENT` orders and releases expired
@@ -96,23 +97,79 @@ export class OrderExpirationService implements OnModuleInit, OnModuleDestroy {
       if (cancelled) expiredOrders += 1;
     }
 
-    const expiredReservations = await this.prisma.inventoryReservation.findMany({
-      where: {
-        status: ReservationStatus.PENDING,
-        expiresAt: { lte: now },
-      },
-      take: RESERVATION_BATCH_SIZE,
-      orderBy: { expiresAt: 'asc' },
-      select: { id: true },
-    });
-
-    let releasedReservations = 0;
-    for (const reservation of expiredReservations) {
-      const released = await this.releaseStandaloneReservation(reservation.id);
-      if (released) releasedReservations += 1;
-    }
+    const releasedReservations = await this.sweepExpiredReservations(now);
 
     return { expiredOrders, releasedReservations };
+  }
+
+  private async sweepExpiredReservations(now: Date): Promise<number> {
+    let releasedReservations = 0;
+    let cursor: { expiresAt: Date; id: string } | undefined;
+
+    for (let batch = 0; batch < MAX_RESERVATION_SWEEP_BATCHES; batch += 1) {
+      const expiredReservations = await this.prisma.inventoryReservation.findMany({
+        where: {
+          status: ReservationStatus.PENDING,
+          expiresAt: { lte: now },
+          ...(cursor
+            ? {
+                OR: [
+                  { expiresAt: { gt: cursor.expiresAt } },
+                  { expiresAt: cursor.expiresAt, id: { gt: cursor.id } },
+                ],
+              }
+            : {}),
+        },
+        take: RESERVATION_BATCH_SIZE,
+        orderBy: [{ expiresAt: 'asc' }, { id: 'asc' }],
+        select: { id: true, expiresAt: true },
+      });
+
+      if (expiredReservations.length === 0) {
+        break;
+      }
+
+      for (const reservation of expiredReservations) {
+        const released = await this.releaseStandaloneReservation(reservation.id);
+        if (released) releasedReservations += 1;
+      }
+
+      if (
+        expiredReservations.length < RESERVATION_BATCH_SIZE ||
+        releasedReservations >= RESERVATION_BATCH_SIZE
+      ) {
+        break;
+      }
+
+      const nextCursor = this.resolveNextReservationCursor(
+        expiredReservations[expiredReservations.length - 1],
+        cursor,
+      );
+      if (!nextCursor) {
+        break;
+      }
+      cursor = nextCursor;
+    }
+
+    return releasedReservations;
+  }
+
+  private resolveNextReservationCursor(
+    last: { id: string; expiresAt?: Date | string },
+    prevCursor?: { expiresAt: Date; id: string },
+  ): { expiresAt: Date; id: string } | undefined {
+    const lastExpiresAt = last.expiresAt ? new Date(last.expiresAt) : undefined;
+    if (!lastExpiresAt || Number.isNaN(lastExpiresAt.getTime()) || !last.id) {
+      return undefined;
+    }
+    if (
+      prevCursor &&
+      lastExpiresAt.getTime() === prevCursor.expiresAt.getTime() &&
+      last.id === prevCursor.id
+    ) {
+      return undefined;
+    }
+    return { expiresAt: lastExpiresAt, id: last.id };
   }
 
   async expirePendingOrder(orderId: string): Promise<boolean> {
