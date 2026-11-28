@@ -643,9 +643,18 @@ export class ReviewsService {
       if (existing.reviewerId !== userId)
         throw new ForbiddenException('You can only edit your own review.');
 
+      const mediaUrls =
+        dto.mediaUrls !== undefined
+          ? dto.mediaUrls.map((url) => url.trim()).filter(Boolean)
+          : undefined;
+
       const updated = await tx.review.update({
         where: { orderId },
-        data: { rating: dto.rating, comment: dto.comment?.trim() || null },
+        data: {
+          rating: dto.rating,
+          comment: dto.comment?.trim() || null,
+          ...(mediaUrls !== undefined ? { mediaUrls } : {}),
+        },
       });
 
       if (typeof tx?.notification?.create === 'function') {
