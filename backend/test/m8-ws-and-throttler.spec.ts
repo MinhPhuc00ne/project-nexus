@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   ForbiddenException,
   Get,
@@ -202,6 +203,59 @@ describe('M8 WebSocket Zod Validation, PayOS Webhook, OAuth Throttle, RedisThrot
         WS_AUCTION_EVENTS.SERVER.VIEWPORT_UPDATED,
         validSync,
       );
+    });
+
+    it('sanitizes internal and non-ASCII errors in handlePlaceBid', async () => {
+      const gateway = createGateway();
+      const buyer = createSocketMock({ id: 'buyer-1', role: Role.BUYER });
+
+      gateway.registerPlaceBidHandler(
+        vi.fn(async () => {
+          throw new BadRequestException('Bid amount is too low.');
+        }),
+      );
+      const httpErrRes = await gateway.handlePlaceBid(buyer.socket, {
+        auctionId: 'auc-1',
+        bidAmount: 500,
+      });
+      expect(httpErrRes).toEqual({ ok: false, error: 'Bid amount is too low.' });
+      expect(buyer.emit).toHaveBeenLastCalledWith(WS_AUCTION_EVENTS.SERVER.BID_REJECTED, {
+        auctionId: 'auc-1',
+        auctionItemId: undefined,
+        message: 'Bid amount is too low.',
+      });
+
+      gateway.registerPlaceBidHandler(
+        vi.fn(async () => {
+          throw new Error('Prisma P2002 internal leak');
+        }),
+      );
+      const rawErrRes = await gateway.handlePlaceBid(buyer.socket, {
+        auctionId: 'auc-1',
+        bidAmount: 500,
+      });
+      expect(rawErrRes).toEqual({ ok: false, error: 'Failed to place bid.' });
+      expect(buyer.emit).toHaveBeenLastCalledWith(WS_AUCTION_EVENTS.SERVER.BID_REJECTED, {
+        auctionId: 'auc-1',
+        auctionItemId: undefined,
+        message: 'Failed to place bid.',
+      });
+
+      gateway.registerPlaceBidHandler(
+        vi.fn(async () => {
+          throw new BadRequestException('Giá đặt không hợp lệ');
+        }),
+      );
+      const viErrRes = await gateway.handlePlaceBid(buyer.socket, {
+        auctionId: 'auc-1',
+        bidAmount: 500,
+      });
+      expect(viErrRes).toEqual({ ok: false, error: 'Failed to place bid.' });
+      expect(buyer.emit).toHaveBeenLastCalledWith(WS_AUCTION_EVENTS.SERVER.BID_REJECTED, {
+        auctionId: 'auc-1',
+        auctionItemId: undefined,
+        message: 'Failed to place bid.',
+      });
     });
   });
 

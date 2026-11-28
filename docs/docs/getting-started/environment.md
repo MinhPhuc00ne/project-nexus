@@ -11,7 +11,7 @@ Project Nexus loads environment variables from the monorepo root `.env` file (vi
 | Variable            | Example (`.env.example`)                                                          | Required | Description                                                           |
 | :------------------ | :-------------------------------------------------------------------------------- | :------- | :-------------------------------------------------------------------- |
 | `NODE_ENV`          | `development`                                                                     | Yes      | Runtime mode (`development`, `test`, `production`)                    |
-| `APP_ENV`           | `local`                                                                           | Yes      | Deployment tier (`local`, `staging`, `demo`, `production`)            |
+| `APP_ENV`           | `development`                                                                     | Yes      | Deployment tier (`development`, `demo`, `production`)                 |
 | `SWAGGER_ENABLED`   | `true`                                                                            | No       | Enables `/api/docs` Swagger UI (auto-disabled in production if unset) |
 | `POSTGRES_USER`     | `postgres`                                                                        | Yes      | PostgreSQL container username                                         |
 | `POSTGRES_PASSWORD` | `nexus_secret_2026`                                                               | Yes      | PostgreSQL password                                                   |
@@ -50,7 +50,7 @@ Project Nexus loads environment variables from the monorepo root `.env` file (vi
 | `GHN_CLIENT_ID`      | `123456`                                                | Optional* | GHN client ID                                  |
 | `GHN_WEBHOOK_SECRET` | `nexus_ghn_webhook_secret_2026`                         | Yes       | Secret for verifying GHN tracking webhooks     |
 
-_\*Note_: `.env.example` ships with blank third-party secrets so local development works immediately with Wallet and COD flows; `production` and `staging` fail fast at startup if required secrets (`JWT_SECRET`, `DATABASE_URL`, `REDIS_URL`) are missing. Run `npm run env:check` to validate any `.env` file, or `node infra/scripts/sync-railway-env.mjs` to sync Railway variables.
+_\*Note_: `.env.example` ships with blank third-party secrets so local development works immediately with Wallet and COD flows; `production` fails fast at startup if required secrets (`JWT_SECRET`, `DATABASE_URL`, `REDIS_URL`) are missing. Run `npm run env:check` to validate any `.env` file, or `node infra/scripts/sync-railway-env.mjs` to sync Railway variables.
 
 ## 4. Business Rules, Media, Mail and AI Chatbot
 

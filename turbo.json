@@ -37,7 +37,8 @@
         "NEXUS_BACKEND_REVIEW_DB_TEST",
         "NEXUS_BANNER_DB_TEST",
         "NEXUS_CHATBOT_DB_TEST",
-        "NEXUS_DOCUMENT_GAPS_DB_TEST"
+        "NEXUS_DOCUMENT_GAPS_DB_TEST",
+        "RUN_PROD_SIM_TESTS"
       ]
     },
     "lint": {
