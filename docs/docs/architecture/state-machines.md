@@ -58,8 +58,8 @@ stateDiagram-v2
     ACTIVE --> ENDED : All lots closed
     EXTENDED --> ENDED : Extension timer expires
     ENDED --> SETTLED : Awards & deposits settled
-    DRAFT --> CANCELLED : Session cancelled
-    SCHEDULED --> CANCELLED : Cancelled before start
+    DRAFT --> CANCELLED : Session canceled
+    SCHEDULED --> CANCELLED : Canceled before start
 ```
 
 ### Lot and Award Flow (`AuctionItem` and `AuctionAward`)

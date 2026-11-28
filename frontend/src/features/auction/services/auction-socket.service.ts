@@ -14,7 +14,9 @@ export function createAuctionSocket(auctionId?: string): AuctionSocketClient {
   const backendUrl = new URL(API_BASE_URL, window.location.origin);
   const socket: Socket = io(`${backendUrl.origin}/ws/auctions`, {
     autoConnect: true,
-    auth: { token: getStoredToken() },
+    auth: (cb) => {
+      cb({ token: getStoredToken() });
+    },
   });
 
   if (auctionId) socket.emit(WS_AUCTION_EVENTS.CLIENT.JOIN_ROOM, { auctionId });

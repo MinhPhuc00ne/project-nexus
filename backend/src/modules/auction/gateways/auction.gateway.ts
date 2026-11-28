@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+import { HttpException, Logger } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -218,7 +218,7 @@ export class AuctionGateway
       );
       return { ok: true, data: result };
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to place bid.';
+      const message = this.formatGatewayError(err, 'Failed to place bid.');
       const rejection: WsBidRejectedPayload = {
         auctionId: parsed.data.auctionId,
         auctionItemId: parsed.data.auctionItemId,
@@ -227,6 +227,28 @@ export class AuctionGateway
       client.emit(WS_AUCTION_EVENTS.SERVER.BID_REJECTED, rejection);
       return { ok: false, error: message };
     }
+  }
+
+  private formatGatewayError(err: unknown, fallback: string): string {
+    if (err instanceof HttpException) {
+      const response = err.getResponse();
+      const rawMessage =
+        typeof response === 'string'
+          ? response
+          : typeof response === 'object' && response !== null && 'message' in response
+            ? (response as { message?: unknown }).message
+            : undefined;
+      const text = Array.isArray(rawMessage)
+        ? rawMessage.find((item): item is string => typeof item === 'string')
+        : typeof rawMessage === 'string'
+          ? rawMessage
+          : undefined;
+      const trimmed = text?.trim();
+      if (trimmed && /^[\x20-\x7E]+$/.test(trimmed)) {
+        return trimmed;
+      }
+    }
+    return fallback;
   }
 
   /**
