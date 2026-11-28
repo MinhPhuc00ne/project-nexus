@@ -124,7 +124,7 @@ test(
         prisma,
         shipping,
         escrow,
-        new AuctionSecondChanceHelper(prisma, reputation, adminSettings, finance, stock),
+        new AuctionSecondChanceHelper(prisma, reputation, adminSettings, finance),
       );
       const gateway = {
         broadcastAuctionStarted() {},
@@ -140,7 +140,6 @@ test(
       const auctions = new AuctionService(
         prisma,
         gateway,
-        stock,
         new AuctionAdminHelper(prisma, gateway),
         new AuctionConsignmentHelper(prisma, undefined),
         new AuctionBiddingHelper(prisma, gateway, checkout),

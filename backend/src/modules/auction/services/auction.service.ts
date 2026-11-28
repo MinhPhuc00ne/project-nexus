@@ -2,7 +2,6 @@ import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { AuctionItemStatus, Prisma, Role } from '@prisma/client';
 import { auctionTargetUrl } from '../../../core/navigation/auction-navigation';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { AuctionStockService } from '../../catalog/services/auction-stock.service';
 import { AdminCreateAuctionInput } from '../dtos/admin-create-auction.dto';
 import { AdminUpdateAuctionInput } from '../dtos/admin-update-auction.dto';
 import { AuctionQueryInput } from '../dtos/auction-query.dto';
@@ -42,7 +41,6 @@ export class AuctionService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auctionGateway: AuctionGateway,
-    _stock: AuctionStockService,
     private readonly adminHelper: AuctionAdminHelper,
     private readonly consignmentHelper: AuctionConsignmentHelper,
     private readonly biddingHelper: AuctionBiddingHelper,

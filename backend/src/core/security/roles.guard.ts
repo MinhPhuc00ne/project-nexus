@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Role } from '@nexus/contracts';
+import { AppErrorCode, Role } from '@nexus/contracts';
 import { ROLES_KEY, PRIVILEGES_KEY, AuthenticatedUserPayload } from './roles.decorator';
 
 // RBAC Privilege Map according to docs/srs/README.md Section 4
@@ -35,12 +35,16 @@ export class RolesGuard implements CanActivate {
       return;
     }
     if (requiredRoles.length === 0) {
-      throw new ForbiddenException('Roles metadata is empty');
+      throw new ForbiddenException({
+        message: 'Roles metadata is empty',
+        errorCode: AppErrorCode.FORBIDDEN,
+      });
     }
     if (!requiredRoles.includes(userRole)) {
-      throw new ForbiddenException(
-        `User role ${userRole} does not have required permissions: [${requiredRoles.join(', ')}]`,
-      );
+      throw new ForbiddenException({
+        message: `User role ${userRole} does not have required permissions: [${requiredRoles.join(', ')}]`,
+        errorCode: AppErrorCode.FORBIDDEN,
+      });
     }
   }
 
@@ -54,14 +58,16 @@ export class RolesGuard implements CanActivate {
         ? RBAC_PRIVILEGES_MAP[requiredPrivilege]
         : undefined;
     if (!allowedRoles || allowedRoles.length === 0) {
-      throw new ForbiddenException(
-        `Privilege '${requiredPrivilege}' is not configured in RBAC policy`,
-      );
+      throw new ForbiddenException({
+        message: `Privilege '${requiredPrivilege}' is not configured in RBAC policy`,
+        errorCode: AppErrorCode.FORBIDDEN,
+      });
     }
     if (!allowedRoles.includes(userRole)) {
-      throw new ForbiddenException(
-        `Role ${userRole} is not granted privilege '${requiredPrivilege}'`,
-      );
+      throw new ForbiddenException({
+        message: `Role ${userRole} is not granted privilege '${requiredPrivilege}'`,
+        errorCode: AppErrorCode.FORBIDDEN,
+      });
     }
   }
 
@@ -84,7 +90,10 @@ export class RolesGuard implements CanActivate {
     const user = request.user as AuthenticatedUserPayload | undefined;
 
     if (!user) {
-      throw new ForbiddenException('User context missing');
+      throw new ForbiddenException({
+        message: 'User context missing',
+        errorCode: AppErrorCode.FORBIDDEN,
+      });
     }
 
     this.assertRoles(requiredRoles, user.role);

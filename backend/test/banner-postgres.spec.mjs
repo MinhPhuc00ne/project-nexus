@@ -349,7 +349,6 @@ test(
           const auctions = new AuctionService(
             prisma,
             {},
-            {},
             new AuctionAdminHelper(prisma, {}),
             new AuctionConsignmentHelper(prisma, undefined),
             new AuctionBiddingHelper(prisma, {}, {}),

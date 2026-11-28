@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { AppErrorCode } from '@nexus/contracts';
 import * as fs from 'fs';
 import { diskStorage } from 'multer';
 import * as path from 'path';
@@ -28,9 +29,10 @@ export const sellerProofFileFilter = (
 
   if (!allowedExtensions.includes(ext)) {
     return cb(
-      new BadRequestException(
-        `Định dạng file không được hỗ trợ (${ext}). Vui lòng đính kèm hình ảnh (JPG, PNG, WEBP) hoặc tài liệu (PDF, DOC).`,
-      ),
+      new BadRequestException({
+        message: `Định dạng file không được hỗ trợ (${ext}). Vui lòng đính kèm hình ảnh (JPG, PNG, WEBP) hoặc tài liệu (PDF, DOC).`,
+        errorCode: AppErrorCode.UNSUPPORTED_MEDIA_TYPE,
+      }),
       false,
     );
   }
