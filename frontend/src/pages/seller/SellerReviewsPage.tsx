@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { MessageCircle as MessageOutlined } from 'lucide-react';
 import {
+  ArrowUpDown,
+  MessageCircle as MessageOutlined,
   ShieldCheck as SafetyCertificateOutlined,
   Star as StarFilled,
   Star as StarOutlined,
@@ -8,31 +9,50 @@ import {
 import { useTranslation } from 'react-i18next';
 import { getIntlLocale } from '../../i18n/config';
 import { useSellerSession } from '../../components/seller/SellerSession';
+import SellerReviewReplyThread from '../../components/seller/SellerReviewReplyThread';
 import { EmptyState, PageHeading, Panel } from '../../components/seller/SellerUI';
 import {
   getSellerProductReviewsApi,
   getSellerShopReviewsApi,
   type ProductReviewItem,
+  type ReviewSortBy,
   type ShopReviewItem,
 } from '@/features/reviews/services/reviews.service';
 
-type ReviewTab = 'all' | 'positive' | 'improve';
+type StarFilter = 'all' | 1 | 2 | 3 | 4 | 5;
+type KindFilter = 'all' | 'PRODUCT' | 'SHOP';
 type SellerReview = (ProductReviewItem | ShopReviewItem) & { kind: 'PRODUCT' | 'SHOP' };
+
+const STAR_OPTIONS: StarFilter[] = ['all', 5, 4, 3, 2, 1];
 
 export default function SellerReviewsPage() {
   const { t, i18n } = useTranslation('seller');
   const formatDate = (value: string): string =>
     new Date(value).toLocaleString(getIntlLocale(i18n.language));
   const user = useSellerSession();
-  const [tab, setTab] = useState<ReviewTab>('all');
+
+  const [starFilter, setStarFilter] = useState<StarFilter>('all');
+  const [sortBy, setSortBy] = useState<ReviewSortBy>('newest');
+  const [kindFilter, setKindFilter] = useState<KindFilter>('all');
   const [reviews, setReviews] = useState<SellerReview[]>([]);
+  const [summaryReviews, setSummaryReviews] = useState<SellerReview[]>([]);
   const [reviewCounts, setReviewCounts] = useState({ product: 0, shop: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
-    void Promise.allSettled([getSellerProductReviewsApi(), getSellerShopReviewsApi()])
+    setLoading(true);
+
+    const queryOptions = {
+      rating: starFilter === 'all' ? undefined : starFilter,
+      sortBy,
+    };
+
+    void Promise.allSettled([
+      getSellerProductReviewsApi(1, 50, queryOptions),
+      getSellerShopReviewsApi(1, 50, queryOptions),
+    ])
       .then(([productResult, shopResult]) => {
         if (!active) return;
         if (productResult.status === 'rejected' && shopResult.status === 'rejected') {
@@ -51,48 +71,43 @@ export default function SellerReviewsPage() {
         const shopReviews: SellerReview[] = Array.isArray(shopResponse?.items)
           ? shopResponse.items.map((review) => ({ ...review, kind: 'SHOP' as const }))
           : [];
-        setReviews(
-          [...productReviews, ...shopReviews].sort(
-            (first, second) =>
-              new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime(),
-          ),
-        );
-        setReviewCounts({ product: productResponse?.total ?? 0, shop: shopResponse?.total ?? 0 });
+
+        const merged = [...productReviews, ...shopReviews].sort((first, second) => {
+          const diff = new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime();
+          return sortBy === 'oldest' ? -diff : diff;
+        });
+
+        setReviews(merged);
+        if (starFilter === 'all') {
+          setSummaryReviews(merged);
+          setReviewCounts({
+            product: productResponse?.total ?? productReviews.length,
+            shop: shopResponse?.stats?.totalReviews ?? shopResponse?.total ?? shopReviews.length,
+          });
+        }
       })
       .finally(() => {
         if (active) setLoading(false);
       });
+
     return () => {
       active = false;
     };
-  }, [t]);
+  }, [starFilter, sortBy, t]);
+
+  const statsSource = summaryReviews.length > 0 ? summaryReviews : reviews;
 
   const averageRating = useMemo(() => {
-    if (!reviews.length) return 0;
-    return reviews.reduce((total, review) => total + review.rating, 0) / reviews.length;
-  }, [reviews]);
+    if (!statsSource.length) return 0;
+    return statsSource.reduce((total, review) => total + review.rating, 0) / statsSource.length;
+  }, [statsSource]);
 
   const visibleReviews = useMemo(() => {
-    if (tab === 'positive') return reviews.filter((review) => review.rating >= 4);
-    if (tab === 'improve') return reviews.filter((review) => review.rating <= 3);
-    return reviews;
-  }, [reviews, tab]);
+    if (kindFilter === 'all') return reviews;
+    return reviews.filter((review) => review.kind === kindFilter);
+  }, [reviews, kindFilter]);
 
-  const tabs: Array<{ key: ReviewTab; label: string }> = [
-    { key: 'all', label: t('reviews.tabs.all', { count: reviews.length }) },
-    {
-      key: 'positive',
-      label: t('reviews.tabs.positive', {
-        count: reviews.filter((review) => review.rating >= 4).length,
-      }),
-    },
-    {
-      key: 'improve',
-      label: t('reviews.tabs.improve', {
-        count: reviews.filter((review) => review.rating <= 3).length,
-      }),
-    },
-  ];
+  const canReply = user.isSellerActive && !user.isShopSuspended;
 
   return (
     <div className="flex min-w-0 flex-col gap-5" data-seller="page-stack">
@@ -119,13 +134,15 @@ export default function SellerReviewsPage() {
                 )}
               </div>
               <p className="mt-2 text-xs text-slate-500">
-                {t('reviews.totalReviews', { count: reviews.length })}
+                {t('reviews.totalReviews', { count: statsSource.length })}
               </p>
             </div>
             <div className="min-w-0 flex-1 space-y-2">
               {[5, 4, 3, 2, 1].map((star) => {
-                const count = reviews.filter((review) => review.rating === star).length;
-                const width = reviews.length ? (count / reviews.length) * 100 : 0;
+                const count = statsSource.filter(
+                  (review) => Math.floor(review.rating) === star,
+                ).length;
+                const width = statsSource.length ? (count / statsSource.length) * 100 : 0;
                 return (
                   <div key={star} className="flex items-center gap-2 text-xs text-slate-600">
                     <span className="w-10">{t('reviews.starLabel', { star })}</span>
@@ -176,21 +193,55 @@ export default function SellerReviewsPage() {
       </div>
 
       <Panel title={t('reviews.feedbackTitle')} subtitle={t('reviews.feedbackSubtitle')}>
-        <div className="flex flex-wrap gap-2 border-b border-slate-100 pb-4">
-          {tabs.map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              onClick={() => setTab(item.key)}
-              className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
-                tab === item.key
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-700'
-              }`}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div
+            className="flex flex-wrap gap-1.5"
+            role="group"
+            aria-label={t('reviews.filterAllStars')}
+          >
+            {STAR_OPTIONS.map((option) => (
+              <button
+                key={String(option)}
+                type="button"
+                onClick={() => setStarFilter(option)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                  starFilter === option
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-700'
+                }`}
+              >
+                {option === 'all'
+                  ? t('reviews.filterAllStars')
+                  : t('reviews.filterStarOption', { star: option })}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              aria-label={t('reviews.typeAll')}
+              value={kindFilter}
+              onChange={(e) => setKindFilter(e.target.value as KindFilter)}
+              className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 focus:border-blue-400 focus:outline-none"
             >
-              {item.label}
-            </button>
-          ))}
+              <option value="all">{t('reviews.typeAll')}</option>
+              <option value="PRODUCT">{t('reviews.typeProduct')}</option>
+              <option value="SHOP">{t('reviews.typeShop')}</option>
+            </select>
+
+            <label className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700">
+              <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
+              <select
+                aria-label={t('reviews.sortLabel')}
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as ReviewSortBy)}
+                className="bg-transparent focus:outline-none"
+              >
+                <option value="newest">{t('reviews.sortNewest')}</option>
+                <option value="oldest">{t('reviews.sortOldest')}</option>
+              </select>
+            </label>
+          </div>
         </div>
 
         <ReviewsContent
@@ -198,6 +249,7 @@ export default function SellerReviewsPage() {
           error={error}
           reviews={visibleReviews}
           formatDate={formatDate}
+          canReply={canReply}
         />
       </Panel>
     </div>
@@ -209,11 +261,13 @@ function ReviewsContent({
   error,
   reviews,
   formatDate,
+  canReply,
 }: {
   loading: boolean;
   error: string | null;
   reviews: SellerReview[];
   formatDate: (val: string) => string;
+  canReply: boolean;
 }) {
   const { t } = useTranslation('seller');
   if (loading) {
@@ -227,31 +281,49 @@ function ReviewsContent({
   }
   return (
     <div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white px-4">
-      {reviews.map((review) => (
-        <article key={review.id} className="py-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <strong className="flex items-center gap-2 text-sm text-slate-800">
-              <MessageOutlined className="text-blue-600" />
-              {review.reviewer.fullName}
-            </strong>
-            <span
-              className={`rounded-md px-2 py-1 text-[11px] font-semibold ${
-                review.kind === 'SHOP' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'
-              }`}
-            >
-              {review.kind === 'SHOP'
-                ? t('reviews.shopReviewBadge')
-                : t('reviews.productReviewBadge')}
-            </span>
-            <span className="text-sm font-semibold text-blue-700">
-              {'★'.repeat(review.rating)}
-              {'☆'.repeat(5 - review.rating)}
-            </span>
-          </div>
-          <p className="mt-2 text-sm text-slate-600">{review.comment || t('reviews.noComment')}</p>
-          <p className="mt-2 text-xs text-slate-400">{formatDate(review.createdAt)}</p>
-        </article>
-      ))}
+      {reviews.map((review) => {
+        const productReview = review.kind === 'PRODUCT' ? (review as ProductReviewItem) : null;
+        return (
+          <article key={`${review.kind}-${review.id}`} className="py-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <strong className="flex items-center gap-2 text-sm text-slate-800">
+                <MessageOutlined className="text-blue-600" />
+                {review.reviewer.fullName}
+              </strong>
+              <span
+                className={`rounded-md px-2 py-1 text-[11px] font-semibold ${
+                  review.kind === 'SHOP'
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'bg-slate-100 text-slate-600'
+                }`}
+              >
+                {review.kind === 'SHOP'
+                  ? t('reviews.shopReviewBadge')
+                  : t('reviews.productReviewBadge')}
+              </span>
+              <span className="text-sm font-semibold text-blue-700">
+                {'★'.repeat(review.rating)}
+                {'☆'.repeat(5 - review.rating)}
+              </span>
+            </div>
+            <p className="mt-2 text-sm text-slate-600">
+              {review.comment || t('reviews.noComment')}
+            </p>
+            <p className="mt-2 text-xs text-slate-400">{formatDate(review.createdAt)}</p>
+
+            <SellerReviewReplyThread
+              reviewId={review.id}
+              kind={review.kind === 'SHOP' ? 'shop' : 'product'}
+              legacyReply={productReview?.sellerReply}
+              legacyRepliedAt={productReview?.sellerRepliedAt}
+              media={review.media}
+              mediaUrls={review.mediaUrls}
+              formatDate={formatDate}
+              canReply={canReply}
+            />
+          </article>
+        );
+      })}
     </div>
   );
 }

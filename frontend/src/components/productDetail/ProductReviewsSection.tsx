@@ -23,6 +23,7 @@ import {
 import { getBuyerOrdersApi } from '@/features/orders/services/orders';
 import { getStoredToken, getStoredUser } from '@/features/auth/services/auth';
 import { getBuyerReviewEligibility } from '../../utils/buyerReviewEligibility';
+import ReviewMediaPicker from '../reviews/ReviewMediaPicker';
 import ReviewItem from './ReviewItem';
 import { useToast } from '../ToastNotification';
 
@@ -117,6 +118,8 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
   const [includeShopReview, setIncludeShopReview] = useState<boolean>(true);
   const [shopComment, setShopComment] = useState('');
   const [comment, setComment] = useState('');
+  const [productFiles, setProductFiles] = useState<File[]>([]);
+  const [shopFiles, setShopFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -231,7 +234,11 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
     setErrorMsg(null);
 
     try {
-      const productReviewData = { rating: userRating, comment: comment.trim() };
+      const productReviewData = {
+        rating: userRating,
+        comment: comment.trim(),
+        files: productFiles,
+      };
       await saveBuyerProductReviewApi(
         Boolean(ownProductReview),
         reviewableOrderId,
@@ -248,9 +255,13 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
           {
             rating: shopRating,
             comment: shopComment.trim() || comment.trim(),
+            files: shopFiles,
           },
         );
       }
+
+      setProductFiles([]);
+      setShopFiles([]);
 
       const updatedExistingReview = Boolean(
         ownProductReview || (includeShopReview && ownShopReview),
@@ -361,7 +372,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
     reviewListContent = (
       <div className="divide-y divide-slate-100">
         {reviews.map((rev) => (
-          <ReviewItem key={rev.id} rev={rev} />
+          <ReviewItem key={rev.id} rev={rev} sellerId={sellerId} />
         ))}
       </div>
     );
@@ -509,6 +520,12 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
           className="w-full text-xs p-3 rounded-md border border-slate-300 bg-white text-slate-800 focus:border-blue-600 focus:outline-none"
         />
 
+        <ReviewMediaPicker
+          files={productFiles}
+          onChange={setProductFiles}
+          disabled={isSubmitting}
+        />
+
         {reviewEligibilityMessage && (
           <p
             className={`text-[11px] ${reviewEligibilityError ? 'text-rose-600' : 'text-slate-500'}`}
@@ -521,13 +538,16 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
         )}
 
         {sellerId && canReviewShop && includeShopReview && (
-          <input
-            type="text"
-            value={shopComment}
-            onChange={(e) => setShopComment(e.target.value)}
-            placeholder={t('product.shopReviewPlaceholder')}
-            className="w-full text-xs px-3 py-2.5 rounded-md border border-slate-300 bg-white text-slate-800 focus:border-blue-600 focus:outline-none"
-          />
+          <div className="space-y-2">
+            <input
+              type="text"
+              value={shopComment}
+              onChange={(e) => setShopComment(e.target.value)}
+              placeholder={t('product.shopReviewPlaceholder')}
+              className="w-full text-xs px-3 py-2.5 rounded-md border border-slate-300 bg-white text-slate-800 focus:border-blue-600 focus:outline-none"
+            />
+            <ReviewMediaPicker files={shopFiles} onChange={setShopFiles} disabled={isSubmitting} />
+          </div>
         )}
 
         <div className="flex justify-end">
