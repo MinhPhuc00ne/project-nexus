@@ -19,11 +19,11 @@ export class ShopController {
   @Get()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[GUEST / BUYER] Tìm kiếm và lọc danh sách gian hàng (Shop/Seller)',
+    summary: '[GUEST / BUYER] Search and filter shops',
     description:
-      'Hỗ trợ tìm kiếm theo từ khóa (tên shop, mô tả, tên chủ shop), lọc theo tỉnh/thành phố, sắp xếp theo uy tín/sản phẩm/mới nhất và phân trang.',
+      'Supports keyword search (shop name, description, owner name), city filtering, sorting (reputation, product count, newest), and pagination.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách gian hàng thành công' })
+  @ApiResponse({ status: 200, description: 'Shops retrieved successfully' })
   async getShops(@ZodQuery(QueryShopSchema) query: QueryShopInput) {
     return this.shopService.getShops(query);
   }
@@ -32,12 +32,12 @@ export class ShopController {
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[GUEST / BUYER] Xem thông tin chi tiết gian hàng và danh sách sản phẩm đang bán',
+    summary: '[GUEST / BUYER] Get shop details and active product listings',
     description:
-      'Trả về thông tin hồ sơ gian hàng (tên, avatar, địa chỉ, uy tín) cùng danh sách sản phẩm phân trang.',
+      'Returns shop profile details (name, avatar, address, reputation) and paginated active products.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy thông tin gian hàng thành công' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy gian hàng' })
+  @ApiResponse({ status: 200, description: 'Shop details retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Shop not found' })
   async getShopDetail(
     @ZodParam('id', UuidParamSchema) shopId: string,
     @ZodQuery(ShopDetailPaginationQuerySchema) query: ShopDetailPaginationQuery,

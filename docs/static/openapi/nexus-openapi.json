@@ -238,19 +238,19 @@
         },
         "responses": {
           "200": {
-            "description": "Đăng nhập thành công"
+            "description": "Signed in successfully"
           },
           "401": {
-            "description": "Email hoặc mật khẩu không chính xác"
+            "description": "Invalid email or password"
           }
         },
-        "summary": "Đăng nhập vào hệ thống",
+        "summary": "Sign in with email and password",
         "tags": ["1. AUTH"]
       }
     },
     "/api/v1/auth/google": {
       "get": {
-        "description": "LƯU Ý: Vui lòng mở link trực tiếp trên trình duyệt, không bấm Execute.",
+        "description": "Open this URL directly in a browser rather than executing from Swagger UI.",
         "operationId": "AuthController_googleAuth",
         "parameters": [],
         "responses": {
@@ -258,7 +258,7 @@
             "description": ""
           }
         },
-        "summary": "Đăng nhập bằng Google",
+        "summary": "Sign in with Google OAuth",
         "tags": ["1. AUTH"]
       }
     },
@@ -277,7 +277,7 @@
     },
     "/api/v1/auth/oauth/exchange": {
       "post": {
-        "description": "Nhận mã opaque từ redirect của Google callback và trả về access token, refresh token cùng thông tin tài khoản. Mã chỉ dùng được một lần, hết hạn sau 60 giây.",
+        "description": "Accepts the opaque code from the Google callback redirect and returns access token, refresh token, and account details. Single-use, expires after 60 seconds.",
         "operationId": "AuthController_exchangeOAuthCode",
         "parameters": [],
         "requestBody": {
@@ -303,13 +303,13 @@
         },
         "responses": {
           "200": {
-            "description": "Đổi mã thành công"
+            "description": "Code exchanged successfully"
           },
           "401": {
-            "description": "Mã không hợp lệ, đã dùng hoặc đã hết hạn"
+            "description": "Invalid, already-used, or expired code"
           }
         },
-        "summary": "Đổi mã OAuth một lần sang phiên đăng nhập",
+        "summary": "Exchange a one-time OAuth code for session tokens",
         "tags": ["1. AUTH"]
       }
     },
@@ -361,10 +361,10 @@
         },
         "responses": {
           "201": {
-            "description": "Đăng ký thành công, vui lòng check mail"
+            "description": "Registration succeeded; check email for OTP"
           }
         },
-        "summary": "Đăng ký tài khoản mới & gửi mã OTP về email",
+        "summary": "Register a new account and send an email OTP code",
         "tags": ["1. AUTH"]
       }
     },
@@ -402,10 +402,10 @@
         },
         "responses": {
           "200": {
-            "description": "Xác thực thành công"
+            "description": "Email verified successfully"
           }
         },
-        "summary": "Xác thực tài khoản bằng mã OTP nhận từ email",
+        "summary": "Verify account email using the OTP code",
         "tags": ["1. AUTH"]
       }
     },
@@ -436,13 +436,13 @@
         },
         "responses": {
           "200": {
-            "description": "Đã gửi mã OTP về email"
+            "description": "OTP sent to email"
           },
           "400": {
-            "description": "Email không tồn tại hoặc tài khoản chưa xác thực"
+            "description": "Email not found or account not verified"
           }
         },
-        "summary": "Quên mật khẩu - gửi mã OTP đặt lại mật khẩu về Gmail",
+        "summary": "Request a password-reset OTP code via email",
         "tags": ["1. AUTH"]
       }
     },
@@ -487,13 +487,13 @@
         },
         "responses": {
           "200": {
-            "description": "Đặt lại mật khẩu thành công"
+            "description": "Password reset successfully"
           },
           "400": {
-            "description": "Mã OTP không chính xác hoặc đã hết hạn"
+            "description": "Invalid or expired OTP code"
           }
         },
-        "summary": "Đặt lại mật khẩu bằng mã OTP nhận từ email",
+        "summary": "Reset password using the email OTP code",
         "tags": ["1. AUTH"]
       }
     },
@@ -523,13 +523,13 @@
         },
         "responses": {
           "200": {
-            "description": "Làm mới token thành công"
+            "description": "Token refreshed successfully"
           },
           "401": {
-            "description": "Refresh token không hợp lệ hoặc đã hết hạn"
+            "description": "Invalid or expired refresh token"
           }
         },
-        "summary": "Làm mới Access Token bằng Refresh Token",
+        "summary": "Refresh access token using a refresh token",
         "tags": ["1. AUTH"]
       }
     },
@@ -559,24 +559,24 @@
         },
         "responses": {
           "200": {
-            "description": "Đăng xuất thành công"
+            "description": "Signed out successfully"
           }
         },
-        "summary": "Đăng xuất và thu hồi Refresh Token",
+        "summary": "Sign out and revoke the refresh token",
         "tags": ["1. AUTH"]
       }
     },
     "/api/v1/auth/me": {
       "get": {
-        "description": "Bóc tách userId từ Token qua JwtAuthGuard và trả về thông tin chi tiết.",
+        "description": "Extracts userId from the JWT via JwtAuthGuard and returns profile details.",
         "operationId": "AuthController_getProfile",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Lấy thông tin tài khoản thành công"
+            "description": "Profile retrieved successfully"
           },
           "401": {
-            "description": "Chưa đăng nhập hoặc token không hợp lệ"
+            "description": "Unauthenticated or invalid token"
           }
         },
         "security": [
@@ -584,13 +584,13 @@
             "bearer": []
           }
         ],
-        "summary": "PROFILE.VIEW - Xem thông tin hồ sơ của tài khoản đang đăng nhập",
+        "summary": "PROFILE.VIEW - Get the authenticated user profile",
         "tags": ["1. AUTH"]
       }
     },
     "/api/v1/auth/profile": {
       "patch": {
-        "description": "Buyer cập nhật thông thường; Seller cần đăng nhập bằng mật khẩu trong 5 phút gần đây, mật khẩu hiện tại hoặc token reauthenticate hợp lệ.",
+        "description": "Buyers update directly; sellers require a password sign-in within the last 5 minutes, current password, or a valid reauthentication token.",
         "operationId": "AuthController_updateProfile",
         "parameters": [],
         "requestBody": {
@@ -635,13 +635,13 @@
         },
         "responses": {
           "200": {
-            "description": "Cập nhật hồ sơ thành công"
+            "description": "Profile updated successfully"
           },
           "400": {
-            "description": "Dữ liệu không hợp lệ"
+            "description": "Invalid input data"
           },
           "401": {
-            "description": "Chưa đăng nhập"
+            "description": "Unauthenticated"
           }
         },
         "security": [
@@ -649,7 +649,7 @@
             "bearer": []
           }
         ],
-        "summary": "PROFILE.UPDATE - Cập nhật thông tin cá nhân (Họ tên, SĐT, Avatar)",
+        "summary": "PROFILE.UPDATE - Update personal profile (full name, phone number, avatar)",
         "tags": ["1. AUTH"]
       }
     },
@@ -687,21 +687,21 @@
             "bearer": []
           }
         ],
-        "summary": "Xác minh lại mật khẩu, cấp token cập nhật hồ sơ trong 5 phút",
+        "summary": "Re-verify password and issue a 5-minute profile update token",
         "tags": ["1. AUTH"]
       }
     },
     "/api/v1/auth/change-password/request-otp": {
       "post": {
-        "description": "Tạo mã OTP ngẫu nhiên 6 số (hạn 15 phút) gửi về hòm thư Gmail hiện tại của người dùng.",
+        "description": "Generates a 6-digit OTP (15-minute TTL) and sends it to the user email address.",
         "operationId": "AuthController_requestChangePasswordOtp",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Đã gửi mã OTP về Gmail thành công"
+            "description": "OTP sent to email successfully"
           },
           "401": {
-            "description": "Chưa đăng nhập"
+            "description": "Unauthenticated"
           }
         },
         "security": [
@@ -709,13 +709,13 @@
             "bearer": []
           }
         ],
-        "summary": "PROFILE.CHANGE_PASSWORD (Bước 1) - Gửi mã OTP xác nhận đổi mật khẩu về Gmail",
+        "summary": "PROFILE.CHANGE_PASSWORD (Step 1) - Send password-change OTP to email",
         "tags": ["1. AUTH"]
       }
     },
     "/api/v1/auth/change-password/confirm-otp": {
       "post": {
-        "description": "Xác thực OTP, cập nhật mật khẩu mới và thu hồi toàn bộ phiên đăng nhập cũ để bảo mật tài khoản.",
+        "description": "Verifies the OTP, updates the password, and revokes all existing sessions for security.",
         "operationId": "AuthController_confirmChangePasswordWithOtp",
         "parameters": [],
         "requestBody": {
@@ -749,13 +749,13 @@
         },
         "responses": {
           "200": {
-            "description": "Đổi mật khẩu thành công"
+            "description": "Password changed successfully"
           },
           "400": {
-            "description": "Mã OTP không đúng hoặc đã hết hạn"
+            "description": "Invalid or expired OTP code"
           },
           "401": {
-            "description": "Chưa đăng nhập"
+            "description": "Unauthenticated"
           }
         },
         "security": [
@@ -763,14 +763,14 @@
             "bearer": []
           }
         ],
-        "summary": "PROFILE.CHANGE_PASSWORD (Bước 2) - Xác nhận OTP và cập nhật mật khẩu mới",
+        "summary": "PROFILE.CHANGE_PASSWORD (Step 2) - Verify OTP and update password",
         "tags": ["1. AUTH"]
       }
     },
     "/api/v1/staff/invitation-info": {
       "get": {
         "deprecated": true,
-        "description": "Staff nhận tài khoản và mật khẩu ngẫu nhiên qua email, đăng nhập ngay; dùng Quên mật khẩu để đặt lại.",
+        "description": "Staff accounts receive credentials via email and sign in directly; use Forgot Password to reset.",
         "operationId": "StaffController_getInvitationInfo",
         "parameters": [
           {
@@ -787,14 +787,14 @@
             "description": ""
           }
         },
-        "summary": "[LEGACY] Tra cứu token kích hoạt đã ngừng hỗ trợ (410)",
+        "summary": "[LEGACY] Deprecated activation token lookup (410)",
         "tags": ["4. STAFF"]
       }
     },
     "/api/v1/staff/activate": {
       "post": {
         "deprecated": true,
-        "description": "Tài khoản Staff được tạo và kích hoạt khi Admin gửi lời mời. Endpoint này không thể tạo tài khoản hoặc thay mật khẩu.",
+        "description": "Staff accounts are created and activated when an Admin sends an invitation. This endpoint no longer creates accounts or updates passwords.",
         "operationId": "StaffController_activateStaff",
         "parameters": [],
         "requestBody": {
@@ -846,7 +846,7 @@
             "description": ""
           }
         },
-        "summary": "[LEGACY] Kích hoạt bằng token đã ngừng hỗ trợ (410)",
+        "summary": "[LEGACY] Deprecated token-based staff activation (410)",
         "tags": ["4. STAFF"]
       }
     },
@@ -864,7 +864,7 @@
             "bearer": []
           }
         ],
-        "summary": "[STAFF] PROFILE.VIEW - Xem thông tin hồ sơ của Staff",
+        "summary": "[STAFF] PROFILE.VIEW - View Staff profile",
         "tags": ["4. STAFF"]
       },
       "patch": {
@@ -908,13 +908,13 @@
             "bearer": []
           }
         ],
-        "summary": "Staff cập nhật họ tên, số điện thoại và avatar của chính mình",
+        "summary": "Update own full name, phone number, and avatar (Staff)",
         "tags": ["4. STAFF"]
       }
     },
     "/api/v1/staff/forgot-password": {
       "post": {
-        "description": "Staff nhập tài khoản được cấp dạng HuyNQ@staff.com. OTP gửi về email cá nhân; dùng chung luồng Quên mật khẩu của hệ thống.",
+        "description": "Accepts the issued @staff.com account and sends a password-reset OTP to the staff personal email.",
         "operationId": "StaffController_forgotPassword",
         "parameters": [],
         "requestBody": {
@@ -943,13 +943,13 @@
             "description": ""
           }
         },
-        "summary": "[STAFF] PROFILE.RESET_PASSWORD (Bước 1) - Quên mật khẩu Staff: Gửi OTP 6 số về email cá nhân",
+        "summary": "[STAFF] PROFILE.RESET_PASSWORD (Step 1) - Send 6-digit OTP to personal email",
         "tags": ["4. STAFF"]
       }
     },
     "/api/v1/staff/reset-password": {
       "post": {
-        "description": "Staff nhập tài khoản @staff.com, OTP nhận ở email cá nhân và mật khẩu mới. Dùng chung xử lý với reset-password thông thường.",
+        "description": "Accepts the @staff.com account, personal email OTP, and new password using the standard password-reset flow.",
         "operationId": "StaffController_resetPassword",
         "parameters": [],
         "requestBody": {
@@ -991,13 +991,13 @@
             "description": ""
           }
         },
-        "summary": "[STAFF] PROFILE.RESET_PASSWORD (Bước 2) - Xác nhận OTP và đặt lại mật khẩu mới cho Staff",
+        "summary": "[STAFF] PROFILE.RESET_PASSWORD (Step 2) - Verify OTP and set new Staff password",
         "tags": ["4. STAFF"]
       }
     },
     "/api/v1/staff/change-password": {
       "post": {
-        "description": "Staff nhập mật khẩu hiện tại và mật khẩu mới để đổi mật khẩu bảo mật.",
+        "description": "Requires current password and new password.",
         "operationId": "StaffController_changePassword",
         "parameters": [],
         "requestBody": {
@@ -1036,21 +1036,21 @@
             "bearer": []
           }
         ],
-        "summary": "[STAFF] PROFILE.CHANGE_PASSWORD - Đổi mật khẩu trực tiếp cho Staff khi đã đăng nhập",
+        "summary": "[STAFF] PROFILE.CHANGE_PASSWORD - Change password while signed in (Staff)",
         "tags": ["4. STAFF"]
       }
     },
     "/api/v1/users/me": {
       "get": {
-        "description": "Trả về thông tin chi tiết bao gồm vai trò (role), trạng thái người bán (isSellerActive) và số dư ví.",
+        "description": "Returns role, isSellerActive flag, and wallet balance.",
         "operationId": "UsersController_getMe",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Lấy thông tin thành công"
+            "description": "User profile retrieved successfully"
           },
           "401": {
-            "description": "Chưa đăng nhập hoặc token không hợp lệ"
+            "description": "Unauthenticated or invalid token"
           }
         },
         "security": [
@@ -1058,13 +1058,13 @@
             "bearer": []
           }
         ],
-        "summary": "Lấy thông tin tài khoản hiện tại, số dư ví và trạng thái Seller",
+        "summary": "Get current account details, wallet balance, and Seller status",
         "tags": ["2. BUYER"]
       }
     },
     "/api/v1/users/toggle-seller": {
       "patch": {
-        "description": "Chỉ những tài khoản đã được Admin nâng cấp thành công lên SELLER mới có quyền thực hiện thao tác này. Nếu tài khoản chưa phải Seller, hệ thống sẽ trả về lỗi 403 Forbidden.",
+        "description": "Only accounts upgraded to SELLER by Admin may toggle modes; non-seller accounts receive 403 Forbidden.",
         "operationId": "UsersController_toggleSeller",
         "parameters": [],
         "requestBody": {
@@ -1087,10 +1087,10 @@
         },
         "responses": {
           "200": {
-            "description": "Chuyển đổi trạng thái tài khoản thành công"
+            "description": "Operating mode updated successfully"
           },
           "403": {
-            "description": "Tài khoản chưa được cấp quyền Seller, không thể chuyển đổi"
+            "description": "Account does not have Seller privileges"
           }
         },
         "security": [
@@ -1098,13 +1098,13 @@
             "bearer": []
           }
         ],
-        "summary": "Chuyển đổi linh hoạt giữa giao diện Người mua và Người bán",
+        "summary": "Switch between Buyer and Seller modes",
         "tags": ["2. BUYER"]
       }
     },
     "/api/v1/users/seller-request": {
       "post": {
-        "description": "Gửi thông tin gian hàng và bắt buộc đính kèm file chứng minh (ảnh chụp CCCD/CMND, Giấy phép kinh doanh, hợp đồng thương nhân, v.v.). Có thể chọn upload file trực tiếp hoặc truyền attachmentUrl.",
+        "description": "Submits shop details and required verification proof (national ID, business license, or merchant contract) via file upload or attachmentUrl.",
         "operationId": "UsersController_createSellerRequest",
         "parameters": [],
         "requestBody": {
@@ -1294,10 +1294,10 @@
         },
         "responses": {
           "201": {
-            "description": "Gửi yêu cầu nâng cấp và tài liệu chứng minh thành công, đang chờ Admin duyệt"
+            "description": "Seller upgrade request submitted and pending Admin review"
           },
           "400": {
-            "description": "Chưa đính kèm tài liệu chứng minh, hoặc đã có yêu cầu PENDING, hoặc tài khoản đã là Seller"
+            "description": "Missing verification document, existing PENDING request, or already a Seller"
           }
         },
         "security": [
@@ -1305,7 +1305,7 @@
             "bearer": []
           }
         ],
-        "summary": "Người mua (Buyer) gửi yêu cầu và file/tài liệu đính kèm chứng minh để nâng cấp lên Seller",
+        "summary": "Submit a Buyer-to-Seller upgrade request with verification documents",
         "tags": ["2. BUYER"]
       }
     },
@@ -1315,7 +1315,7 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Lấy danh sách yêu cầu thành công"
+            "description": "Seller upgrade requests retrieved successfully"
           }
         },
         "security": [
@@ -1323,7 +1323,7 @@
             "bearer": []
           }
         ],
-        "summary": "Xem lịch sử và trạng thái các yêu cầu nâng cấp Seller của tài khoản hiện tại",
+        "summary": "List Seller upgrade request history and statuses for the current user",
         "tags": ["2. BUYER"]
       }
     },
@@ -1456,7 +1456,7 @@
             "bearer": []
           }
         ],
-        "summary": "[BUYER] PROFILE.VIEW - Xem thông tin cá nhân và số dư ví",
+        "summary": "[BUYER] PROFILE.VIEW - View personal profile and wallet balance",
         "tags": ["2. BUYER"]
       },
       "patch": {
@@ -1533,13 +1533,13 @@
             "bearer": []
           }
         ],
-        "summary": "[BUYER / SELLER] PROFILE.UPDATE - Cập nhật thông tin hồ sơ cá nhân",
+        "summary": "[BUYER / SELLER] PROFILE.UPDATE - Update personal profile details",
         "tags": ["2. BUYER"]
       }
     },
     "/api/v1/buyer/seller-upgrade/upload-proof": {
       "post": {
-        "description": "Hỗ trợ định dạng file ảnh hoặc PDF chứng minh hoạt động kinh doanh/căn cước.",
+        "description": "Supports image or PDF proof of business activity or national ID.",
         "operationId": "BuyerController_uploadProof",
         "parameters": [],
         "responses": {
@@ -1552,13 +1552,13 @@
             "bearer": []
           }
         ],
-        "summary": "[BUYER] Tải lên ảnh hoặc file chứng minh để nộp hồ sơ xin lên Seller",
+        "summary": "[BUYER] Upload verification image or PDF for Seller upgrade request",
         "tags": ["2. BUYER"]
       }
     },
     "/api/v1/buyer/addresses/search": {
       "get": {
-        "description": "Tìm kiếm gợi ý địa chỉ và tọa độ GPS qua bản đồ toàn cầu (OpenStreetMap Nominatim).",
+        "description": "Searches address suggestions and GPS coordinates via OpenStreetMap Nominatim.",
         "operationId": "BuyerController_searchAddress",
         "parameters": [
           {
@@ -1581,13 +1581,13 @@
             "bearer": []
           }
         ],
-        "summary": "[BUYER] Tìm kiếm gợi ý địa chỉ toàn cầu (Geocoding Autocomplete)",
+        "summary": "[BUYER] Search global address suggestions (Geocoding Autocomplete)",
         "tags": ["2. BUYER"]
       }
     },
     "/api/v1/buyer/addresses/reverse": {
       "get": {
-        "description": "Truyền tọa độ GPS (lat, lng) khi kéo ghim trên bản đồ để tự động bóc tách số nhà, phường xã, quận huyện, tỉnh thành.",
+        "description": "Accepts GPS coordinates (lat, lng) to extract street, ward, district, and province.",
         "operationId": "BuyerController_reverseGeocode",
         "parameters": [
           {
@@ -1621,7 +1621,7 @@
             "bearer": []
           }
         ],
-        "summary": "[BUYER] Dịch ngược tọa độ ghim bản đồ thành địa chỉ chi tiết (Reverse Geocoding)",
+        "summary": "[BUYER] Reverse geocode map pin coordinates into structured address fields",
         "tags": ["2. BUYER"]
       }
     },
@@ -1639,7 +1639,7 @@
             "bearer": []
           }
         ],
-        "summary": "[BUYER] Xem danh sách sổ địa chỉ nhận hàng của Buyer",
+        "summary": "[BUYER] List saved shipping addresses",
         "tags": ["2. BUYER"]
       },
       "post": {
@@ -1725,7 +1725,7 @@
             "bearer": []
           }
         ],
-        "summary": "[BUYER] Thêm địa chỉ nhận hàng mới kèm tọa độ bản đồ",
+        "summary": "[BUYER] Add a new shipping address with map coordinates",
         "tags": ["2. BUYER"]
       }
     },
@@ -1811,7 +1811,7 @@
             "bearer": []
           }
         ],
-        "summary": "[BUYER] Cập nhật thông tin địa chỉ và tọa độ bản đồ",
+        "summary": "[BUYER] Update a shipping address and map coordinates",
         "tags": ["2. BUYER"]
       },
       "delete": {
@@ -1838,7 +1838,7 @@
             "bearer": []
           }
         ],
-        "summary": "[BUYER] Xóa một địa chỉ nhận hàng",
+        "summary": "[BUYER] Delete a shipping address",
         "tags": ["2. BUYER"]
       }
     },
@@ -1867,7 +1867,7 @@
             "bearer": []
           }
         ],
-        "summary": "[BUYER] Đặt làm địa chỉ nhận hàng mặc định",
+        "summary": "[BUYER] Set a shipping address as default",
         "tags": ["2. BUYER"]
       }
     },
@@ -2018,13 +2018,13 @@
             "bearer": []
           }
         ],
-        "summary": "[SELLER] PROFILE.VIEW - Xem hồ sơ và ví người bán",
+        "summary": "[SELLER] PROFILE.VIEW - View seller profile and wallet balance",
         "tags": ["3. SELLER"]
       }
     },
     "/api/v1/seller/shop-profile": {
       "get": {
-        "description": "Lấy thông tin tên gian hàng, mô tả, hotline, email kinh doanh và địa chỉ kho hàng.",
+        "description": "Returns shop name, description, hotline, business email, and warehouse address.",
         "operationId": "SellerController_getShopProfile",
         "parameters": [],
         "responses": {
@@ -2037,11 +2037,11 @@
             "bearer": []
           }
         ],
-        "summary": "[SELLER] Xem thông tin chi tiết hồ sơ gian hàng của mình",
+        "summary": "[SELLER] View shop profile details",
         "tags": ["3. SELLER"]
       },
       "patch": {
-        "description": "Người bán cập nhật lại tên thương hiệu gian hàng, lời giới thiệu/mô tả shop, số hotline, email liên hệ và địa chỉ kho xuất hàng.",
+        "description": "Updates shop brand name, description, hotline, contact email, and pickup warehouse address.",
         "operationId": "SellerController_updateShopProfile",
         "parameters": [],
         "requestBody": {
@@ -2127,10 +2127,10 @@
         },
         "responses": {
           "200": {
-            "description": "Cập nhật thông tin gian hàng thành công"
+            "description": "Shop profile updated successfully"
           },
           "403": {
-            "description": "Chưa có quyền Seller hoặc shop đang bị đình chỉ"
+            "description": "Missing Seller role or shop is suspended"
           }
         },
         "security": [
@@ -2138,13 +2138,13 @@
             "bearer": []
           }
         ],
-        "summary": "[SELLER] Cập nhật thông tin gian hàng (Sửa tên, mô tả, thông tin liên hệ và địa chỉ shop)",
+        "summary": "[SELLER] Update shop profile (name, description, contact info, and warehouse address)",
         "tags": ["3. SELLER"]
       }
     },
     "/api/v1/seller/toggle-mode": {
       "patch": {
-        "description": "Sau khi Buyer đã được Admin duyệt thành tài khoản Seller, tài khoản có thể linh hoạt chuyển đổi chế độ hoạt động (isSellerActive: true/false) trong cùng phiên làm việc.",
+        "description": "Allows approved Seller accounts to switch isSellerActive (true or false) within the same session.",
         "operationId": "SellerController_toggleSellerMode",
         "parameters": [],
         "responses": {
@@ -2157,13 +2157,13 @@
             "bearer": []
           }
         ],
-        "summary": "[SELLER / BUYER] Chuyển đổi qua lại giữa role Seller hoặc Buyer",
+        "summary": "[SELLER / BUYER] Toggle between Seller and Buyer operating modes",
         "tags": ["3. SELLER"]
       }
     },
     "/api/v1/fulfillment/shipping/fee": {
       "post": {
-        "description": "Tra cứu cước phí vận chuyển chính xác theo quy chuẩn bảng giá Giao Hàng Nhanh: Mã Quận/Huyện, Phường/Xã, trọng lượng gram và kích thước 3 chiều.",
+        "description": "Queries GHN shipping fee using district ID, ward code, weight in grams, and parcel dimensions.",
         "operationId": "FulfillmentController_calculateOfficialGhnFee",
         "parameters": [],
         "requestBody": {
@@ -2312,7 +2312,7 @@
         },
         "responses": {
           "200": {
-            "description": "Cước phí vận chuyển GHN chính thức"
+            "description": "Official GHN shipping fee"
           }
         },
         "security": [
@@ -2320,13 +2320,13 @@
             "bearer": []
           }
         ],
-        "summary": "[ADMIN] Kiểm tra API tính phí bằng shop GHN cấu hình chung; đơn seller dùng quote riêng",
+        "summary": "[ADMIN] Test GHN shipping fee calculation using default platform shop (seller orders use shop-specific quotes)",
         "tags": ["10. FULFILLMENT & SHIPPING"]
       }
     },
     "/api/v1/fulfillment/shipping/quote": {
       "post": {
-        "description": "Phí do GHN trả về theo địa chỉ và sản phẩm. Khoảng cách chỉ để tham khảo, không dùng tính cước. GHN lỗi sẽ không có báo giá dự phòng.",
+        "description": "Returns the fee calculated by GHN for the destination address and items. Distance is informational only; no fallback quote is generated if GHN fails.",
         "operationId": "FulfillmentController_getShippingQuote",
         "parameters": [],
         "requestBody": {
@@ -2432,7 +2432,7 @@
         },
         "responses": {
           "200": {
-            "description": "Báo giá vận chuyển chi tiết"
+            "description": "Detailed shipping quote"
           }
         },
         "security": [
@@ -2440,13 +2440,13 @@
             "bearer": []
           }
         ],
-        "summary": "Báo giá vận chuyển từ API GHN",
+        "summary": "Quote shipping fee from GHN API",
         "tags": ["10. FULFILLMENT & SHIPPING"]
       }
     },
     "/api/v1/fulfillment/shipping/distance": {
       "post": {
-        "description": "Chỉ trả khoảng cách và thời gian di chuyển. Không tính hoặc trả phí vận chuyển.",
+        "description": "Returns only distance and travel duration without computing shipping fees.",
         "operationId": "FulfillmentController_computeDirectDistance",
         "parameters": [],
         "requestBody": {
@@ -2490,16 +2490,16 @@
         },
         "responses": {
           "200": {
-            "description": "Khoảng cách và thời gian di chuyển tham khảo"
+            "description": "Informational distance and travel duration"
           }
         },
-        "summary": "Đo khoảng cách tham khảo giữa hai tọa độ GPS",
+        "summary": "Measure informational road distance between two GPS coordinates",
         "tags": ["10. FULFILLMENT & SHIPPING"]
       }
     },
     "/api/v1/fulfillment/shipping/diagnostic": {
       "get": {
-        "description": "Kiểm tra token, shop ID, URL môi trường (Sandbox/Production) và trạng thái kết nối GHN.",
+        "description": "Checks token, shop ID, environment URL (Sandbox or Production), and GHN connection status.",
         "operationId": "FulfillmentController_getDiagnostic",
         "parameters": [],
         "responses": {
@@ -2507,7 +2507,7 @@
             "description": ""
           }
         },
-        "summary": "Chẩn đoán cấu hình và kiểm tra kết nối cổng GHN Express",
+        "summary": "Diagnose GHN Express configuration and connectivity",
         "tags": ["10. FULFILLMENT & SHIPPING"]
       }
     },
@@ -2520,7 +2520,7 @@
             "description": ""
           }
         },
-        "summary": "Lấy danh sách 63 Tỉnh/Thành phố từ GHN Master Data",
+        "summary": "List provinces from GHN Master Data",
         "tags": ["10. FULFILLMENT & SHIPPING"]
       }
     },
@@ -2545,7 +2545,7 @@
             "description": ""
           }
         },
-        "summary": "Lấy danh sách Quận/Huyện theo Tỉnh/Thành từ GHN",
+        "summary": "List districts by province ID from GHN",
         "tags": ["10. FULFILLMENT & SHIPPING"]
       }
     },
@@ -2570,7 +2570,7 @@
             "description": ""
           }
         },
-        "summary": "Lấy danh sách Phường/Xã theo Quận/Huyện từ GHN",
+        "summary": "List wards by district ID from GHN",
         "tags": ["10. FULFILLMENT & SHIPPING"]
       }
     },
@@ -2606,7 +2606,7 @@
             "description": ""
           }
         },
-        "summary": "Tra cứu các gói dịch vụ GHN khả dụng giữa 2 Quận/Huyện",
+        "summary": "Query available GHN services between two districts",
         "tags": ["10. FULFILLMENT & SHIPPING"]
       }
     },
@@ -2660,7 +2660,7 @@
             "description": ""
           }
         },
-        "summary": "Nhận callback GHN (chiều giao đi và chiều hoàn hàng); xác minh lại trạng thái qua API GHN",
+        "summary": "Receive GHN webhook callbacks for forward and return shipments and re-verify status via GHN API",
         "tags": ["10. FULFILLMENT & SHIPPING"]
       }
     },
@@ -2678,11 +2678,11 @@
             "bearer": []
           }
         ],
-        "summary": "[SELLER] Đồng bộ điểm lấy hàng GHN từ hồ sơ gian hàng",
+        "summary": "[SELLER] Sync GHN pickup point from shop profile",
         "tags": ["10. FULFILLMENT & SHIPPING"]
       },
       "put": {
-        "description": "Địa chỉ gửi lên phải khớp hồ sơ gian hàng. Thay đổi địa chỉ tại shop-profile.",
+        "description": "Submitted address must match shop profile. Update address under shop-profile.",
         "operationId": "SellerPickupController_propose",
         "parameters": [],
         "requestBody": {
@@ -2749,7 +2749,7 @@
             "bearer": []
           }
         ],
-        "summary": "[SELLER] Kết nối lại GHN bằng địa chỉ hồ sơ gian hàng",
+        "summary": "[SELLER] Reconnect GHN using shop profile address",
         "tags": ["10. FULFILLMENT & SHIPPING"]
       }
     },
@@ -2767,7 +2767,7 @@
             "bearer": []
           }
         ],
-        "summary": "[ADMIN] Xem điểm lấy hàng đang chờ xác minh",
+        "summary": "[ADMIN] List pickup points pending verification",
         "tags": ["10. FULFILLMENT & SHIPPING"]
       }
     },
@@ -2808,7 +2808,7 @@
             "bearer": []
           }
         ],
-        "summary": "[ADMIN] Danh sách điểm GHN thuộc tài khoản sàn, dùng last_offset để phân trang",
+        "summary": "[ADMIN] List GHN shops on the platform account using last_offset pagination",
         "tags": ["10. FULFILLMENT & SHIPPING"]
       }
     },
@@ -2857,7 +2857,7 @@
             "bearer": []
           }
         ],
-        "summary": "[ADMIN] Xác minh và gắn điểm lấy hàng với shop GHN thực tế",
+        "summary": "[ADMIN] Verify and bind a pickup point to a real GHN shop",
         "tags": ["10. FULFILLMENT & SHIPPING"]
       }
     },
@@ -5831,7 +5831,7 @@
     },
     "/api/v1/backoffice/disputes": {
       "get": {
-        "description": "API theo quy chuẩn SRS Backoffice để Staff/Admin truy xuất toàn bộ khiếu nại đang chờ xử lý và lịch sử xử lý tranh chấp trên nền tảng.",
+        "description": "Backoffice endpoint for Staff and Admin to query pending disputes and dispute resolution history across the platform.",
         "operationId": "BackofficeDisputesController_getDisputes",
         "parameters": [
           {
@@ -5893,7 +5893,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Lấy danh sách khiếu nại thành công"
+            "description": "Disputes retrieved successfully"
           }
         },
         "security": [
@@ -5901,7 +5901,7 @@
             "bearer": []
           }
         ],
-        "summary": "[STAFF / ADMIN] Tra cứu danh sách khiếu nại toàn sàn (Backoffice API)",
+        "summary": "[STAFF / ADMIN] List marketplace disputes (Backoffice API)",
         "tags": ["5. ADMIN"]
       }
     },
@@ -5989,7 +5989,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin & Nhân viên hỗ trợ tra cứu đơn toàn sàn, lọc và phân trang",
+        "summary": "List marketplace orders with filters and pagination (Admin & Support Staff)",
         "tags": ["5. ADMIN - ORDERS"]
       }
     },
@@ -6018,7 +6018,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin & Nhân viên hỗ trợ xem chi tiết đơn, thanh toán, vận chuyển, hậu mãi và lịch sử thao tác",
+        "summary": "Get order details including payment, shipping, after-sales, and action history (Admin & Support Staff)",
         "tags": ["5. ADMIN - ORDERS"]
       }
     },
@@ -6090,7 +6090,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin điều chỉnh điểm uy tín, có nhật ký người thực hiện",
+        "summary": "Adjust user reputation score with actor audit log (Admin)",
         "tags": ["5. ADMIN"]
       }
     },
@@ -6173,7 +6173,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin/Staff tra cứu danh sách bình luận/đánh giá toàn sàn kèm điểm uy tín tác giả",
+        "summary": "List marketplace reviews with author reputation scores (Admin & Support Staff)",
         "tags": ["Reviews (moderation)"]
       }
     },
@@ -6229,7 +6229,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin/Staff xóa bình luận sản phẩm vi phạm, trừ điểm uy tín tác giả và gửi thông báo",
+        "summary": "Delete a violating product review, deduct author reputation, and notify (Admin & Support Staff)",
         "tags": ["Reviews (moderation)"]
       }
     },
@@ -6285,7 +6285,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin/Staff gỡ phản hồi (sellerReply) vi phạm trên đánh giá sản phẩm, trừ điểm uy tín Seller và gửi thông báo",
+        "summary": "Remove a violating seller reply on a product review, deduct seller reputation, and notify (Admin & Support Staff)",
         "tags": ["Reviews (moderation)"]
       }
     },
@@ -6341,7 +6341,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin/Staff xóa đánh giá gian hàng vi phạm, trừ điểm uy tín tác giả và gửi thông báo",
+        "summary": "Delete a violating shop review, deduct author reputation, and notify (Admin & Support Staff)",
         "tags": ["Reviews (moderation)"]
       }
     },
@@ -6406,7 +6406,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin/Staff ẩn hoặc bỏ ẩn đánh giá sản phẩm tiêu cực (không xóa, tác giả vẫn xem được trạng thái bị ẩn)",
+        "summary": "Hide or unhide a negative product review without deletion; the author can still view its hidden status (Admin & Support Staff)",
         "tags": ["Reviews (moderation)"]
       }
     },
@@ -6471,7 +6471,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin/Staff ẩn hoặc bỏ ẩn đánh giá gian hàng tiêu cực (không xóa)",
+        "summary": "Hide or unhide a negative shop review without deletion (Admin & Support Staff)",
         "tags": ["Reviews (moderation)"]
       }
     },
@@ -6536,7 +6536,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin/Staff ẩn hoặc bỏ ẩn tin nhắn phản hồi tiêu cực trong đánh giá (không xóa)",
+        "summary": "Hide or unhide a negative review reply without deletion (Admin & Support Staff)",
         "tags": ["Reviews (moderation)"]
       }
     },
@@ -6586,7 +6586,7 @@
             "bearer": []
           }
         ],
-        "summary": "Danh sách báo cáo vi phạm cần xử lý",
+        "summary": "List violation reports pending moderation",
         "tags": ["Reviews and reports"]
       }
     },
@@ -6644,25 +6644,25 @@
             "bearer": []
           }
         ],
-        "summary": "Xử lý báo cáo: đang điều tra, xác nhận hoặc bác bỏ",
+        "summary": "Review a report: mark investigating, confirm, or dismiss",
         "tags": ["Reviews and reports"]
       }
     },
     "/api/v1/catalog/categories": {
       "get": {
-        "description": "Trả về danh sách danh mục phân cấp (Cha - Con - Cháu) phục vụ menu tìm kiếm và form đăng bán sản phẩm của Seller.",
+        "description": "Returns the nested category tree for search filters and seller product creation forms.",
         "operationId": "CategoryController_getCategories",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Lấy cây danh mục thành công"
+            "description": "Category tree retrieved successfully"
           }
         },
-        "summary": "[CATALOG] Lấy cây phân cấp danh mục sản phẩm (Tối đa 3 cấp)",
+        "summary": "[CATALOG] Get the product category hierarchy (up to 3 levels)",
         "tags": ["7. CATALOG"]
       },
       "post": {
-        "description": "Chỉ Admin có quyền tạo danh mục mới. Hỗ trợ tạo danh mục gốc (level 1) hoặc danh mục con (truyền parentId của cha).",
+        "description": "Admin-only endpoint to create a root category (level 1) or child category via parentId.",
         "operationId": "CategoryController_createCategory",
         "parameters": [],
         "requestBody": {
@@ -6699,13 +6699,13 @@
         },
         "responses": {
           "201": {
-            "description": "Tạo danh mục thành công"
+            "description": "Category created successfully"
           },
           "400": {
-            "description": "Vượt quá giới hạn 3 tầng danh mục hoặc dữ liệu không hợp lệ"
+            "description": "Exceeds 3-level hierarchy limit or invalid input"
           },
           "409": {
-            "description": "Tên danh mục đã tồn tại"
+            "description": "Category name already exists"
           }
         },
         "security": [
@@ -6713,13 +6713,13 @@
             "bearer": []
           }
         ],
-        "summary": "[ADMIN] Tạo mới danh mục hàng hóa (tối đa 3 cấp)",
+        "summary": "[ADMIN] Create a product category (up to 3 levels)",
         "tags": ["7. CATALOG"]
       }
     },
     "/api/v1/catalog/categories/{id}": {
       "patch": {
-        "description": "Admin chỉnh sửa tên, slug hoặc dời danh mục sang danh mục cha khác (parentId). Hệ thống tự động tính toán lại cấp độ level.",
+        "description": "Updates category name, slug, or parentId and automatically recalculates hierarchy levels.",
         "operationId": "CategoryController_updateCategory",
         "parameters": [
           {
@@ -6765,13 +6765,13 @@
         },
         "responses": {
           "200": {
-            "description": "Cập nhật danh mục thành công"
+            "description": "Category updated successfully"
           },
           "400": {
-            "description": "Không thể chuyển vì gây vòng lặp hoặc vượt quá 3 cấp"
+            "description": "Cycle detected or exceeds 3-level hierarchy limit"
           },
           "404": {
-            "description": "Không tìm thấy danh mục"
+            "description": "Category not found"
           }
         },
         "security": [
@@ -6779,11 +6779,11 @@
             "bearer": []
           }
         ],
-        "summary": "[ADMIN] Cập nhật danh mục hoặc điều chuyển danh mục cha (re-parenting)",
+        "summary": "[ADMIN] Update or re-parent a category",
         "tags": ["7. CATALOG"]
       },
       "delete": {
-        "description": "Chỉ được xóa danh mục khi không chứa danh mục con và không có sản phẩm nào đang liên kết.",
+        "description": "Permitted only when the category has no child categories and no linked products.",
         "operationId": "CategoryController_deleteCategory",
         "parameters": [
           {
@@ -6799,13 +6799,13 @@
         ],
         "responses": {
           "200": {
-            "description": "Xóa danh mục thành công"
+            "description": "Category deleted successfully"
           },
           "400": {
-            "description": "Danh mục đang có danh mục con hoặc còn sản phẩm liên kết"
+            "description": "Category still contains subcategories or linked products"
           },
           "404": {
-            "description": "Không tìm thấy danh mục"
+            "description": "Category not found"
           }
         },
         "security": [
@@ -6813,7 +6813,7 @@
             "bearer": []
           }
         ],
-        "summary": "[ADMIN] Xóa danh mục hàng hóa",
+        "summary": "[ADMIN] Delete a product category",
         "tags": ["7. CATALOG"]
       }
     },
@@ -6874,7 +6874,7 @@
             "bearer": []
           }
         ],
-        "summary": "Seller thiết lập/dừng giá sale có thời gian cho sản phẩm của mình",
+        "summary": "Configure or clear a scheduled sale price for a shop product (Seller)",
         "tags": ["7. CATALOG - PRODUCTS"]
       }
     },
@@ -7076,7 +7076,7 @@
         "tags": ["7. CATALOG - PRODUCTS"]
       },
       "post": {
-        "description": "Người bán đăng sản phẩm kèm thông tin hình ảnh, giá bán và số lượng tồn kho ban đầu.",
+        "description": "Publishes a new product with images, pricing, and initial stock quantity.",
         "operationId": "ProductController_createProduct",
         "parameters": [],
         "requestBody": {
@@ -7203,10 +7203,10 @@
         },
         "responses": {
           "201": {
-            "description": "Tạo sản phẩm và kho hàng thành công"
+            "description": "Product and inventory created successfully"
           },
           "400": {
-            "description": "Dữ liệu không hợp lệ hoặc danh mục không tồn tại"
+            "description": "Invalid input data or category not found"
           }
         },
         "security": [
@@ -7214,18 +7214,18 @@
             "bearer": []
           }
         ],
-        "summary": "[SELLER] Đăng bán sản phẩm mới (Tự động khởi tạo tồn kho WH_001)",
+        "summary": "[SELLER] Create a new product and initialize default warehouse inventory (WH_001)",
         "tags": ["7. CATALOG - PRODUCTS"]
       }
     },
     "/api/v1/catalog/products/seller/my-products": {
       "get": {
-        "description": "Trả về toàn bộ sản phẩm do tài khoản Seller hiện tại đăng bán kèm số lượng tồn kho.",
+        "description": "Returns all products published by the current seller account along with inventory quantities.",
         "operationId": "ProductController_getMyProducts",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Lấy danh sách sản phẩm của Seller thành công"
+            "description": "Seller products retrieved successfully"
           }
         },
         "security": [
@@ -7233,7 +7233,7 @@
             "bearer": []
           }
         ],
-        "summary": "[SELLER] Xem danh sách sản phẩm và tồn kho của chính Shop mình",
+        "summary": "[SELLER] List products and inventory for the authenticated seller shop",
         "tags": ["7. CATALOG - PRODUCTS"]
       }
     },
@@ -7290,7 +7290,7 @@
         "tags": ["7. CATALOG - PRODUCTS"]
       },
       "patch": {
-        "description": "Người bán cập nhật giá, mô tả, ảnh hoặc thay đổi số lượng tồn kho (SELLER_RESTOCK / SELLER_ADJUSTMENT).",
+        "description": "Updates product price, description, images, or stock quantity (SELLER_RESTOCK or SELLER_ADJUSTMENT).",
         "operationId": "ProductController_updateProduct",
         "parameters": [
           {
@@ -7412,13 +7412,13 @@
         },
         "responses": {
           "200": {
-            "description": "Cập nhật sản phẩm thành công"
+            "description": "Product updated successfully"
           },
           "403": {
-            "description": "Không có quyền sửa sản phẩm của shop khác"
+            "description": "Forbidden to modify another shop product"
           },
           "404": {
-            "description": "Sản phẩm không tồn tại"
+            "description": "Product not found"
           }
         },
         "security": [
@@ -7426,11 +7426,11 @@
             "bearer": []
           }
         ],
-        "summary": "[SELLER] Cập nhật thông tin sản phẩm và điều chỉnh số lượng tồn kho",
+        "summary": "[SELLER] Update product details and adjust inventory stock",
         "tags": ["7. CATALOG - PRODUCTS"]
       },
       "delete": {
-        "description": "Chuyển trạng thái sản phẩm sang INACTIVE.",
+        "description": "Transitions product status to INACTIVE.",
         "operationId": "ProductController_deleteProduct",
         "parameters": [
           {
@@ -7446,10 +7446,10 @@
         ],
         "responses": {
           "200": {
-            "description": "Ẩn sản phẩm thành công"
+            "description": "Product deactivated successfully"
           },
           "403": {
-            "description": "Không có quyền thao tác"
+            "description": "Forbidden"
           }
         },
         "security": [
@@ -7457,13 +7457,13 @@
             "bearer": []
           }
         ],
-        "summary": "[SELLER] Ẩn hoặc xóa sản phẩm của Shop",
+        "summary": "[SELLER] Hide or deactivate a shop product",
         "tags": ["7. CATALOG - PRODUCTS"]
       }
     },
     "/api/v1/catalog/shops": {
       "get": {
-        "description": "Hỗ trợ tìm kiếm theo từ khóa (tên shop, mô tả, tên chủ shop), lọc theo tỉnh/thành phố, sắp xếp theo uy tín/sản phẩm/mới nhất và phân trang.",
+        "description": "Supports keyword search (shop name, description, owner name), city filtering, sorting (reputation, product count, newest), and pagination.",
         "operationId": "ShopController_getShops",
         "parameters": [
           {
@@ -7531,16 +7531,16 @@
         ],
         "responses": {
           "200": {
-            "description": "Lấy danh sách gian hàng thành công"
+            "description": "Shops retrieved successfully"
           }
         },
-        "summary": "[GUEST / BUYER] Tìm kiếm và lọc danh sách gian hàng (Shop/Seller)",
+        "summary": "[GUEST / BUYER] Search and filter shops",
         "tags": ["8. CATALOG - SHOPS"]
       }
     },
     "/api/v1/catalog/shops/{id}": {
       "get": {
-        "description": "Trả về thông tin hồ sơ gian hàng (tên, avatar, địa chỉ, uy tín) cùng danh sách sản phẩm phân trang.",
+        "description": "Returns shop profile details (name, avatar, address, reputation) and paginated active products.",
         "operationId": "ShopController_getShopDetail",
         "parameters": [
           {
@@ -7578,13 +7578,13 @@
         ],
         "responses": {
           "200": {
-            "description": "Lấy thông tin gian hàng thành công"
+            "description": "Shop details retrieved successfully"
           },
           "404": {
-            "description": "Không tìm thấy gian hàng"
+            "description": "Shop not found"
           }
         },
-        "summary": "[GUEST / BUYER] Xem thông tin chi tiết gian hàng và danh sách sản phẩm đang bán",
+        "summary": "[GUEST / BUYER] Get shop details and active product listings",
         "tags": ["8. CATALOG - SHOPS"]
       }
     },
@@ -8271,7 +8271,7 @@
             "bearer": []
           }
         ],
-        "summary": "Đánh giá gian hàng sau khi mua thành công từ 2 sản phẩm (hỗ trợ đính kèm ảnh/video)",
+        "summary": "Submit a shop review after purchasing at least 2 items (supports image/video attachments)",
         "tags": ["Reviews"]
       },
       "patch": {
@@ -8332,7 +8332,7 @@
             "bearer": []
           }
         ],
-        "summary": "Chỉnh sửa đánh giá gian hàng của chính mình",
+        "summary": "Edit my shop review",
         "tags": ["Reviews"]
       },
       "delete": {
@@ -8359,7 +8359,7 @@
             "bearer": []
           }
         ],
-        "summary": "Xóa đánh giá gian hàng của chính mình",
+        "summary": "Delete my shop review",
         "tags": ["Reviews"]
       }
     },
@@ -8461,7 +8461,7 @@
             "bearer": []
           }
         ],
-        "summary": "Đánh giá sản phẩm đã mua (hỗ trợ đính kèm ảnh/video multipart/form-data)",
+        "summary": "Submit a product review for a purchased item (supports multipart/form-data media)",
         "tags": ["Reviews"]
       },
       "patch": {
@@ -8532,7 +8532,7 @@
             "bearer": []
           }
         ],
-        "summary": "Chỉnh sửa đánh giá sản phẩm của chính mình",
+        "summary": "Edit my product review",
         "tags": ["Reviews"]
       },
       "delete": {
@@ -8569,7 +8569,7 @@
             "bearer": []
           }
         ],
-        "summary": "Xóa đánh giá sản phẩm của chính mình",
+        "summary": "Delete my product review",
         "tags": ["Reviews"]
       }
     },
@@ -8598,7 +8598,7 @@
             "bearer": []
           }
         ],
-        "summary": "Bình chọn / bỏ bình chọn đánh giá sản phẩm hữu ích",
+        "summary": "Toggle helpful vote on a product review",
         "tags": ["Reviews"]
       }
     },
@@ -8682,7 +8682,7 @@
             "bearer": []
           }
         ],
-        "summary": "Buyer hoặc Seller gửi phản hồi 2 chiều trên đánh giá sản phẩm (hỗ trợ đính kèm ảnh/video)",
+        "summary": "Submit a two-way reply on a product review (Buyer or Seller, supports media)",
         "tags": ["Reviews"]
       }
     },
@@ -8766,7 +8766,7 @@
             "bearer": []
           }
         ],
-        "summary": "Buyer hoặc Seller gửi phản hồi 2 chiều trên đánh giá gian hàng (hỗ trợ đính kèm ảnh/video)",
+        "summary": "Submit a two-way reply on a shop review (Buyer or Seller, supports media)",
         "tags": ["Reviews"]
       }
     },
@@ -8902,7 +8902,7 @@
             "description": ""
           }
         },
-        "summary": "Danh sách đánh giá gian hàng kèm averageRating và phân bố sao 1-5 (ẩn review tiêu cực đã bị admin ẩn)",
+        "summary": "List shop reviews with averageRating and 1-5 star breakdown (excluding admin-hidden reviews)",
         "tags": ["Reviews (public)"]
       }
     },
@@ -9043,7 +9043,7 @@
             "description": ""
           }
         },
-        "summary": "Lấy danh sách phản hồi 2 chiều (có phân trang) cho đánh giá sản phẩm",
+        "summary": "List paginated two-way replies for a product review",
         "tags": ["Reviews (public)"]
       }
     },
@@ -9114,7 +9114,7 @@
             "description": ""
           }
         },
-        "summary": "Lấy danh sách phản hồi 2 chiều (có phân trang) cho đánh giá gian hàng",
+        "summary": "List paginated two-way replies for a shop review",
         "tags": ["Reviews (public)"]
       }
     },
@@ -9300,7 +9300,7 @@
             "bearer": []
           }
         ],
-        "summary": "Seller phản hồi đánh giá sản phẩm của khách hàng",
+        "summary": "Reply to a customer product review (Seller)",
         "tags": ["Reviews (seller)"]
       }
     },
@@ -9350,7 +9350,7 @@
             "bearer": []
           }
         ],
-        "summary": "Theo dõi trạng thái báo cáo của chính mình",
+        "summary": "Track status of my submitted violation reports",
         "tags": ["Reports"]
       }
     },
@@ -9480,7 +9480,7 @@
     },
     "/api/v1/seller/reviews": {
       "get": {
-        "description": "Lấy danh sách đánh giá nhận xét từ người mua về các đơn hàng của gian hàng, tính điểm trung bình và biểu đồ phân bổ từ 1 đến 5 sao.",
+        "description": "Retrieves buyer reviews for shop orders along with average rating and 1-to-5 star distribution.",
         "operationId": "SellerEngagementController_getReviews",
         "parameters": [
           {
@@ -9537,7 +9537,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Lấy danh sách đánh giá thành công"
+            "description": "Reviews retrieved successfully"
           }
         },
         "security": [
@@ -9545,13 +9545,13 @@
             "bearer": []
           }
         ],
-        "summary": "[SELLER] Xem danh sách đánh giá của khách hàng và phân bố sao",
+        "summary": "[SELLER] List customer reviews and star rating breakdown",
         "tags": ["8. COMMERCE - SELLER REVIEWS & DISPUTES"]
       }
     },
     "/api/v1/seller/disputes": {
       "get": {
-        "description": "Lấy danh sách các khiếu nại do người mua mở kèm theo lý do, link bằng chứng, trạng thái xử lý và bộ đếm trạng thái.",
+        "description": "Retrieves buyer-opened disputes with reason, evidence URLs, resolution status, and status counters.",
         "operationId": "SellerEngagementController_getDisputes",
         "parameters": [
           {
@@ -9600,7 +9600,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Lấy danh sách khiếu nại thành công"
+            "description": "Disputes retrieved successfully"
           }
         },
         "security": [
@@ -9608,13 +9608,13 @@
             "bearer": []
           }
         ],
-        "summary": "[SELLER] Xem danh sách các khiếu nại (Disputes) trên đơn hàng của gian hàng",
+        "summary": "[SELLER] List disputes on shop orders",
         "tags": ["8. COMMERCE - SELLER REVIEWS & DISPUTES"]
       }
     },
     "/api/v1/seller/disputes/{id}/respond": {
       "post": {
-        "description": "Người bán phản hồi lý do khiếu nại của người mua, đính kèm link hình ảnh/video đóng gói để Ban quản trị sàn đối soát và phân xử.",
+        "description": "Allows the seller to respond to a buyer dispute with packaging image or video evidence for Admin review.",
         "operationId": "SellerEngagementController_respondToDispute",
         "parameters": [
           {
@@ -9658,13 +9658,13 @@
         },
         "responses": {
           "200": {
-            "description": "Gửi giải trình khiếu nại thành công"
+            "description": "Dispute response submitted successfully"
           },
           "400": {
-            "description": "Khiếu nại đã kết thúc hoặc dữ liệu không hợp lệ"
+            "description": "Dispute already closed or invalid input"
           },
           "404": {
-            "description": "Không tìm thấy khiếu nại"
+            "description": "Dispute not found"
           }
         },
         "security": [
@@ -9672,18 +9672,18 @@
             "bearer": []
           }
         ],
-        "summary": "[SELLER] Gửi giải trình và bổ sung bằng chứng đối chất khiếu nại",
+        "summary": "[SELLER] Submit dispute explanation and supporting evidence",
         "tags": ["8. COMMERCE - SELLER REVIEWS & DISPUTES"]
       }
     },
     "/api/v1/media/upload": {
       "post": {
-        "description": "Nhận file hình ảnh từ client (field \"file\" hoặc \"image\"), lưu trữ vào máy chủ và trả về đường dẫn URL của ảnh. Nếu gửi nhiều file, hệ thống sẽ tự động upload toàn bộ mảng và trả về danh sách urls.",
+        "description": "Accepts an image file (field \"file\" or \"image\"), stores it, and returns its URL. If multiple files are submitted, uploads all files and returns the urls array.",
         "operationId": "MediaController_uploadMedia",
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "File hình ảnh đính kèm (hỗ trợ JPG, PNG, WEBP, GIF, BMP, TIFF)",
+          "description": "Image file attachment (supports JPG, PNG, WEBP, GIF, BMP, TIFF)",
           "content": {
             "multipart/form-data": {
               "schema": {
@@ -9692,7 +9692,7 @@
                   "file": {
                     "type": "string",
                     "format": "binary",
-                    "description": "File hình ảnh (field name \"file\" hoặc \"image\")"
+                    "description": "Image file (field name \"file\" or \"image\")"
                   }
                 }
               }
@@ -9701,7 +9701,7 @@
         },
         "responses": {
           "200": {
-            "description": "Upload file thành công, trả về đường dẫn URL của ảnh",
+            "description": "File uploaded successfully with image URL",
             "content": {
               "application/json": {
                 "schema": {
@@ -9753,7 +9753,7 @@
             }
           },
           "400": {
-            "description": "Không có file hoặc file không đúng định dạng"
+            "description": "Missing file or unsupported file format"
           }
         },
         "security": [
@@ -9761,18 +9761,18 @@
             "bearer": []
           }
         ],
-        "summary": "[MEDIA] Upload file hình ảnh lên server / Cloudinary",
+        "summary": "[MEDIA] Upload an image file to local storage or Cloudinary",
         "tags": ["6. MEDIA"]
       }
     },
     "/api/v1/media/upload-multiple": {
       "post": {
-        "description": "Nhận một mảng các file hình ảnh từ client (field name \"files\" hoặc \"images\"), lưu trữ và tải lên song song, trả về mảng danh sách URL ảnh để gán trực tiếp vào mảng ảnh sản phẩm/hồ sơ.",
+        "description": "Accepts multiple image files (field name \"files\" or \"images\"), uploads them in parallel, and returns the resulting image URL list.",
         "operationId": "MediaController_uploadMultipleMedia",
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Mảng các file hình ảnh đính kèm (chọn cùng lúc nhiều ảnh)",
+          "description": "Array of image file attachments",
           "content": {
             "multipart/form-data": {
               "schema": {
@@ -9784,7 +9784,7 @@
                       "type": "string",
                       "format": "binary"
                     },
-                    "description": "Danh sách mảng các file hình ảnh"
+                    "description": "List of image files"
                   }
                 }
               }
@@ -9793,7 +9793,7 @@
         },
         "responses": {
           "200": {
-            "description": "Upload toàn bộ danh sách file thành công, trả về mảng URL và thông tin chi tiết",
+            "description": "All files uploaded successfully with URLs and metadata",
             "content": {
               "application/json": {
                 "schema": {
@@ -9867,7 +9867,7 @@
             }
           },
           "400": {
-            "description": "Không có file hoặc file không đúng định dạng"
+            "description": "Missing files or unsupported file format"
           }
         },
         "security": [
@@ -9875,18 +9875,18 @@
             "bearer": []
           }
         ],
-        "summary": "[MEDIA] Upload mảng nhiều file hình ảnh cùng 1 lần (Array / Batch Upload)",
+        "summary": "[MEDIA] Batch upload multiple image files",
         "tags": ["6. MEDIA"]
       }
     },
     "/api/v1/media/upload-review": {
       "post": {
-        "description": "Hỗ trợ upload 1 hoặc nhiều file ảnh (PNG, JPG, WEBP tối đa 5MB/file) và video (MP4, MOV tối đa 50MB/file) qua multipart/form-data để đính kèm vào Review.",
+        "description": "Supports uploading one or more images (PNG, JPG, WEBP up to 5MB each) and videos (MP4, MOV up to 50MB each) via multipart/form-data.",
         "operationId": "MediaController_uploadReviewMedia",
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Danh sách file ảnh/video feedback đánh giá sản phẩm",
+          "description": "Review image or video attachments",
           "content": {
             "multipart/form-data": {
               "schema": {
@@ -9898,7 +9898,7 @@
                       "type": "string",
                       "format": "binary"
                     },
-                    "description": "Danh sách ảnh/video review (tối đa 50MB/file)"
+                    "description": "Review image or video files (up to 50MB each)"
                   }
                 }
               }
@@ -9907,7 +9907,7 @@
         },
         "responses": {
           "200": {
-            "description": "Upload media đánh giá thành công",
+            "description": "Review media uploaded successfully",
             "content": {
               "application/json": {
                 "schema": {
@@ -9986,18 +9986,18 @@
             "bearer": []
           }
         ],
-        "summary": "[MEDIA] Upload hình ảnh hoặc video feedback cho đánh giá sản phẩm",
+        "summary": "[MEDIA] Upload image or video attachments for product reviews",
         "tags": ["6. MEDIA"]
       }
     },
     "/api/v1/commerce/cart": {
       "get": {
-        "description": "Lấy danh sách sản phẩm trong giỏ hàng. Tự động so sánh giá lúc thêm và giá hiện tại của Shop (hasPriceChanged), đồng thời kiểm tra tình trạng tồn kho.",
+        "description": "Retrieves cart items, compares snapshot prices against current shop prices (hasPriceChanged), and checks inventory availability.",
         "operationId": "CartController_getCart",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Lấy giỏ hàng thành công"
+            "description": "Cart retrieved successfully"
           }
         },
         "security": [
@@ -10005,7 +10005,7 @@
             "bearer": []
           }
         ],
-        "summary": "[BUYER / SELLER] Xem giỏ hàng cá nhân kèm Price Revalidation",
+        "summary": "[BUYER / SELLER] Get personal cart with price revalidation",
         "tags": ["8. COMMERCE - CART"]
       },
       "delete": {
@@ -10013,7 +10013,7 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Đã dọn dẹp sạch giỏ hàng"
+            "description": "Cart cleared successfully"
           }
         },
         "security": [
@@ -10021,13 +10021,13 @@
             "bearer": []
           }
         ],
-        "summary": "[BUYER / SELLER] Xóa toàn bộ giỏ hàng (Clear Cart)",
+        "summary": "[BUYER / SELLER] Clear all items from the cart",
         "tags": ["8. COMMERCE - CART"]
       }
     },
     "/api/v1/commerce/cart/items": {
       "post": {
-        "description": "Thêm sản phẩm kèm số lượng. Bắt buộc kiểm tra: tồn kho khả dụng, sản phẩm ACTIVE, và chặn tự mua hàng của chính mình (Anti-Self-Purchase).",
+        "description": "Adds a product with quantity after verifying available stock, ACTIVE product status, and anti-self-purchase rules.",
         "operationId": "CartController_addToCart",
         "parameters": [],
         "requestBody": {
@@ -10069,10 +10069,10 @@
         },
         "responses": {
           "200": {
-            "description": "Thêm vào giỏ hàng thành công"
+            "description": "Item added to cart successfully"
           },
           "400": {
-            "description": "Tồn kho không đủ, sản phẩm hết hàng hoặc người bán cố tình mua đồ của mình"
+            "description": "Insufficient stock, out-of-stock product, or self-purchase attempt"
           }
         },
         "security": [
@@ -10080,13 +10080,13 @@
             "bearer": []
           }
         ],
-        "summary": "[BUYER / SELLER] Thêm sản phẩm vào giỏ hàng",
+        "summary": "[BUYER / SELLER] Add a product to the cart",
         "tags": ["8. COMMERCE - CART"]
       }
     },
     "/api/v1/commerce/cart/items/{id}": {
       "patch": {
-        "description": "Thay đổi số lượng món hàng. Nếu số lượng = 0 sẽ tự động xóa. Kiểm tra số lượng tồn kho khả dụng trước khi cập nhật.",
+        "description": "Updates item quantity; setting quantity to 0 removes the item. Validates available inventory before updating.",
         "operationId": "CartController_updateCartItem",
         "parameters": [
           {
@@ -10123,10 +10123,10 @@
         },
         "responses": {
           "200": {
-            "description": "Cập nhật số lượng thành công"
+            "description": "Cart item quantity updated successfully"
           },
           "400": {
-            "description": "Số lượng vượt quá tồn kho"
+            "description": "Requested quantity exceeds available stock"
           }
         },
         "security": [
@@ -10134,7 +10134,7 @@
             "bearer": []
           }
         ],
-        "summary": "[BUYER / SELLER] Cập nhật số lượng của một món hàng trong giỏ",
+        "summary": "[BUYER / SELLER] Update quantity of a cart item",
         "tags": ["8. COMMERCE - CART"]
       },
       "delete": {
@@ -10153,7 +10153,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Xóa món hàng thành công"
+            "description": "Cart item removed successfully"
           }
         },
         "security": [
@@ -10161,13 +10161,13 @@
             "bearer": []
           }
         ],
-        "summary": "[BUYER / SELLER] Xóa một món hàng khỏi giỏ",
+        "summary": "[BUYER / SELLER] Remove an item from the cart",
         "tags": ["8. COMMERCE - CART"]
       }
     },
     "/api/v1/commerce/cart/merge": {
       "post": {
-        "description": "Nhận danh sách các món Guest đã lưu tạm trên trình duyệt, tự động lọc bỏ sản phẩm của chính mình và gộp số lượng vào giỏ hàng PostgreSQL.",
+        "description": "Accepts guest cart items, filters out the user own shop products, and merges quantities into the PostgreSQL cart.",
         "operationId": "CartController_mergeGuestCart",
         "parameters": [],
         "requestBody": {
@@ -10213,7 +10213,7 @@
         },
         "responses": {
           "200": {
-            "description": "Gộp giỏ hàng thành công"
+            "description": "Guest cart merged successfully"
           }
         },
         "security": [
@@ -10221,7 +10221,7 @@
             "bearer": []
           }
         ],
-        "summary": "[BUYER / SELLER] Gộp giỏ hàng từ Guest (LocalStorage) vào Database sau khi đăng nhập",
+        "summary": "[BUYER / SELLER] Merge guest localStorage cart into the database after sign-in",
         "tags": ["8. COMMERCE - CART"]
       }
     },
@@ -10338,7 +10338,7 @@
             "bearer": []
           }
         ],
-        "summary": "Danh sách khiếu nại thật của người mua",
+        "summary": "List the authenticated buyer disputes",
         "tags": ["8. COMMERCE - CANCELLATIONS & RETURNS"]
       }
     },
@@ -10429,7 +10429,7 @@
             "bearer": []
           }
         ],
-        "summary": "Hủy trước khi GHN lấy hàng; buyer cần Admin duyệt nếu seller đã xác nhận",
+        "summary": "Cancel before GHN pickup; buyer requires Admin approval if seller already confirmed",
         "tags": ["8. COMMERCE - CANCELLATIONS & RETURNS"]
       }
     },
@@ -10492,7 +10492,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin duyệt hoặc từ chối yêu cầu hủy của người mua",
+        "summary": "Approve or reject a buyer cancellation request (Admin)",
         "tags": ["8. COMMERCE - CANCELLATIONS & RETURNS"]
       }
     },
@@ -10551,7 +10551,7 @@
             "bearer": []
           }
         ],
-        "summary": "Yêu cầu trả toàn bộ đơn, trong 3 ngày sau giao hàng theo chính sách sàn",
+        "summary": "Request a full-order return within 3 days of delivery per platform policy",
         "tags": ["8. COMMERCE - CANCELLATIONS & RETURNS"]
       }
     },
@@ -10772,7 +10772,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin xác nhận đã chuyển khoản hoàn tiền về nguồn, kèm mã đối soát duy nhất",
+        "summary": "Confirm refund bank transfer to source with a unique reconciliation reference (Admin)",
         "tags": ["8. COMMERCE - CANCELLATIONS & RETURNS"]
       }
     },
@@ -10881,20 +10881,20 @@
             "bearer": []
           }
         ],
-        "summary": "[BUYER] Báo giá giỏ hàng theo từng shop, chưa tạo đơn hoặc thanh toán",
+        "summary": "[BUYER] Quote cart by shop without creating orders or charging payment",
         "tags": ["8. COMMERCE - ORDERS & PAYMENTS"]
       }
     },
     "/api/v1/commerce/checkout": {
       "post": {
-        "description": "Tạo đơn hàng từ giỏ hàng kèm kiểm tra tồn kho, giá cập nhật và chặn tự mua hàng của chính mình (Anti-Self-Purchase). Nếu chọn PayOS, hệ thống có thể tạo sẵn link thanh toán.",
+        "description": "Creates orders from the cart with stock validation, price revalidation, and anti-self-purchase enforcement. Generates PayOS payment link when selected.",
         "operationId": "OrderController_checkout",
         "parameters": [
           {
             "name": "idempotency-key",
             "required": false,
             "in": "header",
-            "description": "Khóa chống trùng lặp request khi bấm nhiều lần (UUID)",
+            "description": "Idempotency UUID key to prevent duplicate submissions",
             "schema": {
               "type": "string"
             }
@@ -10993,10 +10993,10 @@
         },
         "responses": {
           "201": {
-            "description": "Đặt hàng thành công"
+            "description": "Orders created successfully"
           },
           "400": {
-            "description": "Giỏ hàng trống hoặc vi phạm quy tắc đơn hàng"
+            "description": "Empty cart or order validation failure"
           }
         },
         "security": [
@@ -11004,13 +11004,13 @@
             "bearer": []
           }
         ],
-        "summary": "[BUYER] Đặt hàng từ giỏ hàng hiện tại (Checkout)",
+        "summary": "[BUYER] Place orders from the current cart (Checkout)",
         "tags": ["8. COMMERCE - ORDERS & PAYMENTS"]
       }
     },
     "/api/v1/commerce/orders/{id}/pay": {
       "post": {
-        "description": "PAYOS tạo liên kết VietQR; WALLET trừ số dư người mua. Khi thanh toán thành công, tiền được giữ ký quỹ HELD; chỉ giải ngân sau xác nhận nhận hàng hoặc phân xử khiếu nại.",
+        "description": "PAYOS creates a VietQR payment link; WALLET deducts buyer balance. Funds are held in escrow (HELD) until delivery confirmation or dispute resolution.",
         "operationId": "OrderController_payOrder",
         "parameters": [
           {
@@ -11055,13 +11055,13 @@
         },
         "responses": {
           "200": {
-            "description": "Khởi tạo hoặc thanh toán đơn hàng thành công"
+            "description": "Payment initialized or completed successfully"
           },
           "400": {
-            "description": "Số dư ví không đủ hoặc trạng thái đơn hàng không hợp lệ"
+            "description": "Insufficient wallet balance or invalid order status"
           },
           "404": {
-            "description": "Không tìm thấy đơn hàng"
+            "description": "Order not found"
           }
         },
         "security": [
@@ -11069,13 +11069,13 @@
             "bearer": []
           }
         ],
-        "summary": "[BUYER] Thanh toán đơn hàng (PayOS VietQR hoặc Ví NEXUS Pay)",
+        "summary": "[BUYER] Pay an order (PayOS VietQR or NEXUS Pay Wallet)",
         "tags": ["8. COMMERCE - ORDERS & PAYMENTS"]
       }
     },
     "/api/v1/commerce/orders/{id}/payment-status": {
       "get": {
-        "description": "Chủ động kiểm tra trạng thái đơn hàng từ cơ sở dữ liệu và truy vấn trực tiếp cổng PayOS nếu đang ở trạng thái chờ thanh toán.",
+        "description": "Reads order status from the database and queries PayOS directly when payment is pending.",
         "operationId": "OrderController_getPaymentStatus",
         "parameters": [
           {
@@ -11091,10 +11091,10 @@
         ],
         "responses": {
           "200": {
-            "description": "Lấy trạng thái thanh toán thành công"
+            "description": "Payment status retrieved successfully"
           },
           "404": {
-            "description": "Không tìm thấy đơn hàng"
+            "description": "Order not found"
           }
         },
         "security": [
@@ -11102,18 +11102,18 @@
             "bearer": []
           }
         ],
-        "summary": "[BUYER] Kiểm tra và tự động đồng bộ trạng thái thanh toán PayOS",
+        "summary": "[BUYER] Check and synchronize PayOS payment status",
         "tags": ["8. COMMERCE - ORDERS & PAYMENTS"]
       }
     },
     "/api/v1/commerce/orders": {
       "get": {
-        "description": "Trả về danh sách đơn hàng kèm chi tiết sản phẩm và trạng thái thanh toán.",
+        "description": "Returns orders with item details and payment status.",
         "operationId": "OrderController_getUserOrders",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Lấy danh sách đơn hàng thành công"
+            "description": "Orders retrieved successfully"
           }
         },
         "security": [
@@ -11121,13 +11121,13 @@
             "bearer": []
           }
         ],
-        "summary": "[BUYER] Xem danh sách đơn hàng đã đặt của người dùng",
+        "summary": "[BUYER] List placed orders for the authenticated user",
         "tags": ["8. COMMERCE - ORDERS & PAYMENTS"]
       }
     },
     "/api/v1/commerce/orders/{id}": {
       "get": {
-        "description": "Xem chi tiết đơn hàng, lịch sử thanh toán và trạng thái giao hàng.",
+        "description": "Returns order details, payment history, and shipment status.",
         "operationId": "OrderController_getOrderDetail",
         "parameters": [
           {
@@ -11143,10 +11143,10 @@
         ],
         "responses": {
           "200": {
-            "description": "Lấy chi tiết đơn hàng thành công"
+            "description": "Order details retrieved successfully"
           },
           "404": {
-            "description": "Không tìm thấy đơn hàng"
+            "description": "Order not found"
           }
         },
         "security": [
@@ -11154,7 +11154,7 @@
             "bearer": []
           }
         ],
-        "summary": "[BUYER / SELLER] Xem chi tiết một đơn hàng cụ thể",
+        "summary": "[BUYER / SELLER] Get order details by ID",
         "tags": ["8. COMMERCE - ORDERS & PAYMENTS"]
       }
     },
@@ -11183,7 +11183,7 @@
             "bearer": []
           }
         ],
-        "summary": "[SELLER] Lấy liên kết in phiếu chính thức GHN (A5, 80x80, 52x70)",
+        "summary": "[SELLER] Get official GHN shipping label URL (A5, 80x80, 52x70)",
         "tags": ["8. COMMERCE - SELLER ORDERS & GHN"]
       }
     },
@@ -11258,7 +11258,7 @@
             "bearer": []
           }
         ],
-        "summary": "[SELLER] Xem phí GHN cho kiện đóng gói thực tế và khoản chênh lệch seller chịu",
+        "summary": "[SELLER] Preview GHN fee for actual package dimensions and seller fee delta",
         "tags": ["8. COMMERCE - SELLER ORDERS & GHN"]
       }
     },
@@ -11287,13 +11287,13 @@
             "bearer": []
           }
         ],
-        "summary": "[SELLER] Đối soát yêu cầu tạo vận đơn bị gián đoạn, không tạo lại vận đơn",
+        "summary": "[SELLER] Reconcile an interrupted GHN waybill request without recreating it",
         "tags": ["8. COMMERCE - SELLER ORDERS & GHN"]
       }
     },
     "/api/v1/seller/orders": {
       "get": {
-        "description": "Hỗ trợ lọc theo trạng thái đơn hàng (PAID, PREPARING, SHIPPING, DELIVERED, CONFIRMED, CANCELLED, REFUNDED), tìm kiếm theo mã đơn hoặc tên/SĐT khách hàng, đồng thời trả về counters số lượng đơn theo từng trạng thái.",
+        "description": "Supports filtering by status (PAID, PREPARING, SHIPPING, DELIVERED, CONFIRMED, CANCELLED, REFUNDED), searching by order code or customer name/phone, and returns per-status counters.",
         "operationId": "SellerOrdersController_listOrders",
         "parameters": [
           {
@@ -11355,7 +11355,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Lấy danh sách đơn bán thành công"
+            "description": "Seller orders retrieved successfully"
           }
         },
         "security": [
@@ -11363,13 +11363,13 @@
             "bearer": []
           }
         ],
-        "summary": "[SELLER] Lấy danh sách đơn bán của người bán kèm phân trang và bộ đếm trạng thái",
+        "summary": "[SELLER] List seller orders with pagination and status counters",
         "tags": ["8. COMMERCE - SELLER ORDERS & GHN"]
       }
     },
     "/api/v1/seller/orders/{id}": {
       "get": {
-        "description": "Trả về thông tin chi tiết sản phẩm, khối lượng, thông tin người mua, địa chỉ nhận hàng, trạng thái thanh toán và thông tin vận chuyển GHN.",
+        "description": "Returns item details, weight, buyer information, shipping address, payment status, and GHN tracking details.",
         "operationId": "SellerOrdersController_getOrderDetail",
         "parameters": [
           {
@@ -11385,13 +11385,13 @@
         ],
         "responses": {
           "200": {
-            "description": "Lấy chi tiết đơn hàng thành công"
+            "description": "Order details retrieved successfully"
           },
           "403": {
-            "description": "Không có quyền truy cập đơn hàng này"
+            "description": "Forbidden to access this order"
           },
           "404": {
-            "description": "Không tìm thấy đơn hàng"
+            "description": "Order not found"
           }
         },
         "security": [
@@ -11399,13 +11399,13 @@
             "bearer": []
           }
         ],
-        "summary": "[SELLER] Xem chi tiết thông tin 1 đơn bán",
+        "summary": "[SELLER] Get seller order details",
         "tags": ["8. COMMERCE - SELLER ORDERS & GHN"]
       }
     },
     "/api/v1/seller/orders/{id}/confirm": {
       "post": {
-        "description": "Người bán xác nhận đã tiếp nhận đơn và đang chuẩn bị đóng gói hàng hóa, đồng thời gửi thông báo trạng thái tới người mua.",
+        "description": "Marks the order as accepted for packaging and sends a status notification to the buyer.",
         "operationId": "SellerOrdersController_confirmOrder",
         "parameters": [
           {
@@ -11421,10 +11421,10 @@
         ],
         "responses": {
           "200": {
-            "description": "Xác nhận đơn hàng thành công"
+            "description": "Order confirmed successfully"
           },
           "400": {
-            "description": "Đơn hàng không ở trạng thái hợp lệ để xác nhận"
+            "description": "Order is not in a confirmable status"
           }
         },
         "security": [
@@ -11432,13 +11432,13 @@
             "bearer": []
           }
         ],
-        "summary": "[SELLER] Xác nhận đơn hàng (Chuyển trạng thái PAID -> PREPARING)",
+        "summary": "[SELLER] Confirm an order (PAID -> PREPARING)",
         "tags": ["8. COMMERCE - SELLER ORDERS & GHN"]
       }
     },
     "/api/v1/seller/orders/{id}/dispatch-ghn": {
       "post": {
-        "description": "Lưu yêu cầu chống gửi trùng, tạo mã vận đơn thật. Đơn giữ PREPARING và shipment CREATED; chỉ chuyển SHIPPING khi đồng bộ GHN xác nhận đã lấy hàng. Kết quả không rõ phải đối soát, không gửi tạo lại.",
+        "description": "Records an idempotent dispatch request and creates the waybill. Order stays PREPARING with shipment CREATED until GHN confirms pickup. Ambiguous failures must be reconciled rather than retried.",
         "operationId": "SellerOrdersController_dispatchGhn",
         "parameters": [
           {
@@ -11500,10 +11500,10 @@
         },
         "responses": {
           "200": {
-            "description": "Bàn giao vận đơn GHN thành công"
+            "description": "GHN waybill created successfully"
           },
           "400": {
-            "description": "Đơn hàng chưa ở trạng thái chuẩn bị hàng"
+            "description": "Order is not in PREPARING status"
           }
         },
         "security": [
@@ -11511,13 +11511,13 @@
             "bearer": []
           }
         ],
-        "summary": "[SELLER] Tạo vận đơn GHN, chờ hãng xác nhận lấy hàng",
+        "summary": "[SELLER] Create a GHN waybill and await carrier pickup",
         "tags": ["8. COMMERCE - SELLER ORDERS & GHN"]
       }
     },
     "/api/v1/seller/orders/{id}/print-waybill": {
       "get": {
-        "description": "Lấy dữ liệu phiếu gửi hàng chuẩn hóa (thông tin người gửi, người nhận, danh sách kiện hàng, barcode GHN) để người bán in dán lên bưu kiện.",
+        "description": "Returns standardized sender, recipient, parcel item list, and GHN barcode data for printing.",
         "operationId": "SellerOrdersController_printWaybill",
         "parameters": [
           {
@@ -11533,7 +11533,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Lấy dữ liệu in vận đơn thành công"
+            "description": "Waybill data retrieved successfully"
           }
         },
         "security": [
@@ -11541,7 +11541,7 @@
             "bearer": []
           }
         ],
-        "summary": "[SELLER] In phiếu giao hàng / Vận đơn GHN (Print Waybill)",
+        "summary": "[SELLER] Get printable GHN waybill data",
         "tags": ["8. COMMERCE - SELLER ORDERS & GHN"]
       }
     },
@@ -11729,12 +11729,12 @@
     },
     "/api/v1/commerce/wallet": {
       "get": {
-        "description": "Trả về số dư khả dụng, tiền tạm giữ và danh sách các giao dịch gần nhất của ví.",
+        "description": "Returns available balance, held balance, and recent wallet transactions.",
         "operationId": "WalletController_getMyWallet",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Lấy thông tin ví thành công"
+            "description": "Wallet details retrieved successfully"
           }
         },
         "security": [
@@ -11742,13 +11742,13 @@
             "bearer": []
           }
         ],
-        "summary": "[BUYER / USER] Xem số dư ví và lịch sử giao dịch cá nhân",
+        "summary": "[BUYER / USER] Get personal wallet balance and transaction history",
         "tags": ["8. COMMERCE - WALLET"]
       }
     },
     "/api/v1/commerce/wallet/deposit": {
       "post": {
-        "description": "Nạp tiền vào ví để mua sắm và thanh toán đơn hàng bằng số dư ví. Hỗ trợ tạo liên kết PayOS VietQR hoặc nạp trực tiếp.",
+        "description": "Adds funds to the wallet for purchases via PayOS VietQR payment link or direct top-up.",
         "operationId": "WalletController_depositMyWallet",
         "parameters": [],
         "requestBody": {
@@ -11784,10 +11784,10 @@
         },
         "responses": {
           "200": {
-            "description": "Nạp tiền thành công hoặc trả về thông tin VietQR PayOS"
+            "description": "Top-up completed or PayOS VietQR payment link returned"
           },
           "400": {
-            "description": "Số tiền nạp không hợp lệ"
+            "description": "Invalid top-up amount"
           }
         },
         "security": [
@@ -11795,13 +11795,13 @@
             "bearer": []
           }
         ],
-        "summary": "[BUYER / USER] Nạp tiền vào ví cá nhân (NEXUS Pay)",
+        "summary": "[BUYER / USER] Top up personal NEXUS Pay wallet",
         "tags": ["8. COMMERCE - WALLET"]
       }
     },
     "/api/v1/commerce/wallet/deposit/{orderCode}/status": {
       "get": {
-        "description": "Kiểm tra trạng thái giao dịch nạp tiền ví theo orderCode và đồng bộ với cổng PayOS.",
+        "description": "Checks wallet deposit status by orderCode and synchronizes with PayOS.",
         "operationId": "WalletController_checkWalletDepositStatus",
         "parameters": [
           {
@@ -11816,7 +11816,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Lấy trạng thái nạp tiền thành công"
+            "description": "Deposit status retrieved successfully"
           }
         },
         "security": [
@@ -11824,13 +11824,13 @@
             "bearer": []
           }
         ],
-        "summary": "[BUYER / USER] Kiểm tra trạng thái nạp tiền ví qua PayOS",
+        "summary": "[BUYER / USER] Check PayOS wallet top-up status",
         "tags": ["8. COMMERCE - WALLET"]
       }
     },
     "/api/v1/buyer/finance/withdraw": {
       "post": {
-        "description": "Kiểm tra số dư khả dụng, đóng băng tạm thời số tiền rút trong ví và gửi yêu cầu đến Quản trị viên duyệt chuyển khoản.",
+        "description": "Validates available balance, freezes the requested amount in the wallet, and submits a payout request for Admin approval.",
         "operationId": "BuyerFinanceController_createWithdrawal",
         "parameters": [],
         "requestBody": {
@@ -11875,10 +11875,10 @@
         },
         "responses": {
           "201": {
-            "description": "Tạo yêu cầu rút tiền thành công"
+            "description": "Withdrawal request created successfully"
           },
           "400": {
-            "description": "Số dư không đủ, thiếu thông tin ngân hàng hoặc số tiền rút không hợp lệ"
+            "description": "Insufficient balance, missing bank details, or invalid withdrawal amount"
           }
         },
         "security": [
@@ -11886,13 +11886,13 @@
             "bearer": []
           }
         ],
-        "summary": "[BUYER] Tạo yêu cầu rút tiền từ số dư ví về tài khoản ngân hàng",
+        "summary": "[BUYER] Create a withdrawal request from wallet balance to bank account",
         "tags": ["2. BUYER"]
       }
     },
     "/api/v1/buyer/finance/transactions": {
       "get": {
-        "description": "Hỗ trợ phân trang và lọc theo loại giao dịch (DEPOSIT, WITHDRAW, ESCROW_REFUND...) và trạng thái (PENDING, SUCCESS, FAILED).",
+        "description": "Supports pagination and filtering by transaction type (DEPOSIT, WITHDRAW, ESCROW_REFUND) and status (PENDING, SUCCESS, FAILED).",
         "operationId": "BuyerFinanceController_getTransactions",
         "parameters": [
           {
@@ -11956,7 +11956,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Lấy lịch sử giao dịch thành công"
+            "description": "Transaction history retrieved successfully"
           }
         },
         "security": [
@@ -11964,7 +11964,7 @@
             "bearer": []
           }
         ],
-        "summary": "[BUYER] Xem lịch sử giao dịch tài chính / biến động số dư ví cá nhân",
+        "summary": "[BUYER] List personal wallet transaction history",
         "tags": ["2. BUYER"]
       }
     },
@@ -11997,7 +11997,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Lấy danh sách yêu cầu rút tiền thành công"
+            "description": "Withdrawal requests retrieved successfully"
           }
         },
         "security": [
@@ -12005,18 +12005,18 @@
             "bearer": []
           }
         ],
-        "summary": "[BUYER] Xem danh sách các yêu cầu rút tiền đã tạo và tiến độ duyệt",
+        "summary": "[BUYER] List submitted withdrawal requests and approval status",
         "tags": ["2. BUYER"]
       }
     },
     "/api/v1/seller/finance/revenue": {
       "get": {
-        "description": "Tổng hợp số dư ví khả dụng, số tiền tạm giữ, tổng doanh số bán hàng, phí sàn ước tính và phân bổ doanh thu theo tháng.",
+        "description": "Aggregates available balance, held funds, total sales, estimated platform fees, and monthly revenue breakdown.",
         "operationId": "SellerFinanceController_getRevenueOverview",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Lấy báo cáo doanh thu thành công"
+            "description": "Revenue overview retrieved successfully"
           }
         },
         "security": [
@@ -12024,13 +12024,13 @@
             "bearer": []
           }
         ],
-        "summary": "[SELLER] Báo cáo doanh thu, số dư ví và chi tiết tài chính của Shop",
+        "summary": "[SELLER] Get shop revenue overview, wallet balance, and financial breakdown",
         "tags": ["3. SELLER"]
       }
     },
     "/api/v1/seller/finance/withdraw": {
       "post": {
-        "description": "Kiểm tra số dư khả dụng, khóa tạm thời số tiền rút trong ví và gửi yêu cầu đến Quản trị viên duyệt chuyển khoản.",
+        "description": "Validates available balance, freezes the requested amount in the wallet, and submits a payout request for Admin approval.",
         "operationId": "SellerFinanceController_createWithdrawal",
         "parameters": [],
         "requestBody": {
@@ -12075,10 +12075,10 @@
         },
         "responses": {
           "201": {
-            "description": "Tạo yêu cầu rút tiền thành công"
+            "description": "Withdrawal request created successfully"
           },
           "400": {
-            "description": "Số dư không đủ hoặc số tiền rút không hợp lệ"
+            "description": "Insufficient balance or invalid withdrawal amount"
           }
         },
         "security": [
@@ -12086,13 +12086,13 @@
             "bearer": []
           }
         ],
-        "summary": "[SELLER] Tạo yêu cầu rút tiền từ số dư ví về tài khoản ngân hàng",
+        "summary": "[SELLER] Create a withdrawal request from wallet balance to bank account",
         "tags": ["3. SELLER"]
       }
     },
     "/api/v1/seller/finance/transactions": {
       "get": {
-        "description": "Hỗ trợ phân trang và lọc theo loại giao dịch (DEPOSIT, WITHDRAW, ESCROW_PAYOUT...) và trạng thái (PENDING, SUCCESS, FAILED).",
+        "description": "Supports pagination and filtering by transaction type (DEPOSIT, WITHDRAW, ESCROW_PAYOUT) and status (PENDING, SUCCESS, FAILED).",
         "operationId": "SellerFinanceController_getTransactions",
         "parameters": [
           {
@@ -12156,7 +12156,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Lấy lịch sử giao dịch thành công"
+            "description": "Transaction history retrieved successfully"
           }
         },
         "security": [
@@ -12164,7 +12164,7 @@
             "bearer": []
           }
         ],
-        "summary": "[SELLER] Xem lịch sử giao dịch tài chính / biến động số dư ví của Shop",
+        "summary": "[SELLER] List shop wallet transaction history",
         "tags": ["3. SELLER"]
       }
     },
@@ -12197,7 +12197,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Lấy danh sách yêu cầu rút tiền thành công"
+            "description": "Withdrawal requests retrieved successfully"
           }
         },
         "security": [
@@ -12205,7 +12205,7 @@
             "bearer": []
           }
         ],
-        "summary": "[SELLER] Xem danh sách các yêu cầu rút tiền đã tạo và tiến độ duyệt",
+        "summary": "[SELLER] List submitted withdrawal requests and approval status",
         "tags": ["3. SELLER"]
       }
     },
@@ -12388,7 +12388,7 @@
             "bearer": []
           }
         ],
-        "summary": "Danh sách phiên đấu giá công khai (hỗ trợ phân trang & lọc)",
+        "summary": "List public auction sessions with pagination and filters",
         "tags": ["Auctions"]
       }
     },
@@ -12406,7 +12406,7 @@
             "bearer": []
           }
         ],
-        "summary": "Lịch sử đặt giá và trạng thái quyền mua của tôi",
+        "summary": "Get my bid history and auction award statuses",
         "tags": ["Auctions"]
       }
     },
@@ -12424,7 +12424,7 @@
             "bearer": []
           }
         ],
-        "summary": "Danh sách vật phẩm đã ký gửi vào các phiên đấu giá của Người bán",
+        "summary": "List consigned auction items for the authenticated seller",
         "tags": ["Auctions"]
       }
     },
@@ -12442,7 +12442,7 @@
             "bearer": []
           }
         ],
-        "summary": "Bảng theo dõi hỗ trợ đấu giá 3D dành cho Nhân viên hỗ trợ & Admin",
+        "summary": "Get 3D auction support overview (Support Staff & Admin)",
         "tags": ["Auctions"]
       }
     },
@@ -12490,7 +12490,7 @@
             "bearer": []
           }
         ],
-        "summary": "Nhân viên hỗ trợ cập nhật ghi chú kiểm tra / hỗ trợ trên lô hàng",
+        "summary": "Update inspection or support note on an auction lot (Support Staff & Admin)",
         "tags": ["Auctions"]
       }
     },
@@ -12528,7 +12528,7 @@
             "bearer": []
           }
         ],
-        "summary": "Danh sách khiếu nại đấu giá (Admin/Staff xem toàn bộ, người dùng xem đơn của mình)",
+        "summary": "List auction complaints (Admin and Staff see all; users see their own)",
         "tags": ["Auctions"]
       }
     },
@@ -12583,7 +12583,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin tiếp nhận (chấp thuận) hoặc từ chối khiếu nại đấu giá",
+        "summary": "Approve or reject an auction complaint (Admin)",
         "tags": ["Auctions"]
       }
     },
@@ -12668,7 +12668,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin tạo mới phòng đấu giá đa lô (gửi thông báo tới Người bán để ký gửi)",
+        "summary": "Create a multi-lot auction room and notify sellers for consignment (Admin)",
         "tags": ["Auctions"]
       }
     },
@@ -12759,7 +12759,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin cập nhật thông tin phiên đấu giá trước khi bắt đầu",
+        "summary": "Update auction session details before start (Admin)",
         "tags": ["Auctions"]
       },
       "delete": {
@@ -12786,7 +12786,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin xóa phòng đấu giá chưa diễn ra và chưa có lượt đặt giá",
+        "summary": "Delete an unstarted auction room with no bids (Admin)",
         "tags": ["Auctions"]
       }
     },
@@ -12815,7 +12815,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin & Nhân viên hỗ trợ khóa đăng ký ký gửi vật phẩm sớm cho phiên đấu giá",
+        "summary": "Lock item consignment registration early for an auction session (Admin & Support Staff)",
         "tags": ["Auctions"]
       }
     },
@@ -12844,7 +12844,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin & Nhân viên hỗ trợ bấm bắt đầu phiên đấu giá thủ công và gửi thông báo tới Người mua",
+        "summary": "Manually start an auction session and notify buyers (Admin & Support Staff)",
         "tags": ["Auctions"]
       }
     },
@@ -12873,7 +12873,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin & Nhân viên hỗ trợ xem danh sách toàn bộ vật phẩm ký gửi trong phiên",
+        "summary": "List all consigned items in an auction session (Admin & Support Staff)",
         "tags": ["Auctions"]
       }
     },
@@ -12953,7 +12953,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin & Nhân viên hỗ trợ duyệt hoặc từ chối vật phẩm ký gửi của Người bán",
+        "summary": "Approve or reject a seller consigned item (Admin & Support Staff)",
         "tags": ["Auctions"]
       }
     },
@@ -12992,7 +12992,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin & Nhân viên hỗ trợ kết thúc riêng từng lô đấu giá",
+        "summary": "End an individual auction lot (Admin & Support Staff)",
         "tags": ["Auctions"]
       }
     },
@@ -13021,7 +13021,7 @@
             "bearer": []
           }
         ],
-        "summary": "Danh sách quyền mua sau đấu giá cho Admin & Nhân viên hỗ trợ",
+        "summary": "List post-auction awards (Admin & Support Staff)",
         "tags": ["Auctions"]
       }
     },
@@ -13075,7 +13075,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin xác nhận người mua quá hạn thanh toán 24h (mất 30% cọc, trừ 10đ uy tín, chuyển người thứ 2)",
+        "summary": "Confirm 24-hour payment default: forfeit 30% deposit, deduct 10 reputation, and offer second chance (Admin)",
         "tags": ["Auctions"]
       }
     },
@@ -13129,7 +13129,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin xác nhận khách hàng thứ hai không mua nữa (hoàn cọc 30% nếu đã đóng và đóng lô hàng)",
+        "summary": "Confirm second-chance buyer withdrawal, refund 30% deposit if paid, and close the lot (Admin)",
         "tags": ["Auctions"]
       }
     },
@@ -13158,7 +13158,7 @@
             "bearer": []
           }
         ],
-        "summary": "Kiểm tra điều kiện uy tín, ví và chế độ Người mua trước khi đặt giá",
+        "summary": "Check buyer reputation, wallet balance, and buyer mode before bidding",
         "tags": ["Auctions"]
       }
     },
@@ -13419,7 +13419,7 @@
             "bearer": []
           }
         ],
-        "summary": "Lấy dữ liệu đồng bộ màn giới thiệu 3D khi vào phòng đấu giá",
+        "summary": "Get 3D intro showcase synchronization data for an auction room",
         "tags": ["Auctions"]
       }
     },
@@ -13448,7 +13448,7 @@
             "bearer": []
           }
         ],
-        "summary": "Chi tiết phòng đấu giá đa lô theo từng lô hàng và lịch sử trả giá",
+        "summary": "Get multi-lot auction room details with lots and bid history",
         "tags": ["Auctions"]
       }
     },
@@ -13602,7 +13602,7 @@
             "bearer": []
           }
         ],
-        "summary": "Người bán ký gửi vật phẩm đấu giá (kèm kích thước đóng gói GHN & chứng thư)",
+        "summary": "Consign an auction item with GHN shipping dimensions and appraisal certificate (Seller)",
         "tags": ["Auctions"]
       }
     },
@@ -13657,7 +13657,7 @@
             "bearer": []
           }
         ],
-        "summary": "Người mua đặt giá cho một lô hàng trong phòng đấu giá (chế độ Người bán chỉ xem)",
+        "summary": "Place a bid on an auction lot (Seller mode is read-only)",
         "tags": ["Auctions"]
       }
     },
@@ -13722,7 +13722,7 @@
             "bearer": []
           }
         ],
-        "summary": "Người mua đặt giá trực tiếp theo ID lô hàng trong phòng đấu giá",
+        "summary": "Place a bid directly on a specific auction lot ID",
         "tags": ["Auctions"]
       }
     },
@@ -13785,7 +13785,7 @@
             "bearer": []
           }
         ],
-        "summary": "Người bán hoặc Người mua gửi yêu cầu khiếu nại liên quan đến phiên đấu giá",
+        "summary": "Submit an auction complaint (Buyer or Seller)",
         "tags": ["Auctions"]
       }
     },
@@ -13835,13 +13835,13 @@
             "bearer": []
           }
         ],
-        "summary": "Mở cuộc trò chuyện hỗ trợ trực tiếp với Nhân viên hỗ trợ cho phòng đấu giá",
+        "summary": "Open a live support chat with Support Staff for an auction room",
         "tags": ["Auctions"]
       }
     },
     "/api/v1/auctions/{id}/image": {
       "patch": {
-        "description": "Upload ảnh qua POST /media/upload trước, sau đó gửi imageUrl. Không thay đổi giá hoặc lịch phiên.",
+        "description": "Upload the image via POST /media/upload first, then submit imageUrl. Does not alter pricing or session schedule.",
         "operationId": "AuctionImageController_update",
         "parameters": [
           {
@@ -13884,7 +13884,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin/Staff cập nhật ảnh phiên chưa bắt đầu",
+        "summary": "Update image for an unstarted auction session (Admin & Support Staff)",
         "tags": ["11. AUCTIONS"]
       }
     },
@@ -13902,7 +13902,7 @@
             "bearer": []
           }
         ],
-        "summary": "Danh sách quyền mua và đơn thắng đấu giá của tôi",
+        "summary": "List my auction awards and winning orders",
         "tags": ["Auction checkout"]
       }
     },
@@ -14032,7 +14032,7 @@
             "bearer": []
           }
         ],
-        "summary": "Báo giá phí vận chuyển GHN và số tiền 70% còn lại cần thanh toán",
+        "summary": "Quote GHN shipping fee and remaining 70% payment balance",
         "tags": ["Auction checkout"]
       }
     },
@@ -14162,7 +14162,7 @@
             "bearer": []
           }
         ],
-        "summary": "Xác nhận địa chỉ, tính phí GHN và thanh toán 70% còn lại trong 24 giờ",
+        "summary": "Confirm shipping address, calculate GHN fee, and pay remaining 70% within 24 hours",
         "tags": ["Auction checkout"]
       }
     },
@@ -14210,7 +14210,7 @@
             "bearer": []
           }
         ],
-        "summary": "Người mua thứ hai xác nhận đồng ý hoặc từ chối quyền mua món hàng đấu giá",
+        "summary": "Second-chance buyer accepts or declines the auction purchase offer",
         "tags": ["Auction checkout"]
       }
     },
@@ -14239,13 +14239,13 @@
             "bearer": []
           }
         ],
-        "summary": "Người mua thứ hai từ chối lời mời mua món hàng đấu giá (không bị trừ uy tín)",
+        "summary": "Second-chance buyer declines the auction purchase invitation without reputation penalty",
         "tags": ["Auction checkout"]
       }
     },
     "/api/v1/chat/conversations": {
       "post": {
-        "description": "Chặn Staff tự ý tạo chat trực tiếp với người dùng. Chặn người dùng chat trực tiếp với Admin. Đảm bảo mỗi tranh chấp chỉ tạo đúng 1 hội thoại.",
+        "description": "Prevents staff from initiating direct chats with users and blocks direct messaging to Admin. Ensures a single conversation per dispute.",
         "operationId": "ChatController_createConversation",
         "parameters": [],
         "requestBody": {
@@ -14296,13 +14296,13 @@
         },
         "responses": {
           "201": {
-            "description": "Khởi tạo hoặc trả về cuộc trò chuyện hiện có."
+            "description": "Created or returned existing conversation."
           },
           "400": {
-            "description": "Không thể tự chat hoặc không thể nhắn tin trực tiếp cho Admin."
+            "description": "Self-chat or direct Admin messaging is not allowed."
           },
           "403": {
-            "description": "Nhân viên chỉ có thể phản hồi yêu cầu do người dùng gửi lên."
+            "description": "Staff may only respond to user-submitted support requests."
           }
         },
         "security": [
@@ -14310,11 +14310,11 @@
             "bearer": []
           }
         ],
-        "summary": "Tạo hoặc mở cuộc trò chuyện trực tiếp (Buyer - Seller)",
+        "summary": "Create or open a direct conversation (Buyer - Seller)",
         "tags": ["Chat"]
       },
       "get": {
-        "description": "BỎ HOÀN TOÀN CHAT CHUNG: Nhân viên chỉ thấy các cuộc trò chuyện mà chính mình phụ trách. Khách hàng chỉ thấy hội thoại của mình.",
+        "description": "Staff see only their assigned conversations; customers see only their own conversations.",
         "operationId": "ChatController_listConversations",
         "parameters": [
           {
@@ -14374,13 +14374,13 @@
             "bearer": []
           }
         ],
-        "summary": "Lấy danh sách các cuộc trò chuyện của người dùng hiện tại",
+        "summary": "List conversations for the authenticated user",
         "tags": ["Chat"]
       }
     },
     "/api/v1/chat/request-support": {
       "post": {
-        "description": "Tạo yêu cầu hỗ trợ với trạng thái OPEN. Hệ thống tự động ưu tiên gán cho Staff nào đang Online trước nhất. Đảm bảo mỗi tranh chấp chỉ có 1 cuộc trò chuyện.",
+        "description": "Creates an OPEN support conversation, prioritizing online staff assignment and enforcing one conversation per dispute.",
         "operationId": "ChatController_requestSupport",
         "parameters": [],
         "requestBody": {
@@ -14432,7 +14432,7 @@
         },
         "responses": {
           "201": {
-            "description": "Yêu cầu hỗ trợ đã được tạo và đưa vào hàng đợi."
+            "description": "Support request created and queued."
           }
         },
         "security": [
@@ -14440,7 +14440,7 @@
             "bearer": []
           }
         ],
-        "summary": "Buyer / Seller gửi yêu cầu hỗ trợ lên Nhân viên CSKH (Đưa vào Hàng đợi FIFO)",
+        "summary": "Submit a support request to the Support Staff FIFO queue (Buyer / Seller)",
         "tags": ["Chat"]
       }
     },
@@ -14505,20 +14505,20 @@
             "bearer": []
           }
         ],
-        "summary": "Alias gửi yêu cầu hỗ trợ (tương thích format đường dẫn RESTful)",
+        "summary": "Alias for submitting a support request",
         "tags": ["Chat"]
       }
     },
     "/api/v1/chat/disputes/{disputeId}/conversation": {
       "post": {
-        "description": "Đảm bảo mỗi tranh chấp chỉ tạo DUY NHẤT một hội thoại. Trả về ngay hội thoại hiện có nếu đã tồn tại.",
+        "description": "Ensures each dispute maps to a single conversation, returning the existing one if present.",
         "operationId": "ChatController_getDisputeConversation",
         "parameters": [
           {
             "name": "disputeId",
             "required": true,
             "in": "path",
-            "description": "ID của khiếu nại tranh chấp",
+            "description": "Dispute ID",
             "schema": {
               "type": "string",
               "format": "uuid",
@@ -14528,7 +14528,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Hội thoại tranh chấp duy nhất."
+            "description": "Dispute conversation retrieved."
           }
         },
         "security": [
@@ -14536,13 +14536,13 @@
             "bearer": []
           }
         ],
-        "summary": "Tạo hoặc lấy duy nhất 1 cuộc trò chuyện hỗ trợ cho Khiếu nại / Tranh chấp",
+        "summary": "Get or create the single support conversation for a dispute",
         "tags": ["Chat"]
       }
     },
     "/api/v1/chat/queue": {
       "get": {
-        "description": "Lấy danh sách các ticket đang chờ (status = OPEN, chưa có staff nhận), xếp theo thứ tự thời gian ai gửi trước đứng trước (FIFO) kèm thời gian chờ tính bằng giây.",
+        "description": "Lists unassigned OPEN support tickets ordered FIFO with wait time in seconds.",
         "operationId": "ChatController_getQueue",
         "parameters": [
           {
@@ -14584,7 +14584,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Danh sách hàng đợi hỗ trợ kèm phân trang."
+            "description": "Paginated support queue."
           }
         },
         "security": [
@@ -14592,20 +14592,20 @@
             "bearer": []
           }
         ],
-        "summary": "[STAFF / ADMIN] Xem danh sách Hàng đợi yêu cầu hỗ trợ (FIFO Queue)",
+        "summary": "[STAFF / ADMIN] List the support request FIFO queue",
         "tags": ["Chat"]
       }
     },
     "/api/v1/chat/conversations/{id}/claim": {
       "post": {
-        "description": "Nhân viên chủ động tiếp nhận xử lý ticket đang OPEN. Trạng thái chuyển thành IN_PROGRESS và gán assignedStaffId cho nhân viên này.",
+        "description": "Assigns the ticket to the claiming staff member and transitions status to IN_PROGRESS.",
         "operationId": "ChatController_claimConversation",
         "parameters": [
           {
             "name": "id",
             "required": true,
             "in": "path",
-            "description": "ID cuộc trò chuyện cần tiếp nhận",
+            "description": "Conversation ID to claim",
             "schema": {
               "type": "string",
               "format": "uuid",
@@ -14623,20 +14623,20 @@
             "bearer": []
           }
         ],
-        "summary": "[STAFF / ADMIN] Tiếp nhận (Claim) cuộc trò chuyện từ hàng đợi",
+        "summary": "[STAFF / ADMIN] Claim an OPEN conversation from the support queue",
         "tags": ["Chat"]
       }
     },
     "/api/v1/chat/conversations/{id}/status": {
       "patch": {
-        "description": "Staff phụ trách hoặc Admin có quyền cập nhật trạng thái. Khi chuyển thành RESOLVED/CLOSED, giải phóng slot của Staff và tự động kéo ticket tiếp theo trong hàng đợi về cho Staff đó.",
+        "description": "Assigned Staff or Admin may update status. Transitioning to RESOLVED or CLOSED frees the staff slot and assigns the next queued ticket.",
         "operationId": "ChatController_updateStatus",
         "parameters": [
           {
             "name": "id",
             "required": true,
             "in": "path",
-            "description": "ID cuộc trò chuyện",
+            "description": "Conversation ID",
             "schema": {
               "type": "string",
               "format": "uuid",
@@ -14680,7 +14680,7 @@
             "bearer": []
           }
         ],
-        "summary": "Cập nhật trạng thái cuộc trò chuyện (OPEN, IN_PROGRESS, RESOLVED, CLOSED)",
+        "summary": "Update conversation status (OPEN, IN_PROGRESS, RESOLVED, CLOSED)",
         "tags": ["Chat"]
       }
     },
@@ -14698,13 +14698,13 @@
             "bearer": []
           }
         ],
-        "summary": "Lấy tổng số tin nhắn chưa đọc của người dùng",
+        "summary": "Get total unread message count for the authenticated user",
         "tags": ["Chat"]
       }
     },
     "/api/v1/chat/conversations/{id}": {
       "get": {
-        "description": "Ẩn danh thông tin nhân viên hỗ trợ với khách hàng. Chỉ Admin mới thấy thông tin thực.",
+        "description": "Anonymizes Support Staff identity for customers; only Admin sees real identity.",
         "operationId": "ChatController_getConversation",
         "parameters": [
           {
@@ -14728,13 +14728,13 @@
             "bearer": []
           }
         ],
-        "summary": "Xem chi tiết một cuộc trò chuyện theo ID",
+        "summary": "Get conversation details by ID",
         "tags": ["Chat"]
       }
     },
     "/api/v1/chat/conversations/{id}/messages": {
       "get": {
-        "description": "Tin nhắn từ nhân viên hỗ trợ được ẩn danh thành \"Nhân viên Hỗ trợ\" đối với khách hàng. Chỉ Admin mới thấy ID và tên thật nhân viên.",
+        "description": "Support Staff messages are anonymized to customers; only Admin sees staff ID and real name.",
         "operationId": "ChatController_listMessages",
         "parameters": [
           {
@@ -14781,11 +14781,11 @@
             "bearer": []
           }
         ],
-        "summary": "Lấy lịch sử tin nhắn của cuộc trò chuyện",
+        "summary": "List conversation message history",
         "tags": ["Chat"]
       },
       "post": {
-        "description": "Tự động kiểm duyệt từ cấm/nhạy cảm. Nếu Staff phản hồi một hội thoại đang OPEN, hệ thống sẽ tự động gán và chuyển trạng thái sang IN_PROGRESS.",
+        "description": "Applies content moderation automatically. When Staff replies to an OPEN conversation, it is assigned and moved to IN_PROGRESS.",
         "operationId": "ChatController_sendMessage",
         "parameters": [
           {
@@ -14843,7 +14843,7 @@
             "bearer": []
           }
         ],
-        "summary": "Gửi tin nhắn mới vào cuộc trò chuyện",
+        "summary": "Send a new message in a conversation",
         "tags": ["Chat"]
       }
     },
@@ -14895,7 +14895,7 @@
             "bearer": []
           }
         ],
-        "summary": "Gửi tin nhắn mới (Alias hỗ trợ truyền conversationId trong Body)",
+        "summary": "Send a new message (alias accepting conversationId in body)",
         "tags": ["Chat"]
       }
     },
@@ -14924,7 +14924,7 @@
             "bearer": []
           }
         ],
-        "summary": "Đánh dấu đã đọc toàn bộ tin nhắn trong cuộc trò chuyện",
+        "summary": "Mark all messages in a conversation as read",
         "tags": ["Chat"]
       }
     },
@@ -14945,7 +14945,7 @@
                       "type": "string",
                       "format": "binary"
                     },
-                    "description": "Danh sách tối đa 5 file ảnh tải lên"
+                    "description": "Up to 5 image files"
                   }
                 }
               }
@@ -14962,7 +14962,7 @@
             "bearer": []
           }
         ],
-        "summary": "Upload hình ảnh đính kèm chat lên Cloudinary (Tối đa 5 ảnh)",
+        "summary": "Upload chat image attachments to Cloudinary (max 5 images)",
         "tags": ["Chat"]
       }
     },
@@ -14972,7 +14972,7 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Danh sách tin nhắn tự động."
+            "description": "Auto-reply templates."
           }
         },
         "security": [
@@ -14980,11 +14980,11 @@
             "bearer": []
           }
         ],
-        "summary": "Lấy danh sách các mẫu tin nhắn tự động của gian hàng",
+        "summary": "List shop auto-reply templates (Seller)",
         "tags": ["Seller Chat Auto-Reply"]
       },
       "post": {
-        "description": "Tự động kiểm duyệt, chặn từ ngữ cấm hoặc nội dung nhạy cảm.",
+        "description": "Automatically moderates prohibited or sensitive content.",
         "operationId": "SellerAutoReplyController_createAutoReply",
         "parameters": [],
         "requestBody": {
@@ -15033,10 +15033,10 @@
         },
         "responses": {
           "201": {
-            "description": "Tạo tin nhắn tự động thành công."
+            "description": "Auto-reply created successfully."
           },
           "400": {
-            "description": "Nội dung chứa từ cấm hoặc vượt quá giới hạn 10 mẫu."
+            "description": "Content contains prohibited words or exceeds the 10-template limit."
           }
         },
         "security": [
@@ -15044,13 +15044,13 @@
             "bearer": []
           }
         ],
-        "summary": "Tạo mới tin nhắn tự động cho gian hàng (Tối đa 10 mẫu)",
+        "summary": "Create a shop auto-reply template (max 10 templates)",
         "tags": ["Seller Chat Auto-Reply"]
       }
     },
     "/api/v1/chat/auto-replies/my-shop/{id}": {
       "put": {
-        "description": "Không thể chỉnh sửa nếu tin nhắn đã bị Quản trị viên khóa do vi phạm.",
+        "description": "Cannot be edited if locked by Admin due to a policy violation.",
         "operationId": "SellerAutoReplyController_updateAutoReply",
         "parameters": [
           {
@@ -15111,7 +15111,7 @@
             "bearer": []
           }
         ],
-        "summary": "Chỉnh sửa cấu hình tin nhắn tự động của gian hàng",
+        "summary": "Update a shop auto-reply configuration",
         "tags": ["Seller Chat Auto-Reply"]
       },
       "delete": {
@@ -15138,7 +15138,7 @@
             "bearer": []
           }
         ],
-        "summary": "Xóa cấu hình tin nhắn tự động của gian hàng",
+        "summary": "Delete a shop auto-reply configuration",
         "tags": ["Seller Chat Auto-Reply"]
       }
     },
@@ -15167,13 +15167,13 @@
             "bearer": []
           }
         ],
-        "summary": "Bật / Tắt trạng thái kích hoạt tin nhắn tự động",
+        "summary": "Enable or disable an auto-reply template",
         "tags": ["Seller Chat Auto-Reply"]
       }
     },
     "/api/v1/admin/chat/auto-replies": {
       "get": {
-        "description": "Có thể lọc theo scope (SYSTEM/SHOP), trạng thái (ACTIVE/CANCELLED_BY_ADMIN), hoặc theo gian hàng cụ thể.",
+        "description": "Supports filtering by scope (SYSTEM or SHOP), status (ACTIVE or CANCELLED_BY_ADMIN), or specific shop.",
         "operationId": "AdminChatController_listAutoReplies",
         "parameters": [
           {
@@ -15237,7 +15237,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Danh sách tin nhắn tự động kèm phân trang."
+            "description": "Paginated list of auto-replies."
           }
         },
         "security": [
@@ -15245,13 +15245,13 @@
             "bearer": []
           }
         ],
-        "summary": "Quản trị viên xem danh sách tin nhắn tự động toàn sàn",
+        "summary": "List marketplace auto-replies (Admin)",
         "tags": ["Admin Chat Management"]
       }
     },
     "/api/v1/admin/chat/auto-replies/system": {
       "post": {
-        "description": "Tự động gửi lời chào khi người dùng (Buyer hoặc Seller) bắt đầu nhắn tin với đội ngũ hỗ trợ.",
+        "description": "Automatically sends a greeting when a Buyer or Seller initiates a support chat.",
         "operationId": "AdminChatController_createSystemAutoReply",
         "parameters": [],
         "requestBody": {
@@ -15308,13 +15308,13 @@
             "bearer": []
           }
         ],
-        "summary": "Tạo tin nhắn tự động chung của hệ thống (cho nhân viên CSKH)",
+        "summary": "Create a system-wide auto-reply for Support Staff",
         "tags": ["Admin Chat Management"]
       }
     },
     "/api/v1/admin/chat/auto-replies/{id}/cancel": {
       "patch": {
-        "description": "Chuyển trạng thái thành CANCELLED_BY_ADMIN, ghi nhận người hủy, thời gian và lý do hủy.",
+        "description": "Transitions status to CANCELLED_BY_ADMIN and records actor, timestamp, and reason.",
         "operationId": "AdminChatController_cancelSellerAutoReply",
         "parameters": [
           {
@@ -15359,7 +15359,7 @@
             "bearer": []
           }
         ],
-        "summary": "Hủy/Khóa tin nhắn tự động của Seller kèm lý do vi phạm",
+        "summary": "Cancel or lock a seller auto-reply with violation reason (Admin)",
         "tags": ["Admin Chat Management"]
       }
     },
@@ -15388,13 +15388,13 @@
             "bearer": []
           }
         ],
-        "summary": "Xem lịch sử hủy và lý do vi phạm của tin nhắn tự động",
+        "summary": "Get cancellation history and violation reason for an auto-reply",
         "tags": ["Admin Chat Management"]
       }
     },
     "/api/v1/admin/chat/conversations/{id}/audit": {
       "get": {
-        "description": "Admin có thể xem chính xác tài khoản nhân viên (ID, tên thật, email) nào đã gửi từng tin nhắn trong ca trực.",
+        "description": "Allows Admin to inspect the exact staff account (ID, full name, email) for each message.",
         "operationId": "AdminChatController_auditConversation",
         "parameters": [
           {
@@ -15441,7 +15441,7 @@
             "bearer": []
           }
         ],
-        "summary": "Giám sát chi tiết cuộc trò chuyện (Hiển thị đích danh nhân viên CSKH)",
+        "summary": "Audit conversation messages with Support Staff identity (Admin)",
         "tags": ["Admin Chat Management"]
       }
     },
@@ -15496,7 +15496,7 @@
           }
         },
         "security": [],
-        "summary": "Hội thoại AI cho khách chưa đăng nhập; chỉ hướng dẫn chung, không tra cứu đơn",
+        "summary": "Guest AI chat for general guidance without order lookups",
         "tags": ["Chatbot"]
       }
     },
@@ -15514,7 +15514,7 @@
             "bearer": []
           }
         ],
-        "summary": "Chủ đề hỗ trợ và tình trạng cấu hình AI",
+        "summary": "Supported chatbot topics and AI configuration status",
         "tags": ["Chatbot"]
       }
     },
@@ -15607,7 +15607,7 @@
             "bearer": []
           }
         ],
-        "summary": "Hội thoại, lịch sử đặt hàng cho mọi role, đơn bán và giỏ hàng cá nhân; tối đa 20 tin/phút",
+        "summary": "AI chat, personal order/cart lookups, and seller order queries (max 20 messages/min)",
         "tags": ["Chatbot"]
       }
     }

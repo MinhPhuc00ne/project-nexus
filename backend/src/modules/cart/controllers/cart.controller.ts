@@ -30,11 +30,11 @@ export class CartController {
   @Get()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[BUYER / SELLER] Xem giỏ hàng cá nhân kèm Price Revalidation',
+    summary: '[BUYER / SELLER] Get personal cart with price revalidation',
     description:
-      'Lấy danh sách sản phẩm trong giỏ hàng. Tự động so sánh giá lúc thêm và giá hiện tại của Shop (hasPriceChanged), đồng thời kiểm tra tình trạng tồn kho.',
+      'Retrieves cart items, compares snapshot prices against current shop prices (hasPriceChanged), and checks inventory availability.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy giỏ hàng thành công' })
+  @ApiResponse({ status: 200, description: 'Cart retrieved successfully' })
   async getCart(@CurrentUser('id') userId: string) {
     return this.cartService.getCart(userId);
   }
@@ -42,14 +42,14 @@ export class CartController {
   @Post('items')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[BUYER / SELLER] Thêm sản phẩm vào giỏ hàng',
+    summary: '[BUYER / SELLER] Add a product to the cart',
     description:
-      'Thêm sản phẩm kèm số lượng. Bắt buộc kiểm tra: tồn kho khả dụng, sản phẩm ACTIVE, và chặn tự mua hàng của chính mình (Anti-Self-Purchase).',
+      'Adds a product with quantity after verifying available stock, ACTIVE product status, and anti-self-purchase rules.',
   })
-  @ApiResponse({ status: 200, description: 'Thêm vào giỏ hàng thành công' })
+  @ApiResponse({ status: 200, description: 'Item added to cart successfully' })
   @ApiResponse({
     status: 400,
-    description: 'Tồn kho không đủ, sản phẩm hết hàng hoặc người bán cố tình mua đồ của mình',
+    description: 'Insufficient stock, out-of-stock product, or self-purchase attempt',
   })
   async addToCart(
     @CurrentUser('id') userId: string,
@@ -61,12 +61,12 @@ export class CartController {
   @Patch('items/:id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[BUYER / SELLER] Cập nhật số lượng của một món hàng trong giỏ',
+    summary: '[BUYER / SELLER] Update quantity of a cart item',
     description:
-      'Thay đổi số lượng món hàng. Nếu số lượng = 0 sẽ tự động xóa. Kiểm tra số lượng tồn kho khả dụng trước khi cập nhật.',
+      'Updates item quantity; setting quantity to 0 removes the item. Validates available inventory before updating.',
   })
-  @ApiResponse({ status: 200, description: 'Cập nhật số lượng thành công' })
-  @ApiResponse({ status: 400, description: 'Số lượng vượt quá tồn kho' })
+  @ApiResponse({ status: 200, description: 'Cart item quantity updated successfully' })
+  @ApiResponse({ status: 400, description: 'Requested quantity exceeds available stock' })
   async updateCartItem(
     @CurrentUser('id') userId: string,
     @ZodParam('id', UuidParamSchema) cartItemId: string,
@@ -78,9 +78,9 @@ export class CartController {
   @Delete('items/:id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[BUYER / SELLER] Xóa một món hàng khỏi giỏ',
+    summary: '[BUYER / SELLER] Remove an item from the cart',
   })
-  @ApiResponse({ status: 200, description: 'Xóa món hàng thành công' })
+  @ApiResponse({ status: 200, description: 'Cart item removed successfully' })
   async removeCartItem(
     @CurrentUser('id') userId: string,
     @ZodParam('id', UuidParamSchema) cartItemId: string,
@@ -91,9 +91,9 @@ export class CartController {
   @Delete()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[BUYER / SELLER] Xóa toàn bộ giỏ hàng (Clear Cart)',
+    summary: '[BUYER / SELLER] Clear all items from the cart',
   })
-  @ApiResponse({ status: 200, description: 'Đã dọn dẹp sạch giỏ hàng' })
+  @ApiResponse({ status: 200, description: 'Cart cleared successfully' })
   async clearCart(@CurrentUser('id') userId: string) {
     return this.cartService.clearCart(userId);
   }
@@ -101,11 +101,11 @@ export class CartController {
   @Post('merge')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[BUYER / SELLER] Gộp giỏ hàng từ Guest (LocalStorage) vào Database sau khi đăng nhập',
+    summary: '[BUYER / SELLER] Merge guest localStorage cart into the database after sign-in',
     description:
-      'Nhận danh sách các món Guest đã lưu tạm trên trình duyệt, tự động lọc bỏ sản phẩm của chính mình và gộp số lượng vào giỏ hàng PostgreSQL.',
+      'Accepts guest cart items, filters out the user own shop products, and merges quantities into the PostgreSQL cart.',
   })
-  @ApiResponse({ status: 200, description: 'Gộp giỏ hàng thành công' })
+  @ApiResponse({ status: 200, description: 'Guest cart merged successfully' })
   async mergeGuestCart(
     @CurrentUser('id') userId: string,
     @ZodBody(MergeCartSchema) dto: MergeCartInput,

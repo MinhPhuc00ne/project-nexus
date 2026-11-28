@@ -47,7 +47,9 @@ export class ProductController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SELLER, Role.ADMIN)
-  @ApiOperation({ summary: 'Seller thiết lập/dừng giá sale có thời gian cho sản phẩm của mình' })
+  @ApiOperation({
+    summary: 'Configure or clear a scheduled sale price for a shop product (Seller)',
+  })
   updateSale(
     @CurrentUser('id') sellerId: string,
     @ZodParam('id', UuidParamSchema) productId: string,
@@ -75,11 +77,11 @@ export class ProductController {
   @Get('seller/my-products')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[SELLER] Xem danh sách sản phẩm và tồn kho của chính Shop mình',
+    summary: '[SELLER] List products and inventory for the authenticated seller shop',
     description:
-      'Trả về toàn bộ sản phẩm do tài khoản Seller hiện tại đăng bán kèm số lượng tồn kho.',
+      'Returns all products published by the current seller account along with inventory quantities.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách sản phẩm của Seller thành công' })
+  @ApiResponse({ status: 200, description: 'Seller products retrieved successfully' })
   async getMyProducts(@CurrentUser('id') sellerId: string) {
     return this.productService.getSellerProducts(sellerId);
   }
@@ -119,12 +121,11 @@ export class ProductController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
-    summary: '[SELLER] Đăng bán sản phẩm mới (Tự động khởi tạo tồn kho WH_001)',
-    description:
-      'Người bán đăng sản phẩm kèm thông tin hình ảnh, giá bán và số lượng tồn kho ban đầu.',
+    summary: '[SELLER] Create a new product and initialize default warehouse inventory (WH_001)',
+    description: 'Publishes a new product with images, pricing, and initial stock quantity.',
   })
-  @ApiResponse({ status: 201, description: 'Tạo sản phẩm và kho hàng thành công' })
-  @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ hoặc danh mục không tồn tại' })
+  @ApiResponse({ status: 201, description: 'Product and inventory created successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid input data or category not found' })
   async createProduct(
     @CurrentUser('id') sellerId: string,
     @ZodBody(CreateProductSchema) dto: CreateProductInput,
@@ -139,13 +140,13 @@ export class ProductController {
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[SELLER] Cập nhật thông tin sản phẩm và điều chỉnh số lượng tồn kho',
+    summary: '[SELLER] Update product details and adjust inventory stock',
     description:
-      'Người bán cập nhật giá, mô tả, ảnh hoặc thay đổi số lượng tồn kho (SELLER_RESTOCK / SELLER_ADJUSTMENT).',
+      'Updates product price, description, images, or stock quantity (SELLER_RESTOCK or SELLER_ADJUSTMENT).',
   })
-  @ApiResponse({ status: 200, description: 'Cập nhật sản phẩm thành công' })
-  @ApiResponse({ status: 403, description: 'Không có quyền sửa sản phẩm của shop khác' })
-  @ApiResponse({ status: 404, description: 'Sản phẩm không tồn tại' })
+  @ApiResponse({ status: 200, description: 'Product updated successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden to modify another shop product' })
+  @ApiResponse({ status: 404, description: 'Product not found' })
   async updateProduct(
     @CurrentUser('id') sellerId: string,
     @ZodParam('id', UuidParamSchema) productId: string,
@@ -161,11 +162,11 @@ export class ProductController {
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[SELLER] Ẩn hoặc xóa sản phẩm của Shop',
-    description: 'Chuyển trạng thái sản phẩm sang INACTIVE.',
+    summary: '[SELLER] Hide or deactivate a shop product',
+    description: 'Transitions product status to INACTIVE.',
   })
-  @ApiResponse({ status: 200, description: 'Ẩn sản phẩm thành công' })
-  @ApiResponse({ status: 403, description: 'Không có quyền thao tác' })
+  @ApiResponse({ status: 200, description: 'Product deactivated successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
   async deleteProduct(
     @CurrentUser('id') sellerId: string,
     @ZodParam('id', UuidParamSchema) productId: string,

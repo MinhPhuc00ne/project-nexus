@@ -53,34 +53,33 @@ export class UsersController {
     private readonly reputationService: ReputationService,
   ) {}
 
-  // ================= 1. XEM THÔNG TIN CÁ NHÂN =================
+  // ================= 1. USER PROFILE =================
   @Get('me')
   @ApiOperation({
-    summary: 'Lấy thông tin tài khoản hiện tại, số dư ví và trạng thái Seller',
-    description:
-      'Trả về thông tin chi tiết bao gồm vai trò (role), trạng thái người bán (isSellerActive) và số dư ví.',
+    summary: 'Get current account details, wallet balance, and Seller status',
+    description: 'Returns role, isSellerActive flag, and wallet balance.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy thông tin thành công' })
-  @ApiResponse({ status: 401, description: 'Chưa đăng nhập hoặc token không hợp lệ' })
+  @ApiResponse({ status: 200, description: 'User profile retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthenticated or invalid token' })
   async getMe(@CurrentUser() user: AuthenticatedUserPayload) {
     return this.usersService.getMe(user.id);
   }
 
-  // ================= 2. CHUYỂN ĐỔI CHẾ ĐỘ BUYER <-> SELLER =================
+  // ================= 2. TOGGLE BUYER <-> SELLER MODE =================
   @Patch('toggle-seller')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Chuyển đổi linh hoạt giữa giao diện Người mua và Người bán',
+    summary: 'Switch between Buyer and Seller modes',
     description:
-      'Chỉ những tài khoản đã được Admin nâng cấp thành công lên SELLER mới có quyền thực hiện thao tác này. Nếu tài khoản chưa phải Seller, hệ thống sẽ trả về lỗi 403 Forbidden.',
+      'Only accounts upgraded to SELLER by Admin may toggle modes; non-seller accounts receive 403 Forbidden.',
   })
   @ApiResponse({
     status: 200,
-    description: 'Chuyển đổi trạng thái tài khoản thành công',
+    description: 'Operating mode updated successfully',
   })
   @ApiResponse({
     status: 403,
-    description: 'Tài khoản chưa được cấp quyền Seller, không thể chuyển đổi',
+    description: 'Account does not have Seller privileges',
   })
   async toggleSeller(
     @CurrentUser() user: AuthenticatedUserPayload,
@@ -89,7 +88,7 @@ export class UsersController {
     return this.usersService.toggleSellerMode(user.id, dto);
   }
 
-  // ================= 3. BUYER GỬI YÊU CẦU VÀ FILE ĐÍNH KÈM CHỨNG MINH =================
+  // ================= 3. SELLER UPGRADE REQUEST =================
   @Post('seller-request')
   @UseGuards(RolesGuard)
   @Roles(Role.BUYER)
@@ -103,10 +102,9 @@ export class UsersController {
   )
   @ApiConsumes('multipart/form-data', 'application/json')
   @ApiOperation({
-    summary:
-      'Người mua (Buyer) gửi yêu cầu và file/tài liệu đính kèm chứng minh để nâng cấp lên Seller',
+    summary: 'Submit a Buyer-to-Seller upgrade request with verification documents',
     description:
-      'Gửi thông tin gian hàng và bắt buộc đính kèm file chứng minh (ảnh chụp CCCD/CMND, Giấy phép kinh doanh, hợp đồng thương nhân, v.v.). Có thể chọn upload file trực tiếp hoặc truyền attachmentUrl.',
+      'Submits shop details and required verification proof (national ID, business license, or merchant contract) via file upload or attachmentUrl.',
   })
   @ApiBody({
     schema: {
@@ -115,67 +113,64 @@ export class UsersController {
       properties: {
         storeName: {
           type: 'string',
-          example: 'Cổ Vật Hoàng Gia Store',
-          description: 'Tên gian hàng / thương hiệu của người bán',
+          example: 'Royal Vintage Timepieces Store',
+          description: 'Shop or brand name',
         },
         storeDescription: {
           type: 'string',
-          example: 'Chuyên cung cấp đồ cổ sưu tầm, kỷ vật lịch sử và các tác phẩm độc bản.',
-          description: 'Mô tả gian hàng và sản phẩm kinh doanh',
+          example: 'Curated vintage collectibles, mechanical watches, and rare editions.',
+          description: 'Shop and product description',
         },
         phone: {
           type: 'string',
           example: '0987654321',
-          description: 'Số điện thoại liên hệ của cửa hàng',
+          description: 'Shop contact phone number',
         },
         businessEmail: {
           type: 'string',
           example: 'shop@hoanggiavintage.com',
-          description: 'Email liên hệ kinh doanh',
+          description: 'Business contact email',
         },
         identityCardNumber: {
           type: 'string',
           example: '001202008888',
-          description: 'Số CMND/CCCD hoặc Mã số định danh doanh nghiệp',
+          description: 'National ID or business registration number',
         },
         street: {
           type: 'string',
-          example: '720A Điện Biên Phủ',
-          description: 'Địa chỉ cụ thể / số nhà, tên đường của cửa hàng',
+          example: '720A Dien Bien Phu',
+          description: 'Shop street address',
         },
-        ward: { type: 'string', example: 'Phường 22', description: 'Phường/xã' },
-        district: { type: 'string', example: 'Quận Bình Thạnh', description: 'Quận/huyện' },
-        city: { type: 'string', example: 'TP. Hồ Chí Minh', description: 'Tỉnh/thành phố' },
-        latitude: { type: 'number', example: 10.795, description: 'Vĩ độ GPS bản đồ' },
-        longitude: { type: 'number', example: 106.721, description: 'Kinh độ GPS bản đồ' },
+        ward: { type: 'string', example: 'Ward 22', description: 'Ward' },
+        district: { type: 'string', example: 'Binh Thanh District', description: 'District' },
+        city: { type: 'string', example: 'Ho Chi Minh City', description: 'Province or city' },
+        latitude: { type: 'number', example: 10.795, description: 'Map GPS latitude' },
+        longitude: { type: 'number', example: 106.721, description: 'Map GPS longitude' },
         formattedAddress: {
           type: 'string',
-          example: 'Landmark 81, 720A Điện Biên Phủ, Phường 22, Bình Thạnh',
+          example: 'Landmark 81, 720A Dien Bien Phu, Ward 22, Binh Thanh',
         },
         placeId: { type: 'string', example: 'ChIJ_landmark81_hcm' },
         file: {
           type: 'string',
           format: 'binary',
-          description:
-            'File hoặc tài liệu đính kèm chứng minh (JPG, PNG, WEBP, PDF, DOC tối đa 15MB)',
+          description: 'Verification document file (JPG, PNG, WEBP, PDF, DOC up to 15MB)',
         },
         attachmentUrl: {
           type: 'string',
           example: 'https://res.cloudinary.com/...',
-          description:
-            'Hoặc đường dẫn file chứng minh đã tải lên trước (nếu không upload qua form-data)',
+          description: 'Pre-uploaded verification document URL when not using multipart upload',
         },
       },
     },
   })
   @ApiResponse({
     status: 201,
-    description: 'Gửi yêu cầu nâng cấp và tài liệu chứng minh thành công, đang chờ Admin duyệt',
+    description: 'Seller upgrade request submitted and pending Admin review',
   })
   @ApiResponse({
     status: 400,
-    description:
-      'Chưa đính kèm tài liệu chứng minh, hoặc đã có yêu cầu PENDING, hoặc tài khoản đã là Seller',
+    description: 'Missing verification document, existing PENDING request, or already a Seller',
   })
   /**
    * Submit seller upgrade request.
@@ -203,9 +198,9 @@ export class UsersController {
   @UseGuards(RolesGuard)
   @Roles(Role.BUYER, Role.SELLER)
   @ApiOperation({
-    summary: 'Xem lịch sử và trạng thái các yêu cầu nâng cấp Seller của tài khoản hiện tại',
+    summary: 'List Seller upgrade request history and statuses for the current user',
   })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách yêu cầu thành công' })
+  @ApiResponse({ status: 200, description: 'Seller upgrade requests retrieved successfully' })
   async getMySellerRequests(@CurrentUser() user: AuthenticatedUserPayload) {
     return this.usersService.getMySellerRequests(user.id);
   }

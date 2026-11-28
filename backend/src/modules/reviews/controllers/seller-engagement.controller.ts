@@ -26,11 +26,11 @@ export class SellerEngagementController {
   @Get('reviews')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[SELLER] Xem danh sách đánh giá của khách hàng và phân bố sao',
+    summary: '[SELLER] List customer reviews and star rating breakdown',
     description:
-      'Lấy danh sách đánh giá nhận xét từ người mua về các đơn hàng của gian hàng, tính điểm trung bình và biểu đồ phân bổ từ 1 đến 5 sao.',
+      'Retrieves buyer reviews for shop orders along with average rating and 1-to-5 star distribution.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách đánh giá thành công' })
+  @ApiResponse({ status: 200, description: 'Reviews retrieved successfully' })
   async getReviews(
     @CurrentUser('id') sellerId: string,
     @ZodQuery(QuerySellerReviewsSchema) query: QuerySellerReviewsInput,
@@ -41,11 +41,11 @@ export class SellerEngagementController {
   @Get('disputes')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[SELLER] Xem danh sách các khiếu nại (Disputes) trên đơn hàng của gian hàng',
+    summary: '[SELLER] List disputes on shop orders',
     description:
-      'Lấy danh sách các khiếu nại do người mua mở kèm theo lý do, link bằng chứng, trạng thái xử lý và bộ đếm trạng thái.',
+      'Retrieves buyer-opened disputes with reason, evidence URLs, resolution status, and status counters.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách khiếu nại thành công' })
+  @ApiResponse({ status: 200, description: 'Disputes retrieved successfully' })
   async getDisputes(
     @CurrentUser('id') sellerId: string,
     @ZodQuery(QuerySellerDisputesSchema) query: QuerySellerDisputesInput,
@@ -56,13 +56,13 @@ export class SellerEngagementController {
   @Post('disputes/:id/respond')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[SELLER] Gửi giải trình và bổ sung bằng chứng đối chất khiếu nại',
+    summary: '[SELLER] Submit dispute explanation and supporting evidence',
     description:
-      'Người bán phản hồi lý do khiếu nại của người mua, đính kèm link hình ảnh/video đóng gói để Ban quản trị sàn đối soát và phân xử.',
+      'Allows the seller to respond to a buyer dispute with packaging image or video evidence for Admin review.',
   })
-  @ApiResponse({ status: 200, description: 'Gửi giải trình khiếu nại thành công' })
-  @ApiResponse({ status: 400, description: 'Khiếu nại đã kết thúc hoặc dữ liệu không hợp lệ' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy khiếu nại' })
+  @ApiResponse({ status: 200, description: 'Dispute response submitted successfully' })
+  @ApiResponse({ status: 400, description: 'Dispute already closed or invalid input' })
+  @ApiResponse({ status: 404, description: 'Dispute not found' })
   async respondToDispute(
     @CurrentUser('id') sellerId: string,
     @ZodParam('id', UuidParamSchema) disputeId: string,

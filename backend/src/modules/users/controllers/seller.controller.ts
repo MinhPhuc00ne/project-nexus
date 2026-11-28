@@ -20,7 +20,7 @@ export class SellerController {
   ) {}
 
   @ApiOperation({
-    summary: '[SELLER] PROFILE.VIEW - Xem hồ sơ và ví người bán',
+    summary: '[SELLER] PROFILE.VIEW - View seller profile and wallet balance',
   })
   @Roles(Role.SELLER, Role.ADMIN, Role.SUPPORT_STAFF)
   @RequirePrivilege('PROFILE.VIEW')
@@ -30,9 +30,8 @@ export class SellerController {
   }
 
   @ApiOperation({
-    summary: '[SELLER] Xem thông tin chi tiết hồ sơ gian hàng của mình',
-    description:
-      'Lấy thông tin tên gian hàng, mô tả, hotline, email kinh doanh và địa chỉ kho hàng.',
+    summary: '[SELLER] View shop profile details',
+    description: 'Returns shop name, description, hotline, business email, and warehouse address.',
   })
   @Roles(Role.SELLER, Role.ADMIN)
   @Get('shop-profile')
@@ -42,12 +41,12 @@ export class SellerController {
 
   @ApiOperation({
     summary:
-      '[SELLER] Cập nhật thông tin gian hàng (Sửa tên, mô tả, thông tin liên hệ và địa chỉ shop)',
+      '[SELLER] Update shop profile (name, description, contact info, and warehouse address)',
     description:
-      'Người bán cập nhật lại tên thương hiệu gian hàng, lời giới thiệu/mô tả shop, số hotline, email liên hệ và địa chỉ kho xuất hàng.',
+      'Updates shop brand name, description, hotline, contact email, and pickup warehouse address.',
   })
-  @ApiResponse({ status: 200, description: 'Cập nhật thông tin gian hàng thành công' })
-  @ApiResponse({ status: 403, description: 'Chưa có quyền Seller hoặc shop đang bị đình chỉ' })
+  @ApiResponse({ status: 200, description: 'Shop profile updated successfully' })
+  @ApiResponse({ status: 403, description: 'Missing Seller role or shop is suspended' })
   @Roles(Role.SELLER, Role.ADMIN)
   @Patch('shop-profile')
   @HttpCode(HttpStatus.OK)
@@ -59,9 +58,9 @@ export class SellerController {
   }
 
   @ApiOperation({
-    summary: '[SELLER / BUYER] Chuyển đổi qua lại giữa role Seller hoặc Buyer',
+    summary: '[SELLER / BUYER] Toggle between Seller and Buyer operating modes',
     description:
-      'Sau khi Buyer đã được Admin duyệt thành tài khoản Seller, tài khoản có thể linh hoạt chuyển đổi chế độ hoạt động (isSellerActive: true/false) trong cùng phiên làm việc.',
+      'Allows approved Seller accounts to switch isSellerActive (true or false) within the same session.',
   })
   @Roles(Role.SELLER, Role.ADMIN, Role.SUPPORT_STAFF)
   @Patch('toggle-mode')

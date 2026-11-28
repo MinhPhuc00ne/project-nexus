@@ -47,7 +47,7 @@ export class BuyerController {
   ) {}
 
   @ApiOperation({
-    summary: '[BUYER] PROFILE.VIEW - Xem thông tin cá nhân và số dư ví',
+    summary: '[BUYER] PROFILE.VIEW - View personal profile and wallet balance',
   })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -58,7 +58,7 @@ export class BuyerController {
   }
 
   @ApiOperation({
-    summary: '[BUYER / SELLER] PROFILE.UPDATE - Cập nhật thông tin hồ sơ cá nhân',
+    summary: '[BUYER / SELLER] PROFILE.UPDATE - Update personal profile details',
   })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -75,8 +75,8 @@ export class BuyerController {
   }
 
   @ApiOperation({
-    summary: '[BUYER] Tải lên ảnh hoặc file chứng minh để nộp hồ sơ xin lên Seller',
-    description: 'Hỗ trợ định dạng file ảnh hoặc PDF chứng minh hoạt động kinh doanh/căn cước.',
+    summary: '[BUYER] Upload verification image or PDF for Seller upgrade request',
+    description: 'Supports image or PDF proof of business activity or national ID.',
   })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -93,12 +93,11 @@ export class BuyerController {
     return this.usersService.uploadProofDocument(file.buffer, file.originalname);
   }
 
-  // --- QUẢN LÝ SỔ ĐỊA CHỈ GIAO HÀNG (USER ADDRESSES) & BẢN ĐỒ TOÀN CẦU ---
+  // --- SHIPPING ADDRESS BOOK & GLOBAL GEOCODING ---
 
   @ApiOperation({
-    summary: '[BUYER] Tìm kiếm gợi ý địa chỉ toàn cầu (Geocoding Autocomplete)',
-    description:
-      'Tìm kiếm gợi ý địa chỉ và tọa độ GPS qua bản đồ toàn cầu (OpenStreetMap Nominatim).',
+    summary: '[BUYER] Search global address suggestions (Geocoding Autocomplete)',
+    description: 'Searches address suggestions and GPS coordinates via OpenStreetMap Nominatim.',
   })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
@@ -108,9 +107,9 @@ export class BuyerController {
   }
 
   @ApiOperation({
-    summary: '[BUYER] Dịch ngược tọa độ ghim bản đồ thành địa chỉ chi tiết (Reverse Geocoding)',
+    summary: '[BUYER] Reverse geocode map pin coordinates into structured address fields',
     description:
-      'Truyền tọa độ GPS (lat, lng) khi kéo ghim trên bản đồ để tự động bóc tách số nhà, phường xã, quận huyện, tỉnh thành.',
+      'Accepts GPS coordinates (lat, lng) to extract street, ward, district, and province.',
   })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
@@ -120,7 +119,7 @@ export class BuyerController {
   }
 
   @ApiOperation({
-    summary: '[BUYER] Xem danh sách sổ địa chỉ nhận hàng của Buyer',
+    summary: '[BUYER] List saved shipping addresses',
   })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
@@ -130,7 +129,7 @@ export class BuyerController {
   }
 
   @ApiOperation({
-    summary: '[BUYER] Thêm địa chỉ nhận hàng mới kèm tọa độ bản đồ',
+    summary: '[BUYER] Add a new shipping address with map coordinates',
   })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
@@ -143,7 +142,7 @@ export class BuyerController {
   }
 
   @ApiOperation({
-    summary: '[BUYER] Cập nhật thông tin địa chỉ và tọa độ bản đồ',
+    summary: '[BUYER] Update a shipping address and map coordinates',
   })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
@@ -157,7 +156,7 @@ export class BuyerController {
   }
 
   @ApiOperation({
-    summary: '[BUYER] Đặt làm địa chỉ nhận hàng mặc định',
+    summary: '[BUYER] Set a shipping address as default',
   })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
@@ -170,7 +169,7 @@ export class BuyerController {
   }
 
   @ApiOperation({
-    summary: '[BUYER] Xóa một địa chỉ nhận hàng',
+    summary: '[BUYER] Delete a shipping address',
   })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)

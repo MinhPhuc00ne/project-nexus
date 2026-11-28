@@ -16,8 +16,13 @@ function walk(dir) {
   return out;
 }
 
+const backendControllers = walk(path.join(ROOT, 'backend/src/modules')).filter((file) =>
+  file.replace(/\\/g, '/').includes('/controllers/'),
+);
+
 const strictTargets = [
   ...walk(path.join(ROOT, 'packages/contracts/src')),
+  ...backendControllers,
   path.join(ROOT, 'backend/prisma/seeds/system.ts'),
   path.join(ROOT, 'backend/prisma/seeds/admin-create.ts'),
   path.join(ROOT, 'frontend/index.html'),

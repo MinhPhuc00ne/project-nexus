@@ -24,14 +24,14 @@ export class BuyerFinanceController {
   @Post('withdraw')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
-    summary: '[BUYER] Tạo yêu cầu rút tiền từ số dư ví về tài khoản ngân hàng',
+    summary: '[BUYER] Create a withdrawal request from wallet balance to bank account',
     description:
-      'Kiểm tra số dư khả dụng, đóng băng tạm thời số tiền rút trong ví và gửi yêu cầu đến Quản trị viên duyệt chuyển khoản.',
+      'Validates available balance, freezes the requested amount in the wallet, and submits a payout request for Admin approval.',
   })
-  @ApiResponse({ status: 201, description: 'Tạo yêu cầu rút tiền thành công' })
+  @ApiResponse({ status: 201, description: 'Withdrawal request created successfully' })
   @ApiResponse({
     status: 400,
-    description: 'Số dư không đủ, thiếu thông tin ngân hàng hoặc số tiền rút không hợp lệ',
+    description: 'Insufficient balance, missing bank details, or invalid withdrawal amount',
   })
   async createWithdrawal(
     @CurrentUser('id') userId: string,
@@ -43,11 +43,11 @@ export class BuyerFinanceController {
   @Get('transactions')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[BUYER] Xem lịch sử giao dịch tài chính / biến động số dư ví cá nhân',
+    summary: '[BUYER] List personal wallet transaction history',
     description:
-      'Hỗ trợ phân trang và lọc theo loại giao dịch (DEPOSIT, WITHDRAW, ESCROW_REFUND...) và trạng thái (PENDING, SUCCESS, FAILED).',
+      'Supports pagination and filtering by transaction type (DEPOSIT, WITHDRAW, ESCROW_REFUND) and status (PENDING, SUCCESS, FAILED).',
   })
-  @ApiResponse({ status: 200, description: 'Lấy lịch sử giao dịch thành công' })
+  @ApiResponse({ status: 200, description: 'Transaction history retrieved successfully' })
   async getTransactions(
     @CurrentUser('id') userId: string,
     @ZodQuery(QueryFinanceSchema) query: QueryFinanceInput,
@@ -58,9 +58,9 @@ export class BuyerFinanceController {
   @Get('withdrawals')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[BUYER] Xem danh sách các yêu cầu rút tiền đã tạo và tiến độ duyệt',
+    summary: '[BUYER] List submitted withdrawal requests and approval status',
   })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách yêu cầu rút tiền thành công' })
+  @ApiResponse({ status: 200, description: 'Withdrawal requests retrieved successfully' })
   async getWithdrawals(
     @CurrentUser('id') userId: string,
     @ZodQuery(StandardPaginationQuerySchema) query: StandardPaginationQuery,

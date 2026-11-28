@@ -26,10 +26,10 @@ export class WalletController {
   @Get('wallet')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[BUYER / USER] Xem số dư ví và lịch sử giao dịch cá nhân',
-    description: 'Trả về số dư khả dụng, tiền tạm giữ và danh sách các giao dịch gần nhất của ví.',
+    summary: '[BUYER / USER] Get personal wallet balance and transaction history',
+    description: 'Returns available balance, held balance, and recent wallet transactions.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy thông tin ví thành công' })
+  @ApiResponse({ status: 200, description: 'Wallet details retrieved successfully' })
   async getMyWallet(@CurrentUser('id') userId: string) {
     return this.deposits.getUserWallet(userId);
   }
@@ -37,15 +37,15 @@ export class WalletController {
   @Post('wallet/deposit')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[BUYER / USER] Nạp tiền vào ví cá nhân (NEXUS Pay)',
+    summary: '[BUYER / USER] Top up personal NEXUS Pay wallet',
     description:
-      'Nạp tiền vào ví để mua sắm và thanh toán đơn hàng bằng số dư ví. Hỗ trợ tạo liên kết PayOS VietQR hoặc nạp trực tiếp.',
+      'Adds funds to the wallet for purchases via PayOS VietQR payment link or direct top-up.',
   })
   @ApiResponse({
     status: 200,
-    description: 'Nạp tiền thành công hoặc trả về thông tin VietQR PayOS',
+    description: 'Top-up completed or PayOS VietQR payment link returned',
   })
-  @ApiResponse({ status: 400, description: 'Số tiền nạp không hợp lệ' })
+  @ApiResponse({ status: 400, description: 'Invalid top-up amount' })
   async depositMyWallet(
     @CurrentUser('id') userId: string,
     @ZodBody(DepositWalletSchema) dto: DepositWalletInput,
@@ -59,11 +59,10 @@ export class WalletController {
   @Get('wallet/deposit/:orderCode/status')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[BUYER / USER] Kiểm tra trạng thái nạp tiền ví qua PayOS',
-    description:
-      'Kiểm tra trạng thái giao dịch nạp tiền ví theo orderCode và đồng bộ với cổng PayOS.',
+    summary: '[BUYER / USER] Check PayOS wallet top-up status',
+    description: 'Checks wallet deposit status by orderCode and synchronizes with PayOS.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy trạng thái nạp tiền thành công' })
+  @ApiResponse({ status: 200, description: 'Deposit status retrieved successfully' })
   async checkWalletDepositStatus(
     @CurrentUser('id') userId: string,
     @ZodParam('orderCode', NumericCodeParamSchema) orderCode: string,
