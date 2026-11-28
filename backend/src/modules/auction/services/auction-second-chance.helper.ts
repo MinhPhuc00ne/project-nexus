@@ -6,6 +6,7 @@ import {
   NotFoundException,
   Optional,
 } from '@nestjs/common';
+import { AppErrorCode } from '@nexus/contracts';
 import {
   AuctionAwardStatus,
   AuctionAwardTier,
@@ -23,7 +24,6 @@ import {
 } from '../../../core/notifications/notification-publisher.service';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { PlatformSettingsService } from '../../../core/settings/platform-settings.service';
-import { AuctionStockService } from '../../catalog/services/auction-stock.service';
 import { TreasuryService } from '../../treasury/services/treasury.service';
 import { ReputationService } from '../../users/services/reputation.service';
 import {
@@ -47,7 +47,6 @@ export class AuctionSecondChanceHelper {
     reputation: ReputationService,
     adminSettings: PlatformSettingsService,
     treasury: TreasuryService,
-    _auctionStock?: AuctionStockService,
     @Optional() private readonly domainEvents?: DomainEventsService,
     @Optional() private readonly notifications?: NotificationPublisher,
     @Optional() private readonly defaultService?: AuctionDefaultService,
@@ -89,9 +88,10 @@ export class AuctionSecondChanceHelper {
         throw new BadRequestException('Thao tác này chỉ áp dụng cho người mua dự bị.');
       }
       if (award.status !== AuctionAwardStatus.AWAITING_ACCEPTANCE) {
-        throw new ConflictException(
-          'Lời mời mua hàng này đã được phản hồi hoặc không còn hiệu lực.',
-        );
+        throw new ConflictException({
+          message: 'Lời mời mua hàng này đã được phản hồi hoặc không còn hiệu lực.',
+          errorCode: AppErrorCode.CONFLICT,
+        });
       }
 
       const itemTitle = award.auctionItem?.title ?? award.auction.title;
@@ -283,7 +283,10 @@ export class AuctionSecondChanceHelper {
     const buyerId = award.buyerId ?? award.bid.bidderId;
     const sellerId = award.auctionItem?.sellerId ?? award.auction.sellerId;
     if (!sellerId) {
-      throw new ConflictException('Không xác định được người bán cho lô đấu giá.');
+      throw new ConflictException({
+        message: 'Không xác định được người bán cho lô đấu giá.',
+        errorCode: AppErrorCode.CONFLICT,
+      });
     }
 
     const depositAmount = Number(award.depositAmount);

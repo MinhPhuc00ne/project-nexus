@@ -3,7 +3,9 @@ import {
   publishNotification,
 } from '../../../core/notifications/notification-publisher.service';
 import { BadRequestException, ForbiddenException, Injectable, Optional } from '@nestjs/common';
+import { AppErrorCode } from '@nexus/contracts';
 import { NotificationType, OrderRefund, Prisma } from '@prisma/client';
+import { AuditLogService } from '../../../core/audit/audit-log.service';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { notifyAllAdmins } from '../../../core/notifications/admin-notification.util';
 import { TreasuryService } from '../../treasury/services/treasury.service';
@@ -17,6 +19,7 @@ export class RefundService {
     private readonly treasury: TreasuryService,
     private readonly store: AfterSalesStoreService,
     @Optional() private readonly notifications?: NotificationPublisher,
+    @Optional() private readonly auditLog?: AuditLogService,
   ) {}
 
   async issue(
@@ -28,7 +31,10 @@ export class RefundService {
     if (existing.length) return existing;
     const escrow = order.escrowRecord;
     if (!escrow || !['HELD', 'DISPUTED', 'DISBURSED'].includes(escrow.status))
-      throw new BadRequestException('Không có khoản thanh toán có thể hoàn.');
+      throw new BadRequestException({
+        message: 'Không có khoản thanh toán có thể hoàn.',
+        errorCode: AppErrorCode.BAD_REQUEST,
+      });
     const payments = await tx.payment.findMany({ where: { orderId: order.id, status: 'SUCCESS' } });
     if (
       !payments.length ||
@@ -36,7 +42,10 @@ export class RefundService {
         .reduce((sum, p) => sum.plus(p.amount), new Prisma.Decimal(0))
         .comparedTo(escrow.totalAmount) !== 0
     )
-      throw new BadRequestException('Cần đối soát số tiền đã thanh toán trước khi hoàn.');
+      throw new BadRequestException({
+        message: 'Cần đối soát số tiền đã thanh toán trước khi hoàn.',
+        errorCode: AppErrorCode.BAD_REQUEST,
+      });
     const escrowWallet = await this.treasury.getOrCreateEscrowWallet(tx);
     if (escrow.status === 'DISBURSED') {
       const recovered = await tx.wallet.updateMany({
@@ -86,6 +95,19 @@ export class RefundService {
         }),
       );
     await this.finish(tx, order.id);
+    await this.auditLog?.record(
+      {
+        eventName: 'order.refund.issued',
+        operatorId: order.buyerId,
+        payload: {
+          orderId: order.id,
+          refundCount: refunds.length,
+          totalAmount: refunds.reduce((sum, r) => sum + Number(r.amount), 0),
+          destinations: refunds.map((r) => r.destination),
+        },
+      },
+      tx,
+    );
     return refunds;
   }
 
@@ -213,7 +235,10 @@ export class RefundService {
       if (current.status === 'SUCCESS') return current;
       const reference = externalReference.trim();
       if (!reference || current.destination !== 'ORIGINAL')
-        throw new BadRequestException('Thiếu mã đối soát hoàn tiền hợp lệ.');
+        throw new BadRequestException({
+          message: 'Thiếu mã đối soát hoàn tiền hợp lệ.',
+          errorCode: AppErrorCode.BAD_REQUEST,
+        });
       const released = await tx.wallet.updateMany({
         where: { id: current.adminWalletId, lockedBalance: { gte: current.amount } },
         data: { lockedBalance: { decrement: current.amount } },
@@ -238,6 +263,19 @@ export class RefundService {
         refundId,
         externalReference: reference,
       });
+      await this.auditLog?.record(
+        {
+          eventName: 'order.refund.completed',
+          operatorId: actor.id,
+          payload: {
+            refundId,
+            orderId: order.id,
+            amount: Number(current.amount),
+            externalReference: reference,
+          },
+        },
+        tx,
+      );
       return result;
     });
   }

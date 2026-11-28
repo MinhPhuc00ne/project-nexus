@@ -8,6 +8,8 @@ import { ChatController } from './controllers/chat.controller';
 import { SellerAutoReplyController } from './controllers/seller-auto-reply.controller';
 import { ChatGateway } from './gateways/chat.gateway';
 import { ChatAutoReplyService } from './services/chat-auto-reply.service';
+import { ChatConversationService } from './services/chat-conversation.service';
+import { ChatMessageService } from './services/chat-message.service';
 import { ChatSupportService } from './services/chat-support.service';
 import { ChatService } from './services/chat.service';
 import { StaffQueueService } from './services/staff-queue.service';
@@ -31,6 +33,8 @@ import { ChatbotCommerceService } from './services/chatbot-commerce.service';
     ChatbotService,
     ChatbotAiService,
     ChatbotRateLimitService,
+    ChatConversationService,
+    ChatMessageService,
     ChatService,
     ChatSupportService,
     ChatAutoReplyService,

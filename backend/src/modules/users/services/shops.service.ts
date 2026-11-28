@@ -5,6 +5,7 @@ import {
   NotFoundException,
   Optional,
 } from '@nestjs/common';
+import { AppErrorCode } from '@nexus/contracts';
 import { NotificationType, Role, SellerRequestStatus } from '@prisma/client';
 import { assertCleanContent } from '../../../core/moderation/content-moderation.util';
 import { notifyAllAdmins } from '../../../core/notifications/admin-notification.util';
@@ -55,7 +56,10 @@ export class ShopsService {
     });
 
     if (!user) {
-      throw new NotFoundException('Không tìm thấy tài khoản người dùng.');
+      throw new NotFoundException({
+        message: 'Không tìm thấy tài khoản người dùng.',
+        errorCode: AppErrorCode.NOT_FOUND,
+      });
     }
 
     const latestApproved = user.sellerUpgradeRequests[0];
@@ -128,21 +132,26 @@ export class ShopsService {
     });
 
     if (!user) {
-      throw new NotFoundException('Không tìm thấy tài khoản người dùng.');
+      throw new NotFoundException({
+        message: 'Không tìm thấy tài khoản người dùng.',
+        errorCode: AppErrorCode.NOT_FOUND,
+      });
     }
 
     if (user.role !== Role.SELLER && user.role !== Role.ADMIN) {
-      throw new ForbiddenException(
-        'Chỉ tài khoản Người bán (Seller) mới có quyền chỉnh sửa thông tin gian hàng.',
-      );
+      throw new ForbiddenException({
+        message: 'Chỉ tài khoản Người bán (Seller) mới có quyền chỉnh sửa thông tin gian hàng.',
+        errorCode: AppErrorCode.FORBIDDEN,
+      });
     }
 
     if (user.isShopSuspended) {
-      throw new ForbiddenException(
-        `Gian hàng của bạn hiện đang bị Admin đình chỉ hoạt động.${
+      throw new ForbiddenException({
+        message: `Gian hàng của bạn hiện đang bị Admin đình chỉ hoạt động.${
           user.suspensionReason ? ` Lý do: ${user.suspensionReason}` : ''
         } Không thể chỉnh sửa hồ sơ.`,
-      );
+        errorCode: AppErrorCode.SHOP_SUSPENDED,
+      });
     }
 
     if (dto.storeName) {
@@ -155,7 +164,12 @@ export class ShopsService {
     const result = await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM users WHERE id = ${sellerId} FOR UPDATE`;
       const current = await tx.user.findUniqueOrThrow({ where: { id: sellerId } });
-      if (current.isShopSuspended) throw new ForbiddenException('Shop đang bị đình chỉ.');
+      if (current.isShopSuspended) {
+        throw new ForbiddenException({
+          message: 'Shop đang bị đình chỉ.',
+          errorCode: AppErrorCode.SHOP_SUSPENDED,
+        });
+      }
       const latestApproved = await tx.sellerUpgradeRequest.findFirst({
         where: { userId: sellerId, status: SellerRequestStatus.APPROVED },
         orderBy: { updatedAt: 'desc' },

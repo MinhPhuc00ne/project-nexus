@@ -10,6 +10,7 @@ import {
   NotFoundException,
   Optional,
 } from '@nestjs/common';
+import { AppErrorCode } from '@nexus/contracts';
 import {
   AuctionAward,
   AuctionAwardStatus,
@@ -85,7 +86,10 @@ export class AuctionCheckoutService {
     await tx.$queryRaw`SELECT id FROM wallets WHERE user_id = ${input.buyerId} FOR UPDATE`;
     const buyerWallet = await tx.wallet.findUnique({ where: { userId: input.buyerId } });
     if (!buyerWallet || Number(buyerWallet.lockedBalance) < depositAmount) {
-      throw new ConflictException('Số dư tạm giữ trong ví không đủ để khởi tạo tiền cọc 30%.');
+      throw new ConflictException({
+        message: 'Số dư tạm giữ trong ví không đủ để khởi tạo tiền cọc 30%.',
+        errorCode: AppErrorCode.CONFLICT,
+      });
     }
 
     if (refundAmount > 0) {

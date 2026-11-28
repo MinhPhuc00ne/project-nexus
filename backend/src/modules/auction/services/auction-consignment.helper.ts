@@ -11,6 +11,7 @@ import {
   NotFoundException,
   Optional,
 } from '@nestjs/common';
+import { AppErrorCode } from '@nexus/contracts';
 import {
   AuctionItemStatus,
   AuctionStatus,
@@ -63,9 +64,10 @@ export class AuctionConsignmentHelper {
       throw new ForbiddenException('Chỉ tài khoản Người bán mới được gửi vật phẩm ký gửi đấu giá.');
     }
     if (seller.isShopSuspended) {
-      throw new ForbiddenException(
-        'Gian hàng của bạn đang bị tạm khóa, không thể ký gửi vật phẩm.',
-      );
+      throw new ForbiddenException({
+        message: 'Gian hàng của bạn đang bị tạm khóa, không thể ký gửi vật phẩm.',
+        errorCode: AppErrorCode.SHOP_SUSPENDED,
+      });
     }
     const effectiveTrustLevel = trustLevelFor(seller.reputationScore);
     if (

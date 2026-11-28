@@ -13,7 +13,9 @@ import { SellerOrdersController } from './controllers/seller-orders.controller';
 import { OrderLifecycleController } from './controllers/order-lifecycle.controller';
 import { OrderEscrowService } from './services/order-escrow.service';
 import { OrderExpirationService } from './services/order-expiration.service';
+import { OrderCodPaymentService } from './services/order-cod-payment.service';
 import { OrderPaymentHelper } from './services/order-payment.helper';
+import { OrderPayosSettlementService } from './services/order-payos-settlement.service';
 import { OrderPayosService } from './services/order-payos.service';
 import { OrderWalletPaymentService } from './services/order-wallet-payment.service';
 import { OrdersChatFacade } from './services/orders-chat.facade';
@@ -44,6 +46,8 @@ import { OrdersChatFacade } from './services/orders-chat.facade';
   ],
   controllers: [OrderController, SellerOrdersController, OrderLifecycleController],
   providers: [
+    OrderCodPaymentService,
+    OrderPayosSettlementService,
     OrderPayosService,
     OrderWalletPaymentService,
     OrderPaymentHelper,

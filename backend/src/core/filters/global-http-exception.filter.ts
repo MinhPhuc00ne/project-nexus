@@ -9,6 +9,7 @@ import {
 import * as crypto from 'crypto';
 import { inspect } from 'node:util';
 import { Request, Response } from 'express';
+import { AppErrorCode } from '@nexus/contracts';
 import { resolveHeaderTraceId } from '../audit/request-trace.context';
 
 /** The shape of an HttpException, whichever copy of Nest built it. */
@@ -56,7 +57,7 @@ export class GlobalHttpExceptionFilter implements ExceptionFilter {
     const request = ctx.getRequest<Request & { id?: string }>();
 
     let statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
-    let errorCode = 'INTERNAL_SERVER_ERROR';
+    let errorCode: string = AppErrorCode.INTERNAL_SERVER_ERROR;
     let message: string | string[] = 'Internal server error occurred';
     let errors: unknown = null;
 
@@ -68,12 +69,16 @@ export class GlobalHttpExceptionFilter implements ExceptionFilter {
         message = (resObj.message as string | string[]) || exception.message;
         errorCode =
           (typeof resObj.errorCode === 'string' && resObj.errorCode) ||
+          (statusCode === HttpStatus.TOO_MANY_REQUESTS ? AppErrorCode.RATE_LIMIT_EXCEEDED : '') ||
           (typeof resObj.error === 'string' && resObj.error) ||
           `HTTP_${statusCode}`;
         errors = resObj.errors || null;
       } else {
         message = typeof res === 'string' && res.length > 0 ? res : exception.message;
-        errorCode = `HTTP_${statusCode}`;
+        errorCode =
+          statusCode === HttpStatus.TOO_MANY_REQUESTS
+            ? AppErrorCode.RATE_LIMIT_EXCEEDED
+            : `HTTP_${statusCode}`;
       }
     } else if (exception instanceof Error) {
       this.logger.error(`Unhandled Error: ${exception.message}`, exception.stack);

@@ -7,6 +7,7 @@ import {
   Optional,
 } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
+import { AppErrorCode } from '@nexus/contracts';
 import { AfterSalesRequest, NotificationType } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { ProviderConfigService } from '../../../core/providers/provider-config.service';
@@ -55,7 +56,10 @@ export class OrderReturnService {
         throw new ForbiddenException('Chỉ người mua được yêu cầu trả hàng.');
       if (order.afterSales) {
         if (order.afterSales.kind !== 'RETURN')
-          throw new ConflictException('Đơn đã có yêu cầu hủy.');
+          throw new ConflictException({
+            message: 'Đơn đã có yêu cầu hủy.',
+            errorCode: AppErrorCode.CONFLICT,
+          });
         return order.afterSales;
       }
       if (
@@ -65,7 +69,10 @@ export class OrderReturnService {
       )
         throw new BadRequestException('Đơn chưa đủ điều kiện trả hàng.');
       if (order.dispute)
-        throw new ConflictException('Đơn đã có khiếu nại; tiếp tục xử lý trên hồ sơ đó.');
+        throw new ConflictException({
+          message: 'Đơn đã có khiếu nại; tiếp tục xử lý trên hồ sơ đó.',
+          errorCode: AppErrorCode.DISPUTE_ALREADY_EXISTS,
+        });
       if (
         order.status === 'PREPARING' &&
         !['FAILED', 'RETURNED'].includes(order.shipment?.status ?? '')
@@ -124,7 +131,10 @@ export class OrderReturnService {
       if (!current.afterSales || current.afterSales.kind !== 'RETURN')
         throw new BadRequestException('Không có yêu cầu trả hàng.');
       if (dto.decision === 'REJECT' && current.afterSales.status === 'APPROVING')
-        throw new ConflictException('GHN đang xử lý chuyển hoàn. Cần đối soát trước.');
+        throw new ConflictException({
+          message: 'GHN đang xử lý chuyển hoàn. Cần đối soát trước.',
+          errorCode: AppErrorCode.CONFLICT,
+        });
       if (dto.decision === 'APPROVE' && current.afterSales.status === 'REQUESTED') {
         await tx.afterSalesRequest.update({
           where: { orderId },
@@ -213,7 +223,10 @@ export class OrderReturnService {
         current.afterSales.returnWaybillCode &&
         current.afterSales.returnWaybillCode !== waybillCode
       )
-        throw new ConflictException('Đã gắn vận đơn hoàn khác.');
+        throw new ConflictException({
+          message: 'Đã gắn vận đơn hoàn khác.',
+          errorCode: AppErrorCode.CONFLICT,
+        });
       await this.store.audit(tx, current, actor, 'return-waybill-attached', { waybillCode });
       return tx.afterSalesRequest.update({
         where: { orderId },
@@ -260,7 +273,10 @@ export class OrderReturnService {
       if (current.afterSales?.status !== 'APPROVED')
         return tx.afterSalesRequest.findUniqueOrThrow({ where: { orderId } });
       if (current.afterSales.returnWaybillCode !== request.returnWaybillCode)
-        throw new ConflictException('Vận đơn hoàn đã thay đổi.');
+        throw new ConflictException({
+          message: 'Vận đơn hoàn đã thay đổi.',
+          errorCode: AppErrorCode.CONFLICT,
+        });
       await tx.afterSalesRequest.update({
         where: { orderId },
         data: {
